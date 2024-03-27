@@ -5,9 +5,9 @@ from pubsub import pub
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
 
-messages_win = None  # Define messages_win as a global variable
-nodes_win = None     # Define nodes_win as a global variable
-message_row = 1  # Initialize message row counter
+messages_win = None
+nodes_win = None
+message_row = 1
 
 
 node_list = []
@@ -23,8 +23,8 @@ def on_receive(packet, interface):
             message_bytes = packet['decoded']['payload']
             message_string = message_bytes.decode('utf-8')
             # Add received message to the messages window
-            messages_win.addstr(message_row, 1, ">> Received: ", curses.color_pair(1))  # Start prefix at second column
-            messages_win.addstr(message_row, 14, message_string + '\n')  # Start message content after prefix
+            messages_win.addstr(message_row, 1, ">> Received: ", curses.color_pair(1))
+            messages_win.addstr(message_row, 14, message_string + '\n')
             messages_win.box()
             messages_win.refresh()
             message_row += 1  # Increment message row
@@ -34,11 +34,11 @@ def on_receive(packet, interface):
 pub.subscribe(on_receive, 'meshtastic.receive')
 
 def send_message(message):
-    global message_row  # Access the global message_row variable
+    global message_row 
     interface.sendText(message)
     # Add sent message to the messages window
-    messages_win.addstr(message_row, 1, ">> Sent: ", curses.color_pair(2))  # Start prefix at second column
-    messages_win.addstr(message_row, 10, message + '\n')  # Start message content after prefix
+    messages_win.addstr(message_row, 1, ">> Sent: ", curses.color_pair(2))
+    messages_win.addstr(message_row, 10, message + '\n')
 
     messages_win.box()
     messages_win.refresh()
@@ -50,12 +50,12 @@ def draw_text_field(win, text):
     win.addstr(1, 1, text)
 
 def main(stdscr):
-    global messages_win, nodes_win  # Access the global variables
+    global messages_win, nodes_win 
 
     # Initialize colors
     curses.start_color()
-    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)  # Define color pair 1 (cyan text on black background)
-    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)  # Define color pair 2 (yellow text on black background)
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
     # Turn off cursor blinking
     curses.curs_set(1)
@@ -66,7 +66,7 @@ def main(stdscr):
     # Define window dimensions and positions
     entry_win = curses.newwin(3, width, 0, 0)
     messages_win = curses.newwin(height - 6, 2*(width // 3), 3, 0)
-    nodes_win = curses.newwin(height - 6, width // 3, 3, 2*(width // 3))  # Adjusted position and width
+    nodes_win = curses.newwin(height - 6, width // 3, 3, 2*(width // 3))
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
