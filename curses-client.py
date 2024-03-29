@@ -43,8 +43,6 @@ def on_receive(packet, interface):
                 else:
                     message_from_string = str(decimal_to_hex(message_from_id))  # If long name not found, use the ID as string
 
-
-            
             messages_win.addstr(message_row, 1, f">> {message_from_string}", curses.color_pair(1))
             messages_win.addstr(message_row, 3 + len(message_from_string) + 2, message_string + '\n')
             messages_win.box()
