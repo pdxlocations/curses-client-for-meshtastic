@@ -10,7 +10,9 @@ messages_win = None
 nodes_win = None
 channel_win = None  # Added channel_win variable
 message_row = 1
+selected_channel = 0
 
+BROADCAST_ADDR = 4294967295
 
 node_list = []
 if interface.nodes:
@@ -55,7 +57,17 @@ pub.subscribe(on_receive, 'meshtastic.receive')
 
 def send_message(message):
     global message_row 
-    interface.sendText(message)
+    # interface.sendText(message)
+
+    interface.sendText(
+        text=message,
+        destinationId=BROADCAST_ADDR,
+        wantAck=False,
+        wantResponse=False,
+        onResponse=None,
+        channelIndex=selected_channel,
+    )
+
     # Add sent message to the messages window
     messages_win.addstr(message_row, 1, ">> Sent: ", curses.color_pair(2))
     messages_win.addstr(message_row, 10, message + '\n')
@@ -112,7 +124,6 @@ def main(stdscr):
     node = interface.getNode('^local')
     device_channels = node.channels
 
-    selected_channel = 0
     channel_output = []
 
     for device_channel in device_channels:
