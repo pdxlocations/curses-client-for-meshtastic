@@ -27,36 +27,48 @@ def convert_to_camel_case(string):
     camel_case_string = ''.join(word.capitalize() for word in words)
     return camel_case_string
 
+
+node = interface.getNode('^local')
+device_channels = node.channels
+number_of_channels = 0
+for device_channel in device_channels:
+    if device_channel.role:
+        number_of_channels += 1
+# Initialize a list to store messages for each channel
+all_messages = [[] for _ in range(number_of_channels)]
+
+
 def on_receive(packet, interface):
-    global message_row
+    global message_row, all_messages
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
             message_string = message_bytes.decode('utf-8')
+            if packet.get('channel'):
+                channel_number = packet['channel']
+            else:
+                channel_number = 0
 
-            # Add received message to the messages window
+            # Add received message to the messages list
             message_from_id = packet['from']
-            message_from_string =""
+            message_from_string = ""
             for node in interface.nodes.values():
-
                 if message_from_id == node['num']:
                     message_from_string = node["user"]["longName"]  # Get the long name using the node ID
                     break
                 else:
                     message_from_string = str(decimal_to_hex(message_from_id))  # If long name not found, use the ID as string
 
-            messages_win.addstr(message_row, 1, f">> {message_from_string}", curses.color_pair(1))
-            messages_win.addstr(message_row, 3 + len(message_from_string) + 2, message_string + '\n')
-            messages_win.box()
-            messages_win.refresh()
-            message_row += 1  # Increment message row
+            all_messages[channel_number].append((f">> {message_from_string} ", message_string))
+
+            # Update messages window
+            update_messages_window()
     except KeyError as e:
         print(f"Error processing packet: {e}")
 
-
 def send_message(message, destination=BROADCAST_ADDR, channel=0):
-    global message_row 
-    
+    global message_row, all_messages, selected_channel
+
     interface.sendText(
         text=message,
         destinationId=destination,
@@ -66,13 +78,33 @@ def send_message(message, destination=BROADCAST_ADDR, channel=0):
         channelIndex=channel,
     )
 
-    # Add sent message to the messages window
-    messages_win.addstr(message_row, 1, ">> Sent: ", curses.color_pair(2))
-    messages_win.addstr(message_row, 10, message + '\n')
+    # Add sent message to the messages list
+    all_messages[selected_channel].append((">> Sent: ", message))
+
+    # Update messages window
+    update_messages_window()
+    messages_win.refresh()
+
+def update_messages_window():
+    global message_row, all_messages, selected_channel
+
+    messages_win.clear()
+
+    # Calculate how many messages can fit in the window
+    max_messages = messages_win.getmaxyx()[0] - 2  # Subtract 2 for the top and bottom border
+
+    # Determine the starting index for displaying messages
+    start_index = max(0, len(all_messages[selected_channel]) - max_messages)
+
+    # Display messages starting from the calculated start index
+    for row, (prefix, message) in enumerate(all_messages[selected_channel][start_index:], start=1):
+        messages_win.addstr(row, 1, prefix, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
+        messages_win.addstr(row, len(prefix) + 1, message + '\n')
 
     messages_win.box()
     messages_win.refresh()
-    message_row += 1  # Increment message row
+    message_row = len(all_messages[selected_channel])  # Set message row to the number of messages in the list
+
 
 def draw_text_field(win, text):
     win.clear()
@@ -98,7 +130,7 @@ def draw_channel_list():
                 modem_preset_enum = lora_config.modem_preset
                 modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
                 channel_output.append(convert_to_camel_case(modem_preset_string))
-
+    
     for i, channel in enumerate(channel_output):
         if selected_channel == i:
             channel_win.addstr(i+1, 1, channel, curses.color_pair(3))
@@ -180,7 +212,8 @@ def main(stdscr):
                 selected_channel = 0
 
             draw_channel_list()
-            channel_win.refresh()   
+            channel_win.refresh()  
+            update_messages_window()
             
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
             # Enter key pressed, send user input as message
@@ -188,7 +221,7 @@ def main(stdscr):
 
             # Clear entry window and reset input text
             input_text = ""
-            entry_win.clear()
+            entry_win.clear()       
             entry_win.refresh()
         elif char == curses.KEY_BACKSPACE or char == 127:
             # Backspace key pressed, remove last character from input text
