@@ -26,14 +26,14 @@ def convert_to_camel_case(string):
     return camel_case_string
 
 def on_receive(packet, interface):
-    global message_row  # Access the global message_row variable
+    global message_row
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
             message_string = message_bytes.decode('utf-8')
 
             # Add received message to the messages window
-            message_from_id = packet['from']  # Assuming 'from' contains the node ID
+            message_from_id = packet['from']
             message_from_string =""
             for node in interface.nodes.values():
 
@@ -102,7 +102,7 @@ def main(stdscr):
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
     nodes_win.scrollok(True)
-    channel_win.scrollok(True)  # Enable scrolling for the channel_win as well
+    channel_win.scrollok(True)
 
     # Draw boxes around windows
     channel_win.box()
@@ -148,7 +148,7 @@ def main(stdscr):
     entry_win.refresh()
     messages_win.refresh()
     nodes_win.refresh()
-    channel_win.refresh()  # Refresh the channel_win as well
+    channel_win.refresh()
 
     input_text = ""
     while True:
