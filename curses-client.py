@@ -11,7 +11,7 @@ nodes_win = None
 channel_win = None  # Added channel_win variable
 message_row = 1
 selected_channel = 0
-
+number_of_channels=0
 BROADCAST_ADDR = 4294967295
 
 node_list = []
@@ -53,19 +53,17 @@ def on_receive(packet, interface):
     except KeyError as e:
         print(f"Error processing packet: {e}")
 
-pub.subscribe(on_receive, 'meshtastic.receive')
 
-def send_message(message):
+def send_message(message, destination=BROADCAST_ADDR, channel=0):
     global message_row 
-    # interface.sendText(message)
-
+    
     interface.sendText(
         text=message,
-        destinationId=BROADCAST_ADDR,
+        destinationId=destination,
         wantAck=False,
         wantResponse=False,
         onResponse=None,
-        channelIndex=selected_channel,
+        channelIndex=channel,
     )
 
     # Add sent message to the messages window
@@ -81,8 +79,35 @@ def draw_text_field(win, text):
     win.border()
     win.addstr(1, 1, text)
 
+def draw_channel_list():
+    global number_of_channels
+     # Get node information and display it in the channel_win
+    node = interface.getNode('^local')
+    device_channels = node.channels
+
+    channel_output = []
+    number_of_channels = 0
+    for device_channel in device_channels:
+        if device_channel.role:
+            number_of_channels += 1
+            if device_channel.settings.name:
+                channel_output.append(device_channel.settings.name)
+            else:
+                # If channel name is blank, use the modem preset
+                lora_config = node.localConfig.lora
+                modem_preset_enum = lora_config.modem_preset
+                modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
+                channel_output.append(convert_to_camel_case(modem_preset_string))
+
+    for i, channel in enumerate(channel_output):
+        if selected_channel == i:
+            channel_win.addstr(i+1, 1, channel, curses.color_pair(3))
+        else:
+            channel_win.addstr(i+1, 1, channel, curses.color_pair(4))
+
+
 def main(stdscr):
-    global messages_win, nodes_win, channel_win
+    global messages_win, nodes_win, channel_win, selected_channel, function_win
 
     # Initialize colors
     curses.start_color()
@@ -105,52 +130,31 @@ def main(stdscr):
     messages_width = 4 * (width // 8)  # 4/8 of the width
     nodes_width = 3 * (width // 8)  # ⅜ of the width
 
-    channel_win = curses.newwin(height - 3, channel_width, 3, 0)  # Left column
-    messages_win = curses.newwin(height - 3, messages_width, 3, channel_width)  # Middle column
-    nodes_win = curses.newwin(height - 3, nodes_width, 3, channel_width + messages_width)  # Right column
+    channel_win = curses.newwin(height - 6, channel_width, 3, 0)  # Left column
+    messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)  # Middle column
+    nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)  # Right column
+    function_win = curses.newwin(3, width, height - 3, 0)  # Bottom row window
+
+    draw_text_field(function_win, f"TAB = Switch Channels   ENTER = Send Message")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
     nodes_win.scrollok(True)
     channel_win.scrollok(True)
 
+    draw_channel_list()
+
+    # Display initial content in nodes window
+    for i, node in enumerate(node_list, start=1):
+        if i < height - 8   :  # Check if there is enough space in the window
+            nodes_win.addstr(i, 1, node)
+
     # Draw boxes around windows
     channel_win.box()
     entry_win.box()
     messages_win.box()
     nodes_win.box()
-
-    # Get node information and display it in the channel_win
-    node = interface.getNode('^local')
-    device_channels = node.channels
-
-    channel_output = []
-
-    for device_channel in device_channels:
-        if device_channel.role:
-            if device_channel.settings.name:
-                channel_output.append(device_channel.settings.name)
-            else:
-                # If channel name is blank, use the modem preset
-                lora_config = node.localConfig.lora
-                modem_preset_enum = lora_config.modem_preset
-                modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
-                channel_output.append(convert_to_camel_case(modem_preset_string))
-
-
-    for i, channel in enumerate(channel_output):
-        if selected_channel == i:
-            channel_win.addstr(i+1, 1, channel, curses.color_pair(3))
-        else:
-            channel_win.addstr(i+1, 1, channel, curses.color_pair(4))
-
-    channel_win.box()
-
-
-    # Display initial content in nodes window
-    for i, node in enumerate(node_list, start=1):
-        if i < height - 6 - 1:  # Check if there is enough space in the window
-            nodes_win.addstr(i, 1, node)
+    function_win.box()
 
     # Refresh all windows
     stdscr.refresh()
@@ -158,19 +162,29 @@ def main(stdscr):
     messages_win.refresh()
     nodes_win.refresh()
     channel_win.refresh()
+    function_win.refresh()
 
     input_text = ""
+
     while True:
-        # Draw text field
         draw_text_field(entry_win, f"Input: {input_text}")
 
         # Get user input from entry window
         entry_win.move(1, len(input_text) + 8)
         char = entry_win.getch()
 
-        if char == curses.KEY_ENTER or char == 10 or char == 13:
+        if char == ord('\t'):
+            if selected_channel < number_of_channels-1:
+                selected_channel += 1
+            else:
+                selected_channel = 0
+
+            draw_channel_list()
+            channel_win.refresh()   
+            
+        elif char == curses.KEY_ENTER or char == 10 or char == 13:
             # Enter key pressed, send user input as message
-            send_message(input_text)
+            send_message(input_text, channel=selected_channel)
 
             # Clear entry window and reset input text
             input_text = ""
@@ -183,6 +197,7 @@ def main(stdscr):
             # Append typed character to input text
             input_text += chr(char)
 
+pub.subscribe(on_receive, 'meshtastic.receive')
 
 if __name__ == "__main__":
     curses.wrapper(main)
