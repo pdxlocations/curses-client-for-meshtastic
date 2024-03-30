@@ -6,12 +6,8 @@ from meshtastic import config_pb2, BROADCAST_NUM
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
 
-messages_win = None
-nodes_win = None
-channel_win = None
 message_row = 1
 selected_channel = 0
-# number_of_channels=0
 
 def get_node_list():
     node_list = []
@@ -37,7 +33,7 @@ def get_number_of_channels():
             number_of_channels += 1
     return(number_of_channels)
 
-# Initialize a list to store messages for each channel
+# Initialize a list of lists to store messages for each channel
 all_messages = [[] for _ in range(get_number_of_channels())]
 
 def on_receive(packet, interface):
