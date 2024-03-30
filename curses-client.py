@@ -33,11 +33,29 @@ def get_number_of_channels():
             number_of_channels += 1
     return(number_of_channels)
 
+def get_channel_name(channel_num):
+    channel_name = ""
+    node = interface.getNode('^local')
+    device_channels = node.channels
+
+    if device_channels[channel_num].settings.name:
+        channel_name = device_channels[channel_num].settings.name
+    else:
+        # If channel name is blank, use the modem preset
+        lora_config = node.localConfig.lora
+        modem_preset_enum = lora_config.modem_preset
+        modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
+        channel_name = convert_to_camel_case(modem_preset_string)
+    
+    return channel_name
+
+
 # Initialize a list of lists to store messages for each channel
 all_messages = [[] for _ in range(get_number_of_channels())]
 
+
 def on_receive(packet, interface):
-    global message_row, all_messages
+    global message_row, all_messages, selected_channel
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
@@ -46,6 +64,9 @@ def on_receive(packet, interface):
                 channel_number = packet['channel']
             else:
                 channel_number = 0
+
+            if channel_number != selected_channel:
+                add_notification(channel_number)
 
             # Add received message to the messages list
             message_from_id = packet['from']
@@ -81,6 +102,14 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
 
     update_messages_window()
     messages_win.refresh()
+
+def add_notification(channel_number):
+    channel_win.addstr(channel_number+1, len(get_channel_name(channel_number))+1, " *", curses.color_pair(4))
+    channel_win.refresh()
+
+def remove_notification(channel_number):
+    channel_win.addstr(channel_number+1, len(get_channel_name(channel_number))+1, "  ", curses.color_pair(4))
+    channel_win.refresh()
 
 def update_messages_window():
     global message_row, all_messages, selected_channel
@@ -131,6 +160,7 @@ def draw_channel_list():
     for i, channel in enumerate(channel_output):
         if selected_channel == i:
             channel_win.addstr(i+1, 1, channel, curses.color_pair(3))
+            remove_notification(selected_channel)
         else:
             channel_win.addstr(i+1, 1, channel, curses.color_pair(4))
 
