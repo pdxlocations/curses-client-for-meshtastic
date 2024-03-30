@@ -7,6 +7,12 @@ from meshtastic import config_pb2, BROADCAST_NUM
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
+
+myinfo = interface.getMyNodeInfo()
+
+myNodeNum = myinfo['num']
+all_messages = {}
+is_dm = False
 selected_channel = 0
 
 def get_node_list():
@@ -50,9 +56,6 @@ def get_channel_name(channel_num):
     return channel_name
 
 
-# Initialize a list of lists to store messages for each channel
-all_messages = [[] for _ in range(get_number_of_channels())]
-
 
 def on_receive(packet, interface):
     global all_messages, selected_channel
@@ -64,6 +67,11 @@ def on_receive(packet, interface):
                 channel_number = packet['channel']
             else:
                 channel_number = 0
+
+            if packet['to'] == myNodeNum:
+                draw_debug(f"is dm on ch:{channel_number}")
+                is_dm = True
+
 
             if channel_number != selected_channel:
                 add_notification(channel_number)
@@ -78,9 +86,11 @@ def on_receive(packet, interface):
                 else:
                     message_from_string = str(decimal_to_hex(message_from_id))  # If long name not found, use the ID as string
 
-            all_messages[channel_number].append((f">> {message_from_string} ", message_string))
+            if channel_number in all_messages:
+                all_messages[channel_number].append((f">> {message_from_string} ", message_string))
+            else:
+                all_messages[channel_number] = [(f">> {message_from_string} ", message_string)]
 
-            # Update messages window
             update_messages_window()
     except KeyError as e:
         print(f"Error processing packet: {e}")
@@ -97,8 +107,12 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
         channelIndex=channel,
     )
 
-    # Add sent message to the messages list
-    all_messages[selected_channel].append((">> Sent: ", message))
+    # Add sent message to the messages dictionary
+    if selected_channel in all_messages:
+        all_messages[selected_channel].append((">> Sent: ", message))
+    else:
+        all_messages[selected_channel] = [(">> Sent: ", message)]
+
 
     update_messages_window()
     messages_win.refresh()
@@ -120,16 +134,25 @@ def update_messages_window():
     max_messages = messages_win.getmaxyx()[0] - 2  # Subtract 2 for the top and bottom border
 
     # Determine the starting index for displaying messages
-    start_index = max(0, len(all_messages[selected_channel]) - max_messages)
+    if selected_channel in all_messages:
+        start_index = max(0, len(all_messages[selected_channel]) - max_messages)
+    else:
+        # Handle the case where selected_channel does not exist
+        start_index = 0  # Set start_index to 0 or any other appropriate value
+
 
     # Display messages starting from the calculated start index
-    for row, (prefix, message) in enumerate(all_messages[selected_channel][start_index:], start=1):
-        messages_win.addstr(row, 1, prefix, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
-        messages_win.addstr(row, len(prefix) + 1, message + '\n')
+    # Check if selected_channel exists in all_messages before accessing it
+    if selected_channel in all_messages:
+        for row, (prefix, message) in enumerate(all_messages[selected_channel][start_index:], start=1):
+            messages_win.addstr(row, 1, prefix, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
+            messages_win.addstr(row, len(prefix) + 1, message + '\n')
+    else:
+        # Handle the case where selected_channel does not exist
+        pass
 
     messages_win.box()
     messages_win.refresh()
-
 
 def draw_text_field(win, text):
     win.clear()
@@ -223,7 +246,8 @@ def main(stdscr):
     function_win.refresh()
 
     input_text = ""
-    
+    direct_message = False
+
     while True:
         draw_text_field(entry_win, f"Input: {input_text}")
 
@@ -239,7 +263,11 @@ def main(stdscr):
             
         # Check for Ctrl-D
         elif char == 4:
-            draw_debug("ctl-d")
+            if direct_message == False:
+                direct_message = True
+            else:
+                direct_message = False
+            draw_debug(f"dm = {direct_message}")
 
         # Check for Tab
         elif char == ord('\t'):
