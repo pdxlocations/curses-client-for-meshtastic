@@ -1,14 +1,14 @@
 import curses
 import meshtastic.serial_interface
 from pubsub import pub
-from meshtastic import config_pb2  # Import config_pb2 for accessing modem presets
+from meshtastic import config_pb2
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
 
 messages_win = None
 nodes_win = None
-channel_win = None  # Added channel_win variable
+channel_win = None
 message_row = 1
 selected_channel = 0
 number_of_channels=0
@@ -81,7 +81,6 @@ def send_message(message, destination=BROADCAST_ADDR, channel=0):
     # Add sent message to the messages list
     all_messages[selected_channel].append((">> Sent: ", message))
 
-    # Update messages window
     update_messages_window()
     messages_win.refresh()
 
@@ -148,24 +147,19 @@ def main(stdscr):
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
     curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLACK)
 
-    # Turn off cursor blinking
-    curses.curs_set(1)
-
-    # Calculate window dimensions
+    # Calculate window max dimensions
     height, width = stdscr.getmaxyx()
 
     # Define window dimensions and positions
-    entry_win = curses.newwin(3, width, 0, 0)  # Positioned at the top, spans entire width
-    
-    # Define window dimensions and positions
-    channel_width = width // 8  # ⅛ of the width
-    messages_width = 4 * (width // 8)  # 4/8 of the width
-    nodes_width = 3 * (width // 8)  # ⅜ of the width
+    entry_win = curses.newwin(3, width, 0, 0)
+    channel_width = width // 8
+    messages_width = 4 * (width // 8)
+    nodes_width = 3 * (width // 8)
 
-    channel_win = curses.newwin(height - 6, channel_width, 3, 0)  # Left column
-    messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)  # Middle column
-    nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)  # Right column
-    function_win = curses.newwin(3, width, height - 3, 0)  # Bottom row window
+    channel_win = curses.newwin(height - 6, channel_width, 3, 0)
+    messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)
+    nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
+    function_win = curses.newwin(3, width, height - 3, 0)
 
     draw_text_field(function_win, f"TAB = Switch Channels   ENTER = Send Message")
 
@@ -189,7 +183,6 @@ def main(stdscr):
     function_win.box()
 
     # Refresh all windows
-    stdscr.refresh()
     entry_win.refresh()
     messages_win.refresh()
     nodes_win.refresh()
