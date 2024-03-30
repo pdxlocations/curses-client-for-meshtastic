@@ -11,13 +11,15 @@ nodes_win = None
 channel_win = None
 message_row = 1
 selected_channel = 0
-number_of_channels=0
+# number_of_channels=0
 BROADCAST_ADDR = 4294967295
 
-node_list = []
-if interface.nodes:
-    for node in interface.nodes.values():
-        node_list.append(node["user"]["longName"])
+def get_node_list():
+    node_list = []
+    if interface.nodes:
+        for node in interface.nodes.values():
+            node_list.append(node["user"]["longName"])
+    return node_list
 
 def decimal_to_hex(decimal_number):
     return "!" + hex(decimal_number)[2:]
@@ -27,16 +29,17 @@ def convert_to_camel_case(string):
     camel_case_string = ''.join(word.capitalize() for word in words)
     return camel_case_string
 
+def get_number_of_channels():
+    node = interface.getNode('^local')
+    device_channels = node.channels
+    number_of_channels = 0
+    for device_channel in device_channels:
+        if device_channel.role:
+            number_of_channels += 1
+    return(number_of_channels)
 
-node = interface.getNode('^local')
-device_channels = node.channels
-number_of_channels = 0
-for device_channel in device_channels:
-    if device_channel.role:
-        number_of_channels += 1
 # Initialize a list to store messages for each channel
-all_messages = [[] for _ in range(number_of_channels)]
-
+all_messages = [[] for _ in range(get_number_of_channels())]
 
 def on_receive(packet, interface):
     global message_row, all_messages
@@ -136,6 +139,11 @@ def draw_channel_list():
         else:
             channel_win.addstr(i+1, 1, channel, curses.color_pair(4))
 
+def draw_node_list(height):
+    for i, node in enumerate(get_node_list(), start=1):
+        if i < height - 8   :  # Check if there is enough space in the window
+            nodes_win.addstr(i, 1, node)
+
 
 def main(stdscr):
     global messages_win, nodes_win, channel_win, selected_channel, function_win
@@ -169,18 +177,14 @@ def main(stdscr):
     channel_win.scrollok(True)
 
     draw_channel_list()
-
-    # Display initial content in nodes window
-    for i, node in enumerate(node_list, start=1):
-        if i < height - 8   :  # Check if there is enough space in the window
-            nodes_win.addstr(i, 1, node)
+    draw_node_list(height)
 
     # Draw boxes around windows
     channel_win.box()
     entry_win.box()
     messages_win.box()
     nodes_win.box()
-    function_win.box()
+    function_win.box() 
 
     # Refresh all windows
     entry_win.refresh()
