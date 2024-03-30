@@ -1,7 +1,7 @@
 import curses
 import meshtastic.serial_interface
 from pubsub import pub
-from meshtastic import config_pb2
+from meshtastic import config_pb2, BROADCAST_NUM
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
@@ -12,7 +12,6 @@ channel_win = None
 message_row = 1
 selected_channel = 0
 # number_of_channels=0
-BROADCAST_ADDR = 4294967295
 
 def get_node_list():
     node_list = []
@@ -22,7 +21,7 @@ def get_node_list():
     return node_list
 
 def decimal_to_hex(decimal_number):
-    return "!" + hex(decimal_number)[2:]
+    return f"!{decimal_number:08x}"
 
 def convert_to_camel_case(string):
     words = string.split('_')
@@ -69,7 +68,7 @@ def on_receive(packet, interface):
     except KeyError as e:
         print(f"Error processing packet: {e}")
 
-def send_message(message, destination=BROADCAST_ADDR, channel=0):
+def send_message(message, destination=BROADCAST_NUM, channel=0):
     global message_row, all_messages, selected_channel
 
     interface.sendText(
