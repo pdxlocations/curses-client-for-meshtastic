@@ -5,8 +5,6 @@ from meshtastic import config_pb2, BROADCAST_NUM
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
-
-message_row = 1
 selected_channel = 0
 
 def get_node_list():
@@ -31,7 +29,7 @@ def get_number_of_channels():
     for device_channel in device_channels:
         if device_channel.role:
             number_of_channels += 1
-    return(number_of_channels)
+    return number_of_channels 
 
 def get_channel_name(channel_num):
     channel_name = ""
@@ -55,7 +53,7 @@ all_messages = [[] for _ in range(get_number_of_channels())]
 
 
 def on_receive(packet, interface):
-    global message_row, all_messages, selected_channel
+    global all_messages, selected_channel
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
@@ -86,7 +84,7 @@ def on_receive(packet, interface):
         print(f"Error processing packet: {e}")
 
 def send_message(message, destination=BROADCAST_NUM, channel=0):
-    global message_row, all_messages, selected_channel
+    global all_messages, selected_channel
 
     interface.sendText(
         text=message,
@@ -112,7 +110,7 @@ def remove_notification(channel_number):
     channel_win.refresh()
 
 def update_messages_window():
-    global message_row, all_messages, selected_channel
+    global all_messages, selected_channel
 
     messages_win.clear()
 
@@ -129,7 +127,6 @@ def update_messages_window():
 
     messages_win.box()
     messages_win.refresh()
-    message_row = len(all_messages[selected_channel])  # Set message row to the number of messages in the list
 
 
 def draw_text_field(win, text):
@@ -169,6 +166,10 @@ def draw_node_list(height):
         if i < height - 8   :  # Check if there is enough space in the window
             nodes_win.addstr(i, 1, node)
 
+def draw_debug(value):
+    function_win.addstr(1, 70, f"debug: {value}    ")
+    function_win.refresh()
+    
 
 def main(stdscr):
     global messages_win, nodes_win, channel_win, selected_channel, function_win
@@ -194,7 +195,7 @@ def main(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"TAB = Switch Channels   ENTER = Send Message")
+    draw_text_field(function_win, f"TAB = Switch Channels   ENTER = Send Message   ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
@@ -203,6 +204,7 @@ def main(stdscr):
 
     draw_channel_list()
     draw_node_list(height)
+
 
     # Draw boxes around windows
     channel_win.box()
@@ -219,7 +221,7 @@ def main(stdscr):
     function_win.refresh()
 
     input_text = ""
-
+    
     while True:
         draw_text_field(entry_win, f"Input: {input_text}")
 
@@ -227,7 +229,18 @@ def main(stdscr):
         entry_win.move(1, len(input_text) + 8)
         char = entry_win.getch()
 
-        if char == ord('\t'):
+        draw_debug(str(char))
+
+        # Check for Esc
+        if char == 27:
+            break
+            
+        # Check for Ctrl-D
+        elif char == 4:
+            draw_debug("ctl-d")
+
+        # Check for Tab
+        elif char == ord('\t'):
             if selected_channel < number_of_channels-1:
                 selected_channel += 1
             else:
