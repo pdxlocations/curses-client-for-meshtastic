@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import curses
 import meshtastic.serial_interface
 from pubsub import pub
