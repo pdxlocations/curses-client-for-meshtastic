@@ -201,6 +201,7 @@ def draw_text_field(win, text):
     win.border()
     win.addstr(1, 1, text)
 
+    
 def draw_channel_list():
     global direct_message
     for i, (channel, message_list) in enumerate(all_messages.items()):
@@ -218,18 +219,24 @@ def draw_channel_list():
 
 
 
-
 def draw_node_list():
-    global selected_node, direct_message                 
+    global selected_node, direct_message
+    nodes_win.clear()                 
     height, width = nodes_win.getmaxyx()
-    for i, node in enumerate(get_node_list(), start=1):
+    start_index = max(0, selected_node - (height - 3))  # Calculate starting index based on selected node and window height
+
+    for i, node in enumerate(get_node_list()[start_index:], start=1):
 
         if i < height - 1   :  # Check if there is enough space in the window
-            if selected_node + 1 == i and direct_message:
+            if selected_node + 1 == start_index + i and direct_message:
                 nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(3))
             else:
                 nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(4))
+
+    nodes_win.box()
     nodes_win.refresh()
+
+
 
 def draw_debug(value):
     function_win.addstr(1, 100, f"debug: {value}    ")
