@@ -44,7 +44,6 @@ def get_node_list():
     node_list = []
     if interface.nodes:
         for node in interface.nodes.values():
-            # node_list.append(node["user"]["longName"])
             node_list.append(node['num'])
     return node_list
 
@@ -76,7 +75,11 @@ def get_name_from_number(number, type='long'):
 def on_receive(packet, interface):
     global all_messages, selected_channel, channel_list
     try:
-        if 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
+        if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
+            get_node_list()
+            draw_node_list()
+
+        elif 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
             message_string = message_bytes.decode('utf-8')
             if packet.get('channel'):
@@ -255,6 +258,8 @@ def input_tab_nodes():
 def main(stdscr):
     global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message
 
+    stdscr.keypad(True)
+
     # Initialize colors
     curses.start_color()
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
@@ -305,6 +310,8 @@ def main(stdscr):
     input_text = ""
     direct_message = False
 
+    entry_win.keypad(True)
+
     while True:
         draw_text_field(entry_win, f"Input: {input_text}")
 
@@ -312,9 +319,19 @@ def main(stdscr):
         entry_win.move(1, len(input_text) + 8)
         char = entry_win.getch()
 
+        if char == curses.KEY_UP:
+            draw_debug(f"Keypress: UP")
+        elif char == curses.KEY_DOWN:
+            draw_debug(f"Keypress: DOWN")
+        elif char == curses.KEY_LEFT:
+            draw_debug(f"Keypress: LEFT")
+        elif char == curses.KEY_RIGHT:
+            draw_debug(f"Keypress: RIGHT")
+    
         # Check for Esc
-        if char == 27:
+        elif char == 27:
             break
+            # pass
             
         # Check for Ctrl-D
         elif char == 4:
@@ -361,10 +378,12 @@ def main(stdscr):
 
         elif char == curses.KEY_BACKSPACE or char == 127:
             input_text = input_text[:-1]
-            
+
         else:
             # Append typed character to input text
             input_text += chr(char)
+
+        # draw_debug(f"Keypress: {char}")
 
 pub.subscribe(on_receive, 'meshtastic.receive')
 
