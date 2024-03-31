@@ -12,14 +12,40 @@ myinfo = interface.getMyNodeInfo()
 
 myNodeNum = myinfo['num']
 all_messages = {}
-is_dm = False
+channel_list = []
 selected_channel = 0
+selected_node = 0
+direct_message = False
+
+def get_channels():
+    global channel_list
+
+    node = interface.getNode('^local')
+    device_channels = node.channels
+
+    channel_output = []
+    for device_channel in device_channels:
+        if device_channel.role:
+            if device_channel.settings.name:
+                channel_output.append(device_channel.settings.name)
+                all_messages[device_channel.settings.name] = []
+
+            else:
+                # If channel name is blank, use the modem preset
+                lora_config = node.localConfig.lora
+                modem_preset_enum = lora_config.modem_preset
+                modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
+                channel_output.append(convert_to_camel_case(modem_preset_string))
+                all_messages[convert_to_camel_case(modem_preset_string)] = []
+
+    channel_list = list(all_messages.keys())
 
 def get_node_list():
     node_list = []
     if interface.nodes:
         for node in interface.nodes.values():
-            node_list.append(node["user"]["longName"])
+            # node_list.append(node["user"]["longName"])
+            node_list.append(node['num'])
     return node_list
 
 def decimal_to_hex(decimal_number):
@@ -30,35 +56,25 @@ def convert_to_camel_case(string):
     camel_case_string = ''.join(word.capitalize() for word in words)
     return camel_case_string
 
-def get_number_of_channels():
-    node = interface.getNode('^local')
-    device_channels = node.channels
-    number_of_channels = 0
-    for device_channel in device_channels:
-        if device_channel.role:
-            number_of_channels += 1
-    return number_of_channels 
-
-def get_channel_name(channel_num):
-    channel_name = ""
-    node = interface.getNode('^local')
-    device_channels = node.channels
-
-    if device_channels[channel_num].settings.name:
-        channel_name = device_channels[channel_num].settings.name
-    else:
-        # If channel name is blank, use the modem preset
-        lora_config = node.localConfig.lora
-        modem_preset_enum = lora_config.modem_preset
-        modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
-        channel_name = convert_to_camel_case(modem_preset_string)
-    
-    return channel_name
-
-
+def get_name_from_number(number, type='long'):
+    name = ""
+    for node in interface.nodes.values():
+        if number == node['num']:
+            if type == 'long':
+                name = node['user']['longName']
+                return name
+            elif type == 'short':
+                name = node['user']['shortName']
+                return name
+            else:
+                pass
+        else:
+            name =  str(decimal_to_hex(number))  # If long name not found, use the ID as string
+    return name
+        
 
 def on_receive(packet, interface):
-    global all_messages, selected_channel
+    global all_messages, selected_channel, channel_list
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
@@ -69,11 +85,16 @@ def on_receive(packet, interface):
                 channel_number = 0
 
             if packet['to'] == myNodeNum:
-                draw_debug(f"is dm on ch:{channel_number}")
-                is_dm = True
+                if packet['from'] in channel_list:
+                    pass
+                else:
+                    channel_list.append(packet['from'])
+                    all_messages[packet['from']] = []
+                    draw_channel_list()
 
+                channel_number = channel_list.index(packet['from'])
 
-            if channel_number != selected_channel:
+            if channel_list[channel_number] != channel_list[selected_channel]:
                 add_notification(channel_number)
 
             # Add received message to the messages list
@@ -85,18 +106,30 @@ def on_receive(packet, interface):
                     break
                 else:
                     message_from_string = str(decimal_to_hex(message_from_id))  # If long name not found, use the ID as string
-
-            if channel_number in all_messages:
-                all_messages[channel_number].append((f">> {message_from_string} ", message_string))
+        
+            if channel_list[channel_number] in all_messages:
+                all_messages[channel_list[channel_number]].append((f">> {message_from_string} ", message_string))
             else:
-                all_messages[channel_number] = [(f">> {message_from_string} ", message_string)]
+                all_messages[channel_list[channel_number]] = [(f">> {message_from_string} ", message_string)]
+                draw_channel_list()
+                channel_win.refresh()
 
             update_messages_window()
+
     except KeyError as e:
         print(f"Error processing packet: {e}")
 
+
 def send_message(message, destination=BROADCAST_NUM, channel=0):
-    global all_messages, selected_channel
+    global all_messages, channel_list
+    
+    # FIXME if sending a DM, always send on channel 0
+    send_on_channel = 0
+    if isinstance(channel_list[channel], int):
+        send_on_channel = 0
+        destination = channel_list[channel]
+    elif isinstance(channel_list[channel], str):
+        send_on_channel = channel
 
     interface.sendText(
         text=message,
@@ -104,25 +137,34 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
         wantAck=False,
         wantResponse=False,
         onResponse=None,
-        channelIndex=channel,
+        channelIndex=send_on_channel,
     )
 
     # Add sent message to the messages dictionary
-    if selected_channel in all_messages:
-        all_messages[selected_channel].append((">> Sent: ", message))
+    if channel_list[channel] in all_messages:
+        all_messages[channel_list[channel]].append((">> Sent: ", message))
     else:
-        all_messages[selected_channel] = [(">> Sent: ", message)]
-
+        all_messages[channel_list[channel]] = [(">> Sent: ", message)]
 
     update_messages_window()
     messages_win.refresh()
 
 def add_notification(channel_number):
-    channel_win.addstr(channel_number+1, len(get_channel_name(channel_number))+1, " *", curses.color_pair(4))
+    if isinstance(channel_list[channel_number], str):
+        channel_win.addstr(channel_number+1, len(channel_list[channel_number])+1, " *", curses.color_pair(4))
+
+    # this is a DM
+    if isinstance(channel_list[channel_number], int):
+        channel_win.addstr(channel_number+1, len(get_name_from_number(channel_list[channel_number]))+1, " *", curses.color_pair(4))
     channel_win.refresh()
 
 def remove_notification(channel_number):
-    channel_win.addstr(channel_number+1, len(get_channel_name(channel_number))+1, "  ", curses.color_pair(4))
+    if isinstance(channel_list[channel_number], str):
+        channel_win.addstr(channel_number+1, len(channel_list[channel_number])+1, "  ", curses.color_pair(4))
+
+    # this is a DM
+    if isinstance(channel_list[channel_number], int):
+        channel_win.addstr(channel_number+1, len(get_name_from_number(channel_list[channel_number]))+1, "  ", curses.color_pair(4))
     channel_win.refresh()
 
 def update_messages_window():
@@ -134,17 +176,16 @@ def update_messages_window():
     max_messages = messages_win.getmaxyx()[0] - 2  # Subtract 2 for the top and bottom border
 
     # Determine the starting index for displaying messages
-    if selected_channel in all_messages:
-        start_index = max(0, len(all_messages[selected_channel]) - max_messages)
+    if channel_list[selected_channel] in all_messages:
+        start_index = max(0, len(all_messages[channel_list[selected_channel]]) - max_messages)
     else:
         # Handle the case where selected_channel does not exist
         start_index = 0  # Set start_index to 0 or any other appropriate value
 
-
     # Display messages starting from the calculated start index
     # Check if selected_channel exists in all_messages before accessing it
-    if selected_channel in all_messages:
-        for row, (prefix, message) in enumerate(all_messages[selected_channel][start_index:], start=1):
+    if channel_list[selected_channel] in all_messages:
+        for row, (prefix, message) in enumerate(all_messages[channel_list[selected_channel]][start_index:], start=1):
             messages_win.addstr(row, 1, prefix, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
             messages_win.addstr(row, len(prefix) + 1, message + '\n')
     else:
@@ -160,44 +201,62 @@ def draw_text_field(win, text):
     win.addstr(1, 1, text)
 
 def draw_channel_list():
-    global number_of_channels
-     # Get node information and display it in the channel_win
-    node = interface.getNode('^local')
-    device_channels = node.channels
+    global direct_message
+    for i, (channel, message_list) in enumerate(all_messages.items()):
 
-    channel_output = []
-    number_of_channels = 0
-    for device_channel in device_channels:
-        if device_channel.role:
-            number_of_channels += 1
-            if device_channel.settings.name:
-                channel_output.append(device_channel.settings.name)
-            else:
-                # If channel name is blank, use the modem preset
-                lora_config = node.localConfig.lora
-                modem_preset_enum = lora_config.modem_preset
-                modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
-                channel_output.append(convert_to_camel_case(modem_preset_string))
-    
-    for i, channel in enumerate(channel_output):
-        if selected_channel == i:
-            channel_win.addstr(i+1, 1, channel, curses.color_pair(3))
+        #convert node number to long name
+        if isinstance(channel,int):
+            channel = get_name_from_number(channel, type='long')
+
+        if selected_channel == i and not direct_message:
+            channel_win.addstr(i+1, 1, str(channel), curses.color_pair(3))
             remove_notification(selected_channel)
         else:
-            channel_win.addstr(i+1, 1, channel, curses.color_pair(4))
+            channel_win.addstr(i+1, 1, str(channel), curses.color_pair(4))
+    channel_win.refresh()
 
 def draw_node_list(height):
+    global selected_node, direct_message                 
+
     for i, node in enumerate(get_node_list(), start=1):
+
         if i < height - 8   :  # Check if there is enough space in the window
-            nodes_win.addstr(i, 1, node)
+            # if i==1: draw_debug(f"{get_node_list()}  {get_name_from_number(node, 'long')}")
+            if selected_node + 1 == i and direct_message:
+                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(3))
+            else:
+                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(4))
+    nodes_win.refresh()
 
 def draw_debug(value):
-    function_win.addstr(1, 70, f"debug: {value}    ")
+    function_win.addstr(1, 100, f"debug: {value}    ")
     function_win.refresh()
-    
+
+def input_tab_channels():
+    global selected_channel
+    if selected_channel < len(channel_list)-1:
+        selected_channel += 1   
+    else:
+        selected_channel = 0
+
+    draw_channel_list()
+    channel_win.refresh()  
+    update_messages_window()
+            
+def input_tab_nodes(height):
+    global selected_node
+
+    if selected_node < len(get_node_list())-1:
+        selected_node += 1   
+    else:
+        selected_node = 0
+
+    draw_node_list(height)
+    nodes_win.refresh()  
+
 
 def main(stdscr):
-    global messages_win, nodes_win, channel_win, selected_channel, function_win
+    global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message
 
     # Initialize colors
     curses.start_color()
@@ -220,16 +279,17 @@ def main(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"TAB = Switch Channels   ENTER = Send Message   ESC = Quit")
+    draw_text_field(function_win, f"TAB = Switch Channels   CTRL-D = DM   ENTER = Send Message   ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
     nodes_win.scrollok(True)
     channel_win.scrollok(True)
 
+    get_channels()
     draw_channel_list()
+    channel_win.refresh()  
     draw_node_list(height)
-
 
     # Draw boxes around windows
     channel_win.box()
@@ -255,8 +315,6 @@ def main(stdscr):
         entry_win.move(1, len(input_text) + 8)
         char = entry_win.getch()
 
-        draw_debug(str(char))
-
         # Check for Esc
         if char == 27:
             break
@@ -265,31 +323,55 @@ def main(stdscr):
         elif char == 4:
             if direct_message == False:
                 direct_message = True
+                draw_channel_list()
+                draw_node_list(height)
+                channel_win.refresh()  
+                nodes_win.refresh()
             else:
                 direct_message = False
-            draw_debug(f"dm = {direct_message}")
+                draw_channel_list()
+                draw_node_list(height)
+                channel_win.refresh()  
+                nodes_win.refresh()
 
         # Check for Tab
         elif char == ord('\t'):
-            if selected_channel < number_of_channels-1:
-                selected_channel += 1
+            if direct_message:
+
+                draw_channel_list()
+                channel_win.refresh()  
+                input_tab_nodes(height)
             else:
-                selected_channel = 0
+                input_tab_channels()
 
-            draw_channel_list()
-            channel_win.refresh()  
-            update_messages_window()
-            
+
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
-            # Enter key pressed, send user input as message
-            send_message(input_text, channel=selected_channel)
+            if direct_message:
+                node_list = get_node_list()
+                if node_list[selected_node] not in channel_list:
+                    channel_list.append(node_list[selected_node])
+                    all_messages[node_list[selected_node]] = []
 
-            # Clear entry window and reset input text
-            input_text = ""
-            entry_win.clear()       
-            entry_win.refresh()
+                selected_channel = channel_list.index(node_list[selected_node])
+
+                selected_node = 0
+                direct_message = False
+                draw_debug(direct_message)
+                draw_node_list(height)
+                draw_channel_list()
+                nodes_win.refresh()
+                channel_win.refresh()  
+                update_messages_window()
+
+            else:
+                # Enter key pressed, send user input as message
+                send_message(input_text, channel=selected_channel)
+
+                # Clear entry window and reset input text
+                input_text = ""
+                entry_win.clear()       
+                entry_win.refresh()
         elif char == curses.KEY_BACKSPACE or char == 127:
-            # Backspace key pressed, remove last character from input text
             input_text = input_text[:-1]
         else:
             # Append typed character to input text
