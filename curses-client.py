@@ -295,7 +295,7 @@ def main(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"ARROWS = Switch Channels   CTRL-D = DM   ENTER = Select DM Node / Send Message   ESC = Quit")
+    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send Message / Select DM Node   ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
@@ -368,26 +368,6 @@ def main(stdscr):
         elif char == 27:
             break
             
-        # Check for Ctrl-D
-        elif char == 4:
-            if direct_message == False:
-                direct_message = True
-                draw_channel_list()
-                draw_node_list()
-            else:
-                direct_message = False
-                draw_channel_list()
-                draw_node_list()
-
-        # Check for Tab
-        elif char == ord('\t'):
-            if direct_message:
-                draw_channel_list()
-                select_nodes(1)
-            else:
-                select_channels(1)
-
-
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
             if direct_message:
                 node_list = get_node_list()
