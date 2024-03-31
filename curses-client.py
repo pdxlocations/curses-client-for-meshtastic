@@ -216,6 +216,9 @@ def draw_channel_list():
             channel_win.addstr(i+1, 1, str(channel), curses.color_pair(4))
     channel_win.refresh()
 
+
+
+
 def draw_node_list():
     global selected_node, direct_message                 
     height, width = nodes_win.getmaxyx()
@@ -232,28 +235,32 @@ def draw_debug(value):
     function_win.addstr(1, 100, f"debug: {value}    ")
     function_win.refresh()
 
-def input_tab_channels():
+def select_channels(direction):
     global selected_channel
-    if selected_channel < len(channel_list)-1:
-        selected_channel += 1   
-    else:
+    channel_list_length = len(channel_list)
+
+    selected_channel += direction
+
+    if selected_channel < 0:
+        selected_channel = channel_list_length - 1
+    elif selected_channel >= channel_list_length:
         selected_channel = 0
 
     draw_channel_list()
-    channel_win.refresh()  
     update_messages_window()
-            
-def input_tab_nodes():
-    global selected_node
 
-    if selected_node < len(get_node_list())-1:
-        selected_node += 1   
-    else:
+def select_nodes(direction):
+    global selected_node
+    node_list_length = len(get_node_list())
+
+    selected_node += direction
+
+    if selected_node < 0:
+        selected_node = node_list_length - 1
+    elif selected_node >= node_list_length:
         selected_node = 0
 
     draw_node_list()
-    nodes_win.refresh()  
-
 
 def main(stdscr):
     global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message
@@ -281,7 +288,7 @@ def main(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"TAB = Switch Channels   CTRL-D = DM   ENTER = Send Message   ESC = Quit")
+    draw_text_field(function_win, f"ARROWS = Switch Channels   CTRL-D = DM   ENTER = Select DM Node / Send Message   ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
@@ -319,19 +326,40 @@ def main(stdscr):
         entry_win.move(1, len(input_text) + 8)
         char = entry_win.getch()
 
+        # draw_debug(f"Keypress: {char}")
+
         if char == curses.KEY_UP:
-            draw_debug(f"Keypress: UP")
+            if direct_message:
+                draw_channel_list()
+                select_nodes(-1)
+            else:
+                select_channels(-1)
         elif char == curses.KEY_DOWN:
-            draw_debug(f"Keypress: DOWN")
+            if direct_message:
+                draw_channel_list()
+                select_nodes(1)
+            else:
+                select_channels(1)
+            
         elif char == curses.KEY_LEFT:
-            draw_debug(f"Keypress: LEFT")
+            if direct_message == False:
+                pass
+            else:
+                direct_message = False
+                draw_channel_list()
+                draw_node_list()
+
         elif char == curses.KEY_RIGHT:
-            draw_debug(f"Keypress: RIGHT")
-    
+            if direct_message == False:
+                direct_message = True
+                draw_channel_list()
+                draw_node_list()
+            else:
+                pass
+
         # Check for Esc
         elif char == 27:
             break
-            # pass
             
         # Check for Ctrl-D
         elif char == 4:
@@ -348,9 +376,9 @@ def main(stdscr):
         elif char == ord('\t'):
             if direct_message:
                 draw_channel_list()
-                input_tab_nodes()
+                select_nodes(1)
             else:
-                input_tab_channels()
+                select_channels(1)
 
 
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
@@ -383,7 +411,6 @@ def main(stdscr):
             # Append typed character to input text
             input_text += chr(char)
 
-        # draw_debug(f"Keypress: {char}")
 
 pub.subscribe(on_receive, 'meshtastic.receive')
 
