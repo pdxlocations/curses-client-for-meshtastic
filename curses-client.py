@@ -112,8 +112,6 @@ def on_receive(packet, interface):
             else:
                 all_messages[channel_list[channel_number]] = [(f">> {message_from_string} ", message_string)]
                 draw_channel_list()
-                channel_win.refresh()
-
             update_messages_window()
 
     except KeyError as e:
@@ -215,13 +213,12 @@ def draw_channel_list():
             channel_win.addstr(i+1, 1, str(channel), curses.color_pair(4))
     channel_win.refresh()
 
-def draw_node_list(height):
+def draw_node_list():
     global selected_node, direct_message                 
-
+    height, width = nodes_win.getmaxyx()
     for i, node in enumerate(get_node_list(), start=1):
 
-        if i < height - 8   :  # Check if there is enough space in the window
-            # if i==1: draw_debug(f"{get_node_list()}  {get_name_from_number(node, 'long')}")
+        if i < height - 1   :  # Check if there is enough space in the window
             if selected_node + 1 == i and direct_message:
                 nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(3))
             else:
@@ -243,7 +240,7 @@ def input_tab_channels():
     channel_win.refresh()  
     update_messages_window()
             
-def input_tab_nodes(height):
+def input_tab_nodes():
     global selected_node
 
     if selected_node < len(get_node_list())-1:
@@ -251,7 +248,7 @@ def input_tab_nodes(height):
     else:
         selected_node = 0
 
-    draw_node_list(height)
+    draw_node_list()
     nodes_win.refresh()  
 
 
@@ -287,9 +284,9 @@ def main(stdscr):
     channel_win.scrollok(True)
 
     get_channels()
+    channel_win.refresh()
     draw_channel_list()
-    channel_win.refresh()  
-    draw_node_list(height)
+    draw_node_list()
 
     # Draw boxes around windows
     channel_win.box()
@@ -324,23 +321,17 @@ def main(stdscr):
             if direct_message == False:
                 direct_message = True
                 draw_channel_list()
-                draw_node_list(height)
-                channel_win.refresh()  
-                nodes_win.refresh()
+                draw_node_list()
             else:
                 direct_message = False
                 draw_channel_list()
-                draw_node_list(height)
-                channel_win.refresh()  
-                nodes_win.refresh()
+                draw_node_list()
 
         # Check for Tab
         elif char == ord('\t'):
             if direct_message:
-
                 draw_channel_list()
-                channel_win.refresh()  
-                input_tab_nodes(height)
+                input_tab_nodes()
             else:
                 input_tab_channels()
 
@@ -353,14 +344,10 @@ def main(stdscr):
                     all_messages[node_list[selected_node]] = []
 
                 selected_channel = channel_list.index(node_list[selected_node])
-
                 selected_node = 0
                 direct_message = False
-                draw_debug(direct_message)
-                draw_node_list(height)
+                draw_node_list()
                 draw_channel_list()
-                nodes_win.refresh()
-                channel_win.refresh()  
                 update_messages_window()
 
             else:
@@ -371,8 +358,10 @@ def main(stdscr):
                 input_text = ""
                 entry_win.clear()       
                 entry_win.refresh()
+
         elif char == curses.KEY_BACKSPACE or char == 127:
             input_text = input_text[:-1]
+            
         else:
             # Append typed character to input text
             input_text += chr(char)
