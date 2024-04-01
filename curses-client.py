@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import curses
-import meshtastic.serial_interface
+import meshtastic.serial_interface, meshtastic.tcp_interface
 from pubsub import pub
 from meshtastic import config_pb2, BROADCAST_NUM
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
+# interface = meshtastic.tcp_interface.TCPInterface(hostname='192.168.xx.xx')
 
 myinfo = interface.getMyNodeInfo()
 
