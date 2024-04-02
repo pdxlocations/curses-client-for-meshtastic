@@ -3,13 +3,14 @@
 '''
 Curses Client for Meshtastic by http://github.com/pdxlocations
 Powered by Meshtastic.org
-V 0.1.0
+V 0.1.1
 '''
 
 import curses
 import meshtastic.serial_interface, meshtastic.tcp_interface
 from pubsub import pub
 from meshtastic import config_pb2, BROADCAST_NUM
+import textwrap  # Import the textwrap module
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
@@ -188,7 +189,7 @@ def remove_notification(channel_number):
     channel_win.refresh()
 
 def update_messages_window():
-    global all_messages, selected_channel
+    global all_messages, selected_channel, messages_win
 
     messages_win.clear()
 
@@ -205,15 +206,19 @@ def update_messages_window():
     # Display messages starting from the calculated start index
     # Check if selected_channel exists in all_messages before accessing it
     if channel_list[selected_channel] in all_messages:
-        for row, (prefix, message) in enumerate(all_messages[channel_list[selected_channel]][start_index:], start=1):
-            messages_win.addstr(row, 1, prefix, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
-            messages_win.addstr(row, len(prefix) + 1, message + '\n')
-    else:
-        # Handle the case where selected_channel does not exist
-        pass
+        row = 1
+        for _, (prefix, message) in enumerate(all_messages[channel_list[selected_channel]][start_index:], start=1):
+            full_message = f"{prefix}{message}"
+            wrapped_messages = textwrap.wrap(full_message, messages_win.getmaxyx()[1] - 2)
+
+            for wrapped_message in wrapped_messages:
+                messages_win.addstr(row, 1, wrapped_message, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
+                row += 1
 
     messages_win.box()
     messages_win.refresh()
+
+
 
 def draw_text_field(win, text):
     win.clear()
