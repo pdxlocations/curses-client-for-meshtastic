@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+'''
+Curses Client for Meshtastic by http://github.com/pdxlocations
+Powered by Meshtastic.org
+V 0.1.0
+'''
+
 import curses
 import meshtastic.serial_interface, meshtastic.tcp_interface
 from pubsub import pub
