@@ -316,9 +316,9 @@ def main(stdscr):
 
     # Define window dimensions and positions
     entry_win = curses.newwin(3, width, 0, 0)
-    channel_width = width // 8
-    messages_width = 4 * (width // 8)
-    nodes_width = 3 * (width // 8)
+    channel_width = 3 * (width // 16)
+    nodes_width = 5 * (width // 16)
+    messages_width = width - channel_width - nodes_width
 
     channel_win = curses.newwin(height - 6, channel_width, 3, 0)
     messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)
