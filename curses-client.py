@@ -187,12 +187,6 @@ def remove_notification(channel_number):
     channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
     channel_win.refresh()
 
-
-
-
-
-
-
 def update_messages_window():
     global all_messages, selected_channel
 
@@ -226,7 +220,7 @@ def draw_text_field(win, text):
     win.border()
     win.addstr(1, 1, text)
 
-    
+
 def draw_channel_list():
     global direct_message
 
@@ -248,8 +242,6 @@ def draw_channel_list():
             channel_win.addstr(i + 1, 1, truncated_channel, curses.color_pair(4))
 
     channel_win.refresh()
-
-
 
 
 def draw_node_list():
