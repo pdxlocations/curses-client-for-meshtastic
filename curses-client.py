@@ -12,6 +12,8 @@ from pubsub import pub
 from meshtastic import config_pb2, BROADCAST_NUM
 import textwrap  # Import the textwrap module
 
+from settings import settings
+
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
 # interface = meshtastic.tcp_interface.TCPInterface(hostname='192.168.xx.xx')
@@ -299,6 +301,8 @@ def select_nodes(direction):
 
     draw_node_list()
 
+
+
 def main(stdscr):
     global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message
 
@@ -325,7 +329,7 @@ def main(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send Message / Select DM Node   ESC = Quit")
+    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send / Select DM    ESC = Quit  ` = Settings")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
@@ -423,12 +427,17 @@ def main(stdscr):
 
         elif char == curses.KEY_BACKSPACE or char == 127:
             input_text = input_text[:-1]
-
+            
+        elif char == 96:
+            curses.curs_set(0)  # Hide cursor
+            settings(stdscr, interface)
+            curses.curs_set(1)  # Show cursor again
+            
         else:
             # Append typed character to input text
             input_text += chr(char)
 
-
+        # draw_debug(char)
 pub.subscribe(on_receive, 'meshtastic.receive')
 
 if __name__ == "__main__":
