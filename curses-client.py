@@ -158,22 +158,40 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
     messages_win.refresh()
 
 def add_notification(channel_number):
-    if isinstance(channel_list[channel_number], str):
-        channel_win.addstr(channel_number+1, len(channel_list[channel_number])+1, " *", curses.color_pair(4))
+    global channel_win
+    _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
 
-    # this is a DM
-    if isinstance(channel_list[channel_number], int):
-        channel_win.addstr(channel_number+1, len(get_name_from_number(channel_list[channel_number]))+1, " *", curses.color_pair(4))
+    if isinstance(channel_list[channel_number], str):
+        channel_name = channel_list[channel_number]
+    elif isinstance(channel_list[channel_number], int):
+        channel_name = get_name_from_number(channel_list[channel_number])
+
+    # Truncate the channel name if it's too long to fit in the window
+    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+
+    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
     channel_win.refresh()
 
 def remove_notification(channel_number):
-    if isinstance(channel_list[channel_number], str):
-        channel_win.addstr(channel_number+1, len(channel_list[channel_number])+1, "  ", curses.color_pair(4))
+    global channel_win
+    _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
 
-    # this is a DM
-    if isinstance(channel_list[channel_number], int):
-        channel_win.addstr(channel_number+1, len(get_name_from_number(channel_list[channel_number]))+1, "  ", curses.color_pair(4))
+    if isinstance(channel_list[channel_number], str):
+        channel_name = channel_list[channel_number]
+    elif isinstance(channel_list[channel_number], int):
+        channel_name = get_name_from_number(channel_list[channel_number])
+
+    # Truncate the channel name if it's too long to fit in the window
+    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+
+    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
     channel_win.refresh()
+
+
+
+
+
+
 
 def update_messages_window():
     global all_messages, selected_channel
@@ -211,18 +229,26 @@ def draw_text_field(win, text):
     
 def draw_channel_list():
     global direct_message
-    for i, (channel, message_list) in enumerate(all_messages.items()):
 
-        #convert node number to long name
-        if isinstance(channel,int):
+    # Get the dimensions of the channel window
+    _, win_width = channel_win.getmaxyx()
+
+    for i, (channel, message_list) in enumerate(all_messages.items()):
+        # Convert node number to long name if it's an integer
+        if isinstance(channel, int):
             channel = get_name_from_number(channel, type='long')
 
+        # Truncate the channel name if it's too long to fit in the window
+        truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
+
         if selected_channel == i and not direct_message:
-            channel_win.addstr(i+1, 1, str(channel), curses.color_pair(3))
+            channel_win.addstr(i + 1, 1, truncated_channel, curses.color_pair(3))
             remove_notification(selected_channel)
         else:
-            channel_win.addstr(i+1, 1, str(channel), curses.color_pair(4))
+            channel_win.addstr(i + 1, 1, truncated_channel, curses.color_pair(4))
+
     channel_win.refresh()
+
 
 
 
