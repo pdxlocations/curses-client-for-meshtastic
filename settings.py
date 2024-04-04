@@ -21,6 +21,10 @@ def generate_menu_from_protobuf(message_instance):
         elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
             # If the field is UINT32, include an example value
             menu[field_name] = {"Example Value": None}
+        elif field_descriptor.type == 9:  # Field type 9 corresponds to TYPE_STRING
+            # If the field is a string, include an example value
+            menu[field_name] = {"Example String": None}
+
     return menu
 
 
@@ -28,10 +32,6 @@ def nested_menu(stdscr, menu, interface):
     idx = 0
     current_menu = menu
     prev_menu = None
-
-    # Define custom colors
-    curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)  # Red color
-    curses.init_pair(6, curses.COLOR_CYAN, curses.COLOR_BLACK)  # Cyan color
 
     while True:
         stdscr.clear()
@@ -111,7 +111,8 @@ def settings(stdscr, interface):
     # Add top-level menu items
     top_level_menu = {
         "Radio Settings": radio_config,
-        "Module Settings": module_config,
+        # "Module Settings": module_config,
+        "Module Settings": None,
         "Reboot": None,
         "Reset NodeDB": None,
         "Shutdown": None,
@@ -138,3 +139,7 @@ def settings_shutdown(interface):
 
 def settings_factory_reset(interface):
     interface.getNode('^local').factory_reset()
+
+    # ourNode = interface.getNode('^local')
+    # ourNode.localConfig.lora.modem_preset = 'LONG_FAST'
+    # ourNode.writeConfig("lora")
