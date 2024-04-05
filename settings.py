@@ -1,29 +1,20 @@
 import curses
 from meshtastic import config_pb2, module_config_pb2
+import meshtastic.serial_interface, meshtastic.tcp_interface
+
 
 def generate_menu_from_protobuf(message_instance):
     if not hasattr(message_instance, "DESCRIPTOR"):
         return  # This is not a protobuf message instance, exit
+    
     menu = {}
     field_names = message_instance.DESCRIPTOR.fields_by_name.keys()
     for field_name in field_names:
         field_descriptor = message_instance.DESCRIPTOR.fields_by_name[field_name]
-        if field_descriptor.enum_type is not None:
-            # If the field is an enum, add its possible values to the menu
-            menu[field_name] = {enum_value.name: None for enum_value in field_descriptor.enum_type.values}
-        elif field_descriptor.message_type is not None:
-            # If the field is a nested message, recursively generate the menu for it
+
+        if field_descriptor is not None:
             nested_message_instance = getattr(message_instance, field_name)
             menu[field_name] = generate_menu_from_protobuf(nested_message_instance)
-        elif field_descriptor.type == 8:  # Field type 8 corresponds to BOOL
-            # If the field is boolean, include "On" and "Off" options
-            menu[field_name] = {"On": None, "Off": None}
-        elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
-            # If the field is UINT32, include an example value
-            menu[field_name] = {"Example Value": None}
-        elif field_descriptor.type == 9:  # Field type 9 corresponds to TYPE_STRING
-            # If the field is a string, include an example value
-            menu[field_name] = {"Example String": None}
 
     return menu
 
@@ -94,7 +85,7 @@ def nested_menu(stdscr, menu, interface):
 
 def settings(stdscr, interface):
     popup_height = 20
-    popup_width = 30
+    popup_width = 50
     y_start = (curses.LINES - popup_height) // 2
     x_start = (curses.COLS - popup_width) // 2
     popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
@@ -111,8 +102,7 @@ def settings(stdscr, interface):
     # Add top-level menu items
     top_level_menu = {
         "Radio Settings": radio_config,
-        # "Module Settings": module_config,
-        "Module Settings": None,
+        "Module Settings": module_config,
         "Reboot": None,
         "Reset NodeDB": None,
         "Shutdown": None,
@@ -143,3 +133,10 @@ def settings_factory_reset(interface):
     # ourNode = interface.getNode('^local')
     # ourNode.localConfig.lora.modem_preset = 'LONG_FAST'
     # ourNode.writeConfig("lora")
+
+if __name__ == "__main__": 
+    interface = meshtastic.serial_interface.SerialInterface()
+    radio = config_pb2.Config()
+    module = module_config_pb2.ModuleConfig()
+    print(generate_menu_from_protobuf(radio))
+    print(generate_menu_from_protobuf(module))
