@@ -20,9 +20,10 @@ def generate_menu_from_protobuf(message_instance):
 
 
 def nested_menu(stdscr, menu, interface):
-    idx = 0
+    menu_item = 0
     current_menu = menu
-    prev_menu = None
+    prev_menu = []
+    menu_index = 0
 
     while True:
         stdscr.clear()
@@ -31,7 +32,7 @@ def nested_menu(stdscr, menu, interface):
         # Display current menu
         if current_menu is not None:
             for i, key in enumerate(current_menu.keys(), start=0):
-                if i == idx:
+                if i == menu_item:
                     if key in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                         stdscr.addstr(i+1, 1, key, curses.color_pair(5))
                     else:
@@ -43,25 +44,31 @@ def nested_menu(stdscr, menu, interface):
             char = stdscr.getch()
 
             if char == curses.KEY_DOWN:
-                idx = min(len(current_menu) - 1, idx + 1)
+                menu_item = min(len(current_menu) - 1, menu_item + 1)
             elif char == curses.KEY_UP:
-                idx = max(0, idx - 1)
+                menu_item = max(0, menu_item - 1)
             elif char == curses.KEY_RIGHT:
-                selected_key = list(current_menu.keys())[idx]
+                selected_key = list(current_menu.keys())[menu_item]
                 selected_value = current_menu[selected_key]
                 if isinstance(selected_value, dict):
                     # If the selected item is a submenu, navigate to it
-                    prev_menu = current_menu
+                    if 0 <= menu_index < len(prev_menu):
+                        prev_menu[menu_index] = current_menu
+                    else:
+                        prev_menu.append(current_menu)
+                    menu_index += 1
                     current_menu = selected_value
-                    idx = 0
-            elif char == curses.KEY_LEFT and prev_menu is not None:
-                # Go back to the previous menu
-                current_menu = prev_menu
-                prev_menu = None
-                idx = 0
+                    menu_item = 0
+
+            elif char == curses.KEY_LEFT:
+                if menu_index > 0:
+                    current_menu = prev_menu[menu_index-1]
+                    menu_index -= 1
+                menu_item = 0
+
             elif char == ord('\n'):
                 # If user presses enter, display the selected value if it's not a submenu
-                selected_key = list(current_menu.keys())[idx]
+                selected_key = list(current_menu.keys())[menu_item]
                 selected_value = current_menu[selected_key]
 
                 if selected_key == "Reboot":
@@ -140,3 +147,4 @@ if __name__ == "__main__":
     module = module_config_pb2.ModuleConfig()
     print(generate_menu_from_protobuf(radio))
     print(generate_menu_from_protobuf(module))
+    
