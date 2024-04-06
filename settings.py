@@ -18,16 +18,30 @@ def generate_menu_from_protobuf(message_instance):
 
     return menu
 
+def display_values(stdscr, interface, key_list, menu_type, menu_0 = None, menu_1 = None, menu_2 = None):
+    node = interface.getNode('^local')
+
+    for i, key in enumerate(key_list):
+        if menu_type == "Radio Settings":
+            setting = getattr(getattr(node.localConfig, str(menu_1)), key_list[i])  
+        elif menu_type == "Module Settings":
+            setting = getattr(getattr(node.moduleConfig, str(menu_1)), key_list[i])
+        stdscr.addstr(i+1, 40, str(setting))
+    stdscr.refresh()
+
 
 def nested_menu(stdscr, menu, interface):
     menu_item = 0
     current_menu = menu
     prev_menu = []
     menu_index = 0
+    menu_type = None
+    menu_0 = None
+    menu_1 = None
+    menu_2 = None
+    key_list = []
 
     while True:
-        stdscr.clear()
-        stdscr.border()
 
         # Display current menu
         if current_menu is not None:
@@ -38,39 +52,46 @@ def nested_menu(stdscr, menu, interface):
                     else:
                         stdscr.addstr(i+1, 1, key, curses.A_REVERSE)
                 else:
+                    
                     stdscr.addstr(i+1, 1, key)
 
             # Get user input
             char = stdscr.getch()
 
+            selected_key = list(current_menu.keys())[menu_item]
+            selected_value = current_menu[selected_key]
+
             if char == curses.KEY_DOWN:
                 menu_item = min(len(current_menu) - 1, menu_item + 1)
+
             elif char == curses.KEY_UP:
                 menu_item = max(0, menu_item - 1)
+
             elif char == curses.KEY_RIGHT:
-                selected_key = list(current_menu.keys())[menu_item]
-                selected_value = current_menu[selected_key]
+                if menu_index == 0:
+                    if menu_item == 0:
+                        menu_type = "Radio Settings"
+                    elif menu_item == 1:
+                        menu_type = "Module Settings"
+
                 if isinstance(selected_value, dict):
                     # If the selected item is a submenu, navigate to it
-                    if 0 <= menu_index < len(prev_menu):
-                        prev_menu[menu_index] = current_menu
-                    else:
-                        prev_menu.append(current_menu)
+
+                    prev_menu.append(current_menu)
                     menu_index += 1
                     current_menu = selected_value
                     menu_item = 0
 
             elif char == curses.KEY_LEFT:
+                
                 if menu_index > 0:
                     current_menu = prev_menu[menu_index-1]
+                    del prev_menu[menu_index-1]
                     menu_index -= 1
                 menu_item = 0
 
             elif char == ord('\n'):
                 # If user presses enter, display the selected value if it's not a submenu
-                selected_key = list(current_menu.keys())[menu_item]
-                selected_value = current_menu[selected_key]
-
                 if selected_key == "Reboot":
                     settings_reboot(interface)
                 elif selected_key == "Reset NodeDB":
@@ -86,13 +107,28 @@ def nested_menu(stdscr, menu, interface):
             # escape to exit menu        
             elif char == 27:
                 break
+
+            if char:
+                stdscr.clear()
+                stdscr.border()
+
+            next_key = list(current_menu.keys())[menu_item]
+            key_list = list(current_menu.keys())
+
+            if menu_index==0:
+                menu_0 = next_key
+            elif menu_index==1:
+                menu_1 = next_key
+            elif menu_index==2:
+                menu_2 = next_key
+                display_values(stdscr, interface, key_list, menu_type, menu_0, menu_1, menu_2)
         else:
             break  # Exit loop if current_menu is None
 
 
 def settings(stdscr, interface):
     popup_height = 20
-    popup_width = 50
+    popup_width = 60
     y_start = (curses.LINES - popup_height) // 2
     x_start = (curses.COLS - popup_width) // 2
     popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
