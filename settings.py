@@ -26,9 +26,14 @@ def display_values(stdscr, interface, key_list, menu_type, menu_0 = None, menu_1
             setting = getattr(getattr(node.localConfig, str(menu_1)), key_list[i])  
         elif menu_type == "Module Settings":
             setting = getattr(getattr(node.moduleConfig, str(menu_1)), key_list[i])
-        stdscr.addstr(i+1, 40, str(setting))
+        stdscr.addstr(i+3, 40, str(setting))
     stdscr.refresh()
 
+def menu_header(window, text):
+    _, window_width = window.getmaxyx()
+    start_x = (window_width - len(text)) // 2
+    formatted_text = text.replace('_', ' ').title()
+    window.addstr(1, start_x, formatted_text)
 
 def nested_menu(stdscr, menu, interface):
     menu_item = 0
@@ -41,6 +46,8 @@ def nested_menu(stdscr, menu, interface):
     menu_2 = None
     key_list = []
 
+    menu_path = ["Main Menu"]
+
     while True:
 
         # Display current menu
@@ -48,12 +55,13 @@ def nested_menu(stdscr, menu, interface):
             for i, key in enumerate(current_menu.keys(), start=0):
                 if i == menu_item:
                     if key in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
-                        stdscr.addstr(i+1, 1, key, curses.color_pair(5))
+                        stdscr.addstr(i+3, 1, key, curses.color_pair(5))
                     else:
-                        stdscr.addstr(i+1, 1, key, curses.A_REVERSE)
+                        stdscr.addstr(i+3, 1, key, curses.A_REVERSE)
                 else:
-                    
-                    stdscr.addstr(i+1, 1, key)
+                    stdscr.addstr(i+3, 1, key)
+            
+            menu_header(stdscr, f"{menu_path[menu_index]}")
 
             # Get user input
             char = stdscr.getch()
@@ -77,6 +85,7 @@ def nested_menu(stdscr, menu, interface):
                 if isinstance(selected_value, dict):
                     # If the selected item is a submenu, navigate to it
 
+                    menu_path.append(selected_key)
                     prev_menu.append(current_menu)
                     menu_index += 1
                     current_menu = selected_value
@@ -85,6 +94,8 @@ def nested_menu(stdscr, menu, interface):
             elif char == curses.KEY_LEFT:
                 
                 if menu_index > 0:
+                    menu_path.pop()
+
                     current_menu = prev_menu[menu_index-1]
                     del prev_menu[menu_index-1]
                     menu_index -= 1
@@ -177,10 +188,14 @@ def settings_factory_reset(interface):
     # ourNode.localConfig.lora.modem_preset = 'LONG_FAST'
     # ourNode.writeConfig("lora")
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
+
     interface = meshtastic.serial_interface.SerialInterface()
     radio = config_pb2.Config()
     module = module_config_pb2.ModuleConfig()
     print(generate_menu_from_protobuf(radio))
     print(generate_menu_from_protobuf(module))
+
+
+
     
