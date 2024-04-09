@@ -80,20 +80,29 @@ def get_string_input(stdscr, setting_string):
     curses.echo()
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
+
+    input_str = ""
     char = input_win.getch()
-    if char == 27:  # Check if escape key is pressed
-        curses.noecho()
-        return None, False
     input_win.clear()
-    input_win.border()
     input_win.refresh()
-    input_str = input_win.getstr(1, 1, 30).decode("utf-8")
+    input_win.border()
+    while char != 10:  # Continue until Enter key is pressed
+        if char == 27:  # Check if escape key is pressed
+            curses.noecho()
+            return None, False
+        input_str += chr(char)  # Append character to input string
+        input_win.addstr(1, 1, input_str)  # Display the input string
+        input_win.refresh()
+        char = input_win.getch()
+
     curses.noecho()
 
     input_win.clear()
     input_win.refresh()
     return input_str, True
 
+
+import curses
 
 def get_uint_input(stdscr, setting_string):
     popup_height = 5
@@ -107,20 +116,26 @@ def get_uint_input(stdscr, setting_string):
         print("Error occurred while initializing curses window:", e)
 
     input_win.border()
-    input_win.keypad(True)
     input_win.refresh()
 
     curses.echo()
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
+
+    input_str = ""
     char = input_win.getch()
-    if char == 27:  # Check if escape key is pressed
-        curses.noecho()
-        return None, False
     input_win.clear()
-    input_win.border()
     input_win.refresh()
-    input_str = input_win.getstr(1, 1, 30).decode("utf-8")
+    input_win.border()
+    while char != 10:  # Continue until Enter key is pressed
+        if char == 27:  # Check if escape key is pressed
+            curses.noecho()
+            return None, False
+        input_str += chr(char)  # Append character to input string
+        input_win.addstr(1, 1, input_str)  # Display the input string
+        input_win.refresh()
+        char = input_win.getch()
+
     curses.noecho()
 
     try:
@@ -131,6 +146,7 @@ def get_uint_input(stdscr, setting_string):
     input_win.clear()
     input_win.refresh()
     return input_uint, True
+
 
 
 
@@ -159,6 +175,7 @@ def generate_menu_from_protobuf(message_instance, interface):
 def change_setting(stdscr, interface, menu_path):
     node = interface.getNode('^local')
     field_descriptor = None
+    setting_value = None
     
     stdscr.clear()
     stdscr.border()
@@ -206,7 +223,7 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.border()
             menu_path.pop()
             return  # Exit function if escape was pressed during input
-
+        
     formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
     menu_header(stdscr,formatted_text,2)
 
