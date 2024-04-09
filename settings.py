@@ -5,6 +5,7 @@ import meshtastic.serial_interface, meshtastic.tcp_interface
 
 
 def display_enum_menu(stdscr, enum_values, setting_string):
+    apply_settings = False
     menu_height = len(enum_values) + 2
     menu_width = max(len(option) for option in enum_values) + 4
     y_start = (curses.LINES - menu_height) // 2
@@ -40,7 +41,7 @@ def display_enum_menu(stdscr, enum_values, setting_string):
             break
 
         elif char == 27:
-            break
+            return None, False
 
         if char:
             menu_win.clear()
@@ -56,7 +57,8 @@ def display_enum_menu(stdscr, enum_values, setting_string):
     selected_option = enum_values[menu_item]
     menu_win.clear()
     menu_win.refresh()
-    return selected_option
+
+    return selected_option, True
 
 
 
@@ -78,7 +80,10 @@ def get_string_input(stdscr, setting_string):
     curses.echo()
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
-    input_win.getch()
+    char = input_win.getch()
+    if char == 27:  # Check if escape key is pressed
+        curses.noecho()
+        return None, False
     input_win.clear()
     input_win.border()
     input_win.refresh()
@@ -87,7 +92,7 @@ def get_string_input(stdscr, setting_string):
 
     input_win.clear()
     input_win.refresh()
-    return input_str
+    return input_str, True
 
 
 def get_uint_input(stdscr, setting_string):
@@ -108,7 +113,10 @@ def get_uint_input(stdscr, setting_string):
     curses.echo()
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
-    input_win.getch()
+    char = input_win.getch()
+    if char == 27:  # Check if escape key is pressed
+        curses.noecho()
+        return None, False
     input_win.clear()
     input_win.border()
     input_win.refresh()
@@ -122,22 +130,12 @@ def get_uint_input(stdscr, setting_string):
 
     input_win.clear()
     input_win.refresh()
-    return input_uint
+    return input_uint, True
 
 
 
 
 def display_bool_menu(stdscr, setting_value):
-    """
-    Display a menu for selecting a boolean option.
-    
-    Args:
-        stdscr (curses window): The curses window to display the menu.
-        setting_value (bool): The current setting value.
-
-    Returns:
-        bool: The selected boolean option.
-    """
     bool_options = ["False", "True"]
     return display_enum_menu(stdscr, bool_options, setting_value)
 
@@ -158,14 +156,6 @@ def generate_menu_from_protobuf(message_instance, interface):
     return menu
 
 
-
-def find_value(dictionary, key):
-    if key in dictionary:
-        return dictionary[key]
-    else:
-        return None
-    
-
 def change_setting(stdscr, interface, menu_path):
     node = interface.getNode('^local')
     field_descriptor = None
@@ -185,17 +175,37 @@ def change_setting(stdscr, interface, menu_path):
 
     if field_descriptor.enum_type is not None:
         enum_values = [enum_value.name for enum_value in field_descriptor.enum_type.values]
-        enum_option = display_enum_menu(stdscr, enum_values, setting_string)
+        enum_option, change_setting = display_enum_menu(stdscr, enum_values, setting_string)
         setting_value = enum_option
+        if not change_setting:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return  # Exit function if escape was pressed during input
 
     elif field_descriptor.type == 8:  # Field type 8 corresponds to BOOL
-        setting_value = display_bool_menu(stdscr, setting_string)
+        setting_value, change_setting = display_bool_menu(stdscr, setting_string)
+        if not change_setting:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return  # Exit function if escape was pressed during input
 
     elif field_descriptor.type == 9:  # Field type 9 corresponds to STRING
-        setting_value = get_string_input(stdscr, setting_string)
+        setting_value, change_setting = get_string_input(stdscr, setting_string)
+        if not change_setting:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return  # Exit function if escape was pressed during input
 
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
-        setting_value = get_uint_input(stdscr, setting_string)
+        setting_value, change_setting = get_uint_input(stdscr, setting_string)
+        if not change_setting:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return  # Exit function if escape was pressed during input
 
     formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
     menu_header(stdscr,formatted_text,2)
@@ -225,8 +235,8 @@ def change_setting(stdscr, interface, menu_path):
 
 
 
-
     ourNode.writeConfig(menu_path[2])
+    menu_path.pop()
 
 
 
