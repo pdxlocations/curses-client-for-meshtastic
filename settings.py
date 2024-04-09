@@ -301,6 +301,9 @@ def nested_menu(stdscr, menu, interface):
 
             menu_header(stdscr, f"{menu_path[menu_index]}")
 
+            if len(menu_path) == 3:
+                display_values(stdscr, interface, key_list, menu_path, setting_name)
+
             char = stdscr.getch()
 
             selected_key = list(current_menu.keys())[menu_item]
@@ -361,8 +364,8 @@ def nested_menu(stdscr, menu, interface):
 
             if menu_index==1:
                 setting_name = next_key
-            elif menu_index==2:
-                display_values(stdscr, interface, key_list, menu_path, setting_name)
+            # elif menu_index==2:
+            #     display_values(stdscr, interface, key_list, menu_path, setting_name)
         else:
             break  # Exit loop if current_menu is None
 
