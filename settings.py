@@ -426,7 +426,7 @@ def settings_shutdown(interface):
     interface.getNode('^local').shutdown()
 
 def settings_factory_reset(interface):
-    interface.getNode('^local').factory_reset()
+    interface.getNode('^local').factoryReset()
 
 
 
