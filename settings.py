@@ -3,7 +3,6 @@ from meshtastic import config_pb2, module_config_pb2
 import meshtastic.serial_interface, meshtastic.tcp_interface
 
 
-
 def display_enum_menu(stdscr, enum_values, setting_string):
     apply_settings = False
     menu_height = len(enum_values) + 2
@@ -40,7 +39,7 @@ def display_enum_menu(stdscr, enum_values, setting_string):
         elif char == ord('\n'):
             break
 
-        elif char == 27:
+        elif char == 27 or char == curses.KEY_LEFT:
             return None, False
 
         if char:
@@ -60,7 +59,6 @@ def display_enum_menu(stdscr, enum_values, setting_string):
 
     return selected_option, True
 
-
 def get_string_input(stdscr, setting_string):
     popup_height = 5
     popup_width = 40
@@ -76,30 +74,39 @@ def get_string_input(stdscr, setting_string):
     input_win.keypad(True)
     input_win.refresh()
 
-    curses.echo()
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
+    # Get user input
+    curses.curs_set(1)  # Show cursor
+    input_text = ""
 
-    input_str = ""
-    char = input_win.getch()
-    input_win.clear()
-    input_win.refresh()
-    input_win.border()
-    while char != 10:  # Continue until Enter key is pressed
-        if char == 27:  # Check if escape key is pressed
-            curses.noecho()
-            return None, False
-        input_str += chr(char)  # Append character to input string
-        input_win.addstr(1, 1, input_str)  # Display the input string
+    while True:
+        # Display the current input text
+        input_win.addstr(1, 1, input_text)
+        input_win.border()
         input_win.refresh()
-        char = input_win.getch()
 
-    curses.noecho()
+        # Get a character from the user
+        key = stdscr.getch()
 
-    input_win.clear()
-    input_win.refresh()
-    return input_str, True
-
+        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
+            curses.curs_set(0)  # Hide cursor
+            input_win.clear()
+            input_win.refresh()
+            return input_text, True
+        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
+            # Delete the last character from input_text
+            input_text = input_text[:-1]
+        elif 32 <= key <= 126:  # Printable ASCII characters
+            # Append the character to input_text
+            input_text += chr(key)
+        elif key == 27:  # Check if escape key is pressed
+            curses.curs_set(0)  # Hide cursor
+            input_win.refresh()
+            return None, False
+            
+        input_win.clear()
+        input_win.refresh()
 
 
 def get_uint_input(stdscr, setting_string):
@@ -114,45 +121,47 @@ def get_uint_input(stdscr, setting_string):
         print("Error occurred while initializing curses window:", e)
 
     input_win.border()
+    input_win.keypad(True)
     input_win.refresh()
 
-    curses.echo()
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
+    # Get user input
+    curses.curs_set(1)  # Show cursor
+    input_text = ""
 
-    input_str = ""
-    char = input_win.getch()
-    input_win.clear()
-    input_win.refresh()
-    input_win.border()
-    while char != 10:  # Continue until Enter key is pressed
-        if char == 27:  # Check if escape key is pressed
-            curses.noecho()
-            return None, False
-        input_str += chr(char)  # Append character to input string
-        input_win.addstr(1, 1, input_str)  # Display the input string
+    while True:
+        # Display the current input text
+        input_win.addstr(1, 1, input_text)
+        input_win.border()
         input_win.refresh()
-        char = input_win.getch()
 
-    curses.noecho()
+        # Get a character from the user
+        key = stdscr.getch()
 
-    try:
-        input_uint = int(input_str)
-    except ValueError:
-        input_uint = None
-
-    input_win.clear()
-    input_win.refresh()
-    return input_uint, True
-
-
-
+        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
+            curses.curs_set(0)  # Hide cursor
+            input_win.clear()
+            input_win.refresh()
+            return int(input_text), True
+        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
+            # Delete the last character from input_text
+            input_text = input_text[:-1]
+        elif 48 <= key <= 57:  # Numbers (ASCII range)
+            # Append the character to input_text
+            input_text += chr(key)
+        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
+            curses.curs_set(0)  # Hide cursor
+            input_win.refresh()
+            return None, False
+            
+        input_win.clear()
+        input_win.refresh()
 
 
 def display_bool_menu(stdscr, setting_value):
     bool_options = ["False", "True"]
     return display_enum_menu(stdscr, bool_options, setting_value)
-
 
 
 def generate_menu_from_protobuf(message_instance, interface):
@@ -166,7 +175,6 @@ def generate_menu_from_protobuf(message_instance, interface):
         if field_descriptor is not None:
             nested_message_instance = getattr(message_instance, field_name)
             menu[field_name] = generate_menu_from_protobuf(nested_message_instance, interface)
-
     return menu
 
 
@@ -177,6 +185,7 @@ def change_setting(stdscr, interface, menu_path):
     
     stdscr.clear()
     stdscr.border()
+    stdscr.refresh()
     menu_header(stdscr, f"{menu_path[3]}")
 
     if menu_path[1] == "Radio Settings":
@@ -186,7 +195,6 @@ def change_setting(stdscr, interface, menu_path):
     elif menu_path[1] == "Module Settings":
         setting_string = getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3])
         field_descriptor = getattr(node.moduleConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
-
 
     if field_descriptor.enum_type is not None:
         enum_values = [enum_value.name for enum_value in field_descriptor.enum_type.values]
@@ -223,9 +231,7 @@ def change_setting(stdscr, interface, menu_path):
             return  # Exit function if escape was pressed during input
         
     formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
-    menu_header(stdscr,formatted_text,2)
-
-
+    # menu_header(stdscr,formatted_text,2)
 
     ourNode = interface.getNode('^local')
     
@@ -238,7 +244,6 @@ def change_setting(stdscr, interface, menu_path):
         # If setting_value is not "true" or "false", keep it as it is
         setting_value_int = setting_value
 
-
     try:
         if menu_path[1] == "Radio Settings":
             setattr(getattr(ourNode.localConfig, menu_path[2]), menu_path[3], setting_value_int)
@@ -249,11 +254,8 @@ def change_setting(stdscr, interface, menu_path):
 
 
 
-
     ourNode.writeConfig(menu_path[2])
     menu_path.pop()
-
-
 
 
 
@@ -269,6 +271,9 @@ def display_values(stdscr, interface, key_list, menu_path, setting_name = None):
     stdscr.refresh()
 
 def menu_header(window, text, start_y=1):
+    window.clear()
+    window.box()
+    window.refresh()
     _, window_width = window.getmaxyx()
     start_x = (window_width - len(text)) // 2
     formatted_text = text.replace('_', ' ').title()
@@ -288,6 +293,7 @@ def nested_menu(stdscr, menu, interface):
     while True:
         # Display current menu
         if current_menu is not None:
+            menu_header(stdscr, f"{menu_path[menu_index]}")
             for i, key in enumerate(current_menu.keys(), start=0):
                 if i == menu_item:
                     if key in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
@@ -297,7 +303,6 @@ def nested_menu(stdscr, menu, interface):
                 else:
                     stdscr.addstr(i+3, 1, key)
 
-            menu_header(stdscr, f"{menu_path[menu_index]}")
 
             if len(menu_path) == 3:
                 display_values(stdscr, interface, key_list, menu_path, setting_name)
@@ -375,6 +380,8 @@ def settings(stdscr, interface):
     popup_width = 60
     y_start = (curses.LINES - popup_height) // 2
     x_start = (curses.COLS - popup_width) // 2
+
+    curses.curs_set(0)  # Hide cursor
     try:
         popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
     except curses.error as e:
