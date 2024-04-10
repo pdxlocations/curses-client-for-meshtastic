@@ -61,7 +61,6 @@ def display_enum_menu(stdscr, enum_values, setting_string):
     return selected_option, True
 
 
-
 def get_string_input(stdscr, setting_string):
     popup_height = 5
     popup_width = 40
@@ -102,7 +101,6 @@ def get_string_input(stdscr, setting_string):
     return input_str, True
 
 
-import curses
 
 def get_uint_input(stdscr, setting_string):
     popup_height = 5
