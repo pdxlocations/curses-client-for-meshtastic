@@ -4,7 +4,6 @@ import meshtastic.serial_interface, meshtastic.tcp_interface
 
 
 def display_enum_menu(stdscr, enum_values, setting_string):
-    apply_settings = False
     menu_height = len(enum_values) + 2
     menu_width = max(len(option) for option in enum_values) + 4
     y_start = (curses.LINES - menu_height) // 2
@@ -186,45 +185,48 @@ def change_setting(stdscr, interface, menu_path):
     stdscr.clear()
     stdscr.border()
     stdscr.refresh()
-    menu_header(stdscr, f"{menu_path[3]}")
+    menu_header(stdscr, f"{menu_path[-1]}")
 
-    if menu_path[1] == "Radio Settings":
-        setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
-        field_descriptor = getattr(node.localConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
+    # Determine the level of nesting based on the length of menu_path
+    if len(menu_path) ==4:
+        if menu_path[1] == "Radio Settings":
+            setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
+            field_descriptor = getattr(node.localConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
 
-    elif menu_path[1] == "Module Settings":
-        setting_string = getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3])
-        field_descriptor = getattr(node.moduleConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
+        elif menu_path[1] == "Module Settings":
+            setting_string = getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3])
+            field_descriptor = getattr(node.moduleConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
+
 
     if field_descriptor.enum_type is not None:
         enum_values = [enum_value.name for enum_value in field_descriptor.enum_type.values]
-        enum_option, change_setting = display_enum_menu(stdscr, enum_values, setting_string)
+        enum_option, do_change_setting = display_enum_menu(stdscr, enum_values, setting_string)
         setting_value = enum_option
-        if not change_setting:
+        if not do_change_setting:
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
             return  # Exit function if escape was pressed during input
 
     elif field_descriptor.type == 8:  # Field type 8 corresponds to BOOL
-        setting_value, change_setting = display_bool_menu(stdscr, setting_string)
-        if not change_setting:
+        setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
+        if not do_change_setting:
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
             return  # Exit function if escape was pressed during input
 
     elif field_descriptor.type == 9:  # Field type 9 corresponds to STRING
-        setting_value, change_setting = get_string_input(stdscr, setting_string)
-        if not change_setting:
+        setting_value, do_change_setting = get_string_input(stdscr, setting_string)
+        if not do_change_setting:
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
             return  # Exit function if escape was pressed during input
 
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
-        setting_value, change_setting = get_uint_input(stdscr, setting_string)
-        if not change_setting:
+        setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
+        if not do_change_setting:
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
@@ -367,8 +369,6 @@ def nested_menu(stdscr, menu, interface):
 
             if menu_index==1:
                 setting_name = next_key
-            # elif menu_index==2:
-            #     display_values(stdscr, interface, key_list, menu_path, setting_name)
         else:
             break  # Exit loop if current_menu is None
 
@@ -378,6 +378,7 @@ def nested_menu(stdscr, menu, interface):
 def settings(stdscr, interface):
     popup_height = 25
     popup_width = 60
+    popup_win = None
     y_start = (curses.LINES - popup_height) // 2
     x_start = (curses.COLS - popup_width) // 2
 
