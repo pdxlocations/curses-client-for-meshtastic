@@ -157,6 +157,55 @@ def get_uint_input(stdscr, setting_string):
         input_win.clear()
         input_win.refresh()
 
+def get_float_input(stdscr, setting_string):
+    popup_height = 5
+    popup_width = 40
+    y_start = (curses.LINES - popup_height) // 2
+    x_start = (curses.COLS - popup_width) // 2
+
+    try:
+        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
+    except curses.error as e:
+        print("Error occurred while initializing curses window:", e)
+
+    input_win.border()
+    input_win.keypad(True)
+    input_win.refresh()
+
+    input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
+    input_win.refresh()
+    # Get user input
+    curses.curs_set(1)  # Show cursor
+    input_text = ""
+
+    while True:
+        # Display the current input text
+        input_win.addstr(1, 1, input_text)
+        input_win.border()
+        input_win.refresh()
+
+        # Get a character from the user
+        key = stdscr.getch()
+
+        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
+            curses.curs_set(0)  # Hide cursor
+            input_win.clear()
+            input_win.refresh()
+            return float(input_text), True
+        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
+            # Delete the last character from input_text
+            input_text = input_text[:-1]
+        elif (48 <= key <= 57) or key == 46:  # Numbers and decimal point (ASCII range)
+            # Append the character to input_text
+            input_text += chr(key)
+        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
+            curses.curs_set(0)  # Hide cursor
+            input_win.refresh()
+            return None, False
+            
+        input_win.clear()
+        input_win.refresh()
+
 
 def ip_to_fixed32(ip):
     # Parse the IP address
@@ -295,6 +344,14 @@ def change_setting(stdscr, interface, menu_path):
             menu_path.pop()
             return  # Exit function if escape was pressed during input
 
+    elif field_descriptor.type == 2:  # Field type 2 corresponds to FLOAT
+        setting_value, do_change_setting = get_float_input(stdscr, setting_string)
+        if not do_change_setting:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return  # Exit function if escape was pressed during input
+
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
         setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
         if not do_change_setting:
@@ -303,14 +360,17 @@ def change_setting(stdscr, interface, menu_path):
             menu_path.pop()
             return  # Exit function if escape was pressed during input
         
-    else:  # Catch fixed32
+    elif field_descriptor.type == 7:  # Catch fixed32
         setting_value, do_change_setting = get_fixed32_input(stdscr, setting_string)
         if not do_change_setting:
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
             return  # Exit function if escape was pressed during input
-
+    else:
+        menu_path.pop()
+        return
+        
     # formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
     # menu_header(stdscr,formatted_text,2)
 
