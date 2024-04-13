@@ -76,7 +76,7 @@ def get_string_input(stdscr, setting_string):
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
     # Get user input
-    curses.curs_set(1)  # Show cursor
+    curses.curs_set(1)
     input_text = ""
 
     while True:
@@ -89,7 +89,7 @@ def get_string_input(stdscr, setting_string):
         key = stdscr.getch()
 
         if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.clear()
             input_win.refresh()
             return input_text, True
@@ -100,7 +100,7 @@ def get_string_input(stdscr, setting_string):
             # Append the character to input_text
             input_text += chr(key)
         elif key == 27:  # Check if escape key is pressed
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.refresh()
             return None, False
             
@@ -125,8 +125,7 @@ def get_uint_input(stdscr, setting_string):
 
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
-    # Get user input
-    curses.curs_set(1)  # Show cursor
+    curses.curs_set(1)
     input_text = ""
 
     while True:
@@ -139,7 +138,7 @@ def get_uint_input(stdscr, setting_string):
         key = stdscr.getch()
 
         if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.clear()
             input_win.refresh()
             return int(input_text), True
@@ -150,7 +149,7 @@ def get_uint_input(stdscr, setting_string):
             # Append the character to input_text
             input_text += chr(key)
         elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.refresh()
             return None, False
             
@@ -174,8 +173,7 @@ def get_float_input(stdscr, setting_string):
 
     input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
-    # Get user input
-    curses.curs_set(1)  # Show cursor
+    curses.curs_set(1)
     input_text = ""
 
     while True:
@@ -188,7 +186,7 @@ def get_float_input(stdscr, setting_string):
         key = stdscr.getch()
 
         if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.clear()
             input_win.refresh()
             return float(input_text), True
@@ -199,7 +197,7 @@ def get_float_input(stdscr, setting_string):
             # Append the character to input_text
             input_text += chr(key)
         elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.refresh()
             return None, False
             
@@ -236,8 +234,7 @@ def get_fixed32_input(stdscr, setting_string):
 
     input_win.addstr(1, 1, fixed32_to_ip(setting_string))  # Prepopulate input field with the setting value
     input_win.refresh()
-    # Get user input
-    curses.curs_set(1)  # Show cursor
+    curses.curs_set(1)
     input_text = ""
 
     while True:
@@ -250,7 +247,7 @@ def get_fixed32_input(stdscr, setting_string):
         key = stdscr.getch()
 
         if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.clear()
             input_win.refresh()
             return ip_to_fixed32(input_text), True
@@ -261,7 +258,7 @@ def get_fixed32_input(stdscr, setting_string):
             # Append the character to input_text
             input_text += chr(key)
         elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)  # Hide cursor
+            curses.curs_set(0)
             input_win.refresh()
             return None, False
             
@@ -326,7 +323,7 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
-            return  # Exit function if escape was pressed during input
+            return
 
     elif field_descriptor.type == 8:  # Field type 8 corresponds to BOOL
         setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
@@ -334,7 +331,7 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
-            return  # Exit function if escape was pressed during input
+            return
 
     elif field_descriptor.type == 9:  # Field type 9 corresponds to STRING
         setting_value, do_change_setting = get_string_input(stdscr, setting_string)
@@ -342,7 +339,7 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
-            return  # Exit function if escape was pressed during input
+            return
 
     elif field_descriptor.type == 2:  # Field type 2 corresponds to FLOAT
         setting_value, do_change_setting = get_float_input(stdscr, setting_string)
@@ -350,7 +347,7 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
-            return  # Exit function if escape was pressed during input
+            return
 
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
         setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
@@ -358,15 +355,15 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
-            return  # Exit function if escape was pressed during input
+            return
         
-    elif field_descriptor.type == 7:  # Catch fixed32
+    elif field_descriptor.type == 7:  # Field type 7 corresponds to FIXED32
         setting_value, do_change_setting = get_fixed32_input(stdscr, setting_string)
         if not do_change_setting:
             stdscr.clear()
             stdscr.border()
             menu_path.pop()
-            return  # Exit function if escape was pressed during input
+            return
     else:
         menu_path.pop()
         return
@@ -442,17 +439,17 @@ def nested_menu(stdscr, menu, interface):
     menu_index = 0
     next_key = None
 
-    # setting_name = None
     key_list = []
     menu_path = ["Main Menu"]
 
     last_menu_level = False
 
     while True:
-        # Display current menu
+        
         if current_menu is not None:
-
             menu_header(stdscr, f"{menu_path[menu_index]}")
+
+            # Display current menu
             for i, key in enumerate(current_menu.keys(), start=0):
                 if i == menu_item:
                     if key in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
@@ -462,6 +459,7 @@ def nested_menu(stdscr, menu, interface):
                 else:
                     stdscr.addstr(i+3, 1, key)
 
+            # Display current values
             display_values(stdscr, interface, key_list, menu_path)
 
             char = stdscr.getch()
@@ -504,7 +502,6 @@ def nested_menu(stdscr, menu, interface):
                     menu_item = 0
 
             elif char == ord('\n'):
-
                 if selected_key == "Reboot":
                     settings_reboot(interface)
                 elif selected_key == "Reset NodeDB":
@@ -516,9 +513,9 @@ def nested_menu(stdscr, menu, interface):
 
                 elif selected_value is not None:
                     stdscr.refresh()
-                    stdscr.getch()  # Wait for user input before continuing
-            # escape to exit menu        
-            elif char == 27:
+                    stdscr.getch()
+                 
+            elif char == 27:  # escape to exit menu 
                 break
 
             if char:
@@ -543,7 +540,7 @@ def settings(stdscr, interface):
     y_start = (curses.LINES - popup_height) // 2
     x_start = (curses.COLS - popup_width) // 2
 
-    curses.curs_set(0)  # Hide cursor
+    curses.curs_set(0)
     try:
         popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
     except curses.error as e:
@@ -575,7 +572,6 @@ def settings(stdscr, interface):
     # Close the popup window
     popup_win.clear()
     popup_win.refresh()
-    del popup_win  # Delete the window object to free up memory
 
 
 def settings_reboot(interface):
@@ -589,7 +585,6 @@ def settings_shutdown(interface):
 
 def settings_factory_reset(interface):
     interface.getNode('^local').factoryReset()
-
 
 
 if __name__ == "__main__":
