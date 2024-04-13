@@ -478,18 +478,19 @@ def nested_menu(stdscr, menu, interface):
                 menu_item = max(0, menu_item - 1)
 
             elif char == curses.KEY_RIGHT:
-                if isinstance(selected_value, dict):
-                    # If the selected item is a submenu, navigate to it
-                    prev_menu.append(current_menu)
-                    menu_index += 1
-                    current_menu = selected_value
-                    menu_item = 0
-                    last_menu_level = False
-                else:
-                    last_menu_level = True
-
                 if selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                     menu_path.append(selected_key)
+                    
+                    if isinstance(selected_value, dict):
+                        # If the selected item is a submenu, navigate to it
+                        prev_menu.append(current_menu)
+                        menu_index += 1
+                        current_menu = selected_value
+                        menu_item = 0
+                        last_menu_level = False
+                    else:
+                        last_menu_level = True
+                        
                 
             elif char == curses.KEY_LEFT:
                 if last_menu_level == True:
