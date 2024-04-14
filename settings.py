@@ -286,7 +286,7 @@ def generate_menu_from_protobuf(message_instance, interface):
 
 
 def change_setting(stdscr, interface, menu_path):
-    node = interface.getNode('^local')
+    node = interface.localNode
     field_descriptor = None
     setting_value = 0
     
@@ -296,6 +296,17 @@ def change_setting(stdscr, interface, menu_path):
     menu_header(stdscr, f"{menu_path[-1]}")
 
     # Determine the level of nesting based on the length of menu_path
+
+    if menu_path[1] == "User Settings":
+        # n = interface.getMyNodeInfo()
+        # setting_string = n['user'][snake_to_camel(menu_path[2])]
+
+        stdscr.clear()
+        stdscr.border()
+        menu_path.pop()
+        return
+        
+
     if len(menu_path) == 4:
         if menu_path[1] == "Radio Settings":
             setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
@@ -371,7 +382,7 @@ def change_setting(stdscr, interface, menu_path):
     # formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
     # menu_header(stdscr,formatted_text,2)
 
-    ourNode = interface.getNode('^local')
+    ourNode = interface.localNode
     
     # Convert "true" to 1, "false" to 0, leave other values as they are
     if setting_value == "True" or setting_value == "1":
@@ -402,10 +413,24 @@ def change_setting(stdscr, interface, menu_path):
     ourNode.writeConfig(menu_path[2])
     menu_path.pop()
 
+def snake_to_camel(snake_str):
+    components = snake_str.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
 
 def display_values(stdscr, interface, key_list, menu_path):
-    node = interface.getNode('^local')
+    node = interface.localNode
     for i, key in enumerate(key_list):
+
+        if len(menu_path) == 2:
+            if menu_path[1] == 'User Settings':
+                n = interface.getMyNodeInfo()
+                try:
+                    setting = n['user'][snake_to_camel(key_list[i])]
+                except:
+                    setting = None
+                stdscr.addstr(i+3, 40, str(setting))
+
         if len(menu_path) == 3:
             if menu_path[1] == "Radio Settings":
                 setting = getattr(getattr(node.localConfig, menu_path[2]), key_list[i])  
@@ -480,7 +505,7 @@ def nested_menu(stdscr, menu, interface):
             elif char == curses.KEY_RIGHT:
                 if selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                     menu_path.append(selected_key)
-                    
+
                     if isinstance(selected_value, dict):
                         # If the selected item is a submenu, navigate to it
                         prev_menu.append(current_menu)
@@ -551,6 +576,10 @@ def settings(stdscr, interface):
     popup_win.keypad(True)
     
     # Generate menu from protobuf for both radio and module settings
+    from meshtastic import mesh_pb2
+    user = mesh_pb2.User()
+    user_config = generate_menu_from_protobuf(user, interface)
+
     radio = config_pb2.Config()
     radio_config = generate_menu_from_protobuf(radio, interface)
 
@@ -559,6 +588,7 @@ def settings(stdscr, interface):
 
     # Add top-level menu items
     top_level_menu = {
+        "User Settings": user_config,
         "Radio Settings": radio_config,
         "Module Settings": module_config,
         "Reboot": None,
@@ -576,23 +606,27 @@ def settings(stdscr, interface):
 
 
 def settings_reboot(interface):
-    interface.getNode('^local').reboot()
+    interface.localNode.reboot()
 
 def settings_reset_nodedb(interface):
-    interface.getNode('^local').resetNodeDb()
+    interface.localNode.resetNodeDb()
 
 def settings_shutdown(interface):
-    interface.getNode('^local').shutdown()
+    interface.localNode.shutdown()
 
 def settings_factory_reset(interface):
-    interface.getNode('^local').factoryReset()
+    interface.localNode.factoryReset()
+
+def settings_set_owner(interface, long_name=None, short_name=None, is_licensed=False):
+    interface.localNode.setOwner(long_name, short_name, is_licensed)
 
 
 if __name__ == "__main__":
 
     interface = meshtastic.serial_interface.SerialInterface()
-    radio = config_pb2.Config()
-    module = module_config_pb2.ModuleConfig()
+
+    # radio = config_pb2.Config()
+    # module = module_config_pb2.ModuleConfig()
     # print(generate_menu_from_protobuf(radio, interface))
     # print(generate_menu_from_protobuf(module, interface))
 
