@@ -3,6 +3,79 @@ from meshtastic import config_pb2, module_config_pb2
 import meshtastic.serial_interface, meshtastic.tcp_interface
 import ipaddress
 
+def set_region(interface):
+    enum_values = [config_pb2.Config.LoRaConfig.RegionCode.Name(region_code) for region_code in config_pb2.Config.LoRaConfig.RegionCode.values()]
+
+    # Determine the current value's index
+
+    ourNode = interface.localNode
+    current_value = getattr(ourNode.localConfig.lora, "region")
+
+    current_value_str = config_pb2.Config.LoRaConfig.RegionCode.Name(current_value)
+
+    if current_value_str in enum_values:
+        menu_item = enum_values.index(current_value_str)
+    else:
+        menu_item = 0  # Default to the first item if current value not found
+
+    # Maximum number of rows to display
+    max_rows = 10
+
+    # Calculate popup window dimensions and position
+    popup_height = min(len(enum_values), max_rows) + 2
+    popup_width = max(len(option) for option in enum_values) + 6
+    y_start = (curses.LINES - popup_height) // 2
+    x_start = (curses.COLS - popup_width) // 2
+
+    # Create the popup window
+    try:
+        popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
+    except curses.error as e:
+        print("Error occurred while initializing curses window:", e)
+
+    # Enable keypad mode
+    popup_win.keypad(True)
+
+    # Display enum values in the popup window
+    start_index = 0  # Starting index of displayed items
+    while True:
+        popup_win.clear()
+        popup_win.border()
+
+        # Calculate the starting index based on the menu item and window size
+        if menu_item >= start_index + max_rows:
+            start_index += 1
+        elif menu_item < start_index:
+            start_index -= 1
+
+        # Display enum values within the window height
+        for i in range(min(len(enum_values) - start_index, max_rows)):
+            option_index = start_index + i
+            if option_index == menu_item:
+                popup_win.addstr(i + 1, 2, enum_values[option_index], curses.A_REVERSE)
+            else:
+                popup_win.addstr(i + 1, 2, enum_values[option_index])
+
+        popup_win.refresh()
+
+        char = popup_win.getch()
+        if char == curses.KEY_DOWN:
+            if menu_item < len(enum_values) - 1:
+                menu_item += 1
+        elif char == curses.KEY_UP:
+            if menu_item > 0:
+                menu_item -= 1
+        elif char == ord('\n'):
+            selected_option = enum_values[menu_item]
+            popup_win.clear()
+            popup_win.refresh()
+            return selected_option, True
+        elif char == 27 or char == curses.KEY_LEFT:  # Check if escape key is pressed
+            curses.curs_set(0)
+            popup_win.refresh()
+            return None, False
+
+
 def display_enum_menu(stdscr, enum_values, setting_string):
     menu_height = len(enum_values) + 2
     menu_width = max(len(option) for option in enum_values) + 4
@@ -503,6 +576,9 @@ def nested_menu(stdscr, menu, interface):
                 menu_item = max(0, menu_item - 1)
 
             elif char == curses.KEY_RIGHT:
+                if selected_key == "Region":
+                    settings_region(interface)
+                    break
                 if selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                     menu_path.append(selected_key)
 
@@ -528,7 +604,9 @@ def nested_menu(stdscr, menu, interface):
                     menu_item = 0
 
             elif char == ord('\n'):
-                if selected_key == "Reboot":
+                if selected_key == "Region":
+                    settings_region(interface)
+                elif selected_key == "Reboot":
                     settings_reboot(interface)
                 elif selected_key == "Reset NodeDB":
                     settings_reset_nodedb(interface)
@@ -577,6 +655,7 @@ def settings(stdscr, interface):
     
     # Generate menu from protobuf for both radio and module settings
     from meshtastic import mesh_pb2
+
     user = mesh_pb2.User()
     user_config = generate_menu_from_protobuf(user, interface)
 
@@ -588,6 +667,7 @@ def settings(stdscr, interface):
 
     # Add top-level menu items
     top_level_menu = {
+        "Region": None,
         "User Settings": user_config,
         "Radio Settings": radio_config,
         "Module Settings": module_config,
@@ -604,6 +684,12 @@ def settings(stdscr, interface):
     popup_win.clear()
     popup_win.refresh()
 
+def settings_region(interface):
+    selected_option, do_set = set_region(interface)
+    if do_set:
+        ourNode = interface.localNode
+        setattr(ourNode.localConfig.lora, "region", selected_option)
+        ourNode.writeConfig("lora")
 
 def settings_reboot(interface):
     interface.localNode.reboot()
