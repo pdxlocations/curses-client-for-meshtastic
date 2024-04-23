@@ -3,20 +3,12 @@ from meshtastic import config_pb2, module_config_pb2
 import meshtastic.serial_interface, meshtastic.tcp_interface
 import ipaddress
 
-def set_region(interface):
-    enum_values = [config_pb2.Config.LoRaConfig.RegionCode.Name(region_code) for region_code in config_pb2.Config.LoRaConfig.RegionCode.values()]
 
-    # Determine the current value's index
-
-    ourNode = interface.localNode
-    current_value = getattr(ourNode.localConfig.lora, "region")
-
-    current_value_str = config_pb2.Config.LoRaConfig.RegionCode.Name(current_value)
-
-    if current_value_str in enum_values:
-        menu_item = enum_values.index(current_value_str)
-    else:
-        menu_item = 0  # Default to the first item if current value not found
+def display_enum_menu(stdscr, enum_values, menu_item):
+    menu_height = len(enum_values) + 2
+    menu_width = max(len(option) for option in enum_values) + 4
+    y_start = (curses.LINES - menu_height) // 2
+    x_start = (curses.COLS - menu_width) // 2
 
     # Maximum number of rows to display
     max_rows = 10
@@ -74,62 +66,6 @@ def set_region(interface):
             curses.curs_set(0)
             popup_win.refresh()
             return None, False
-
-
-def display_enum_menu(stdscr, enum_values, setting_string):
-    menu_height = len(enum_values) + 2
-    menu_width = max(len(option) for option in enum_values) + 4
-    y_start = (curses.LINES - menu_height) // 2
-    x_start = (curses.COLS - menu_width) // 2
-
-    try:
-        menu_win = curses.newwin(menu_height, menu_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    menu_win.border()
-    menu_win.keypad(True)
-    curses.curs_set(0)
-    menu_win.refresh()
-
-    menu_item = 0
-    for i, option in enumerate(enum_values, start=0):
-        if i == setting_string:
-            menu_win.addstr(i+1, 1, option, curses.A_REVERSE)
-            menu_item = i
-        else:
-            menu_win.addstr(i+1, 1, option)
-    
-    menu_win.refresh()
-
-    while True:
-        char = menu_win.getch()
-        if char == curses.KEY_DOWN:
-            menu_item = min(len(enum_values) - 1, menu_item + 1)
-        elif char == curses.KEY_UP:
-            menu_item = max(0, menu_item - 1)
-        elif char == ord('\n'):
-            break
-
-        elif char == 27 or char == curses.KEY_LEFT:
-            return None, False
-
-        if char:
-            menu_win.clear()
-            menu_win.border()
-
-
-        for i, option in enumerate(enum_values, start=1):
-            if i == menu_item + 1:
-                menu_win.addstr(i, 1, option, curses.A_REVERSE)
-            else:
-                menu_win.addstr(i, 1, option)
-
-    selected_option = enum_values[menu_item]
-    menu_win.clear()
-    menu_win.refresh()
-
-    return selected_option, True
 
 def get_string_input(stdscr, setting_string):
     popup_height = 5
@@ -228,6 +164,55 @@ def get_uint_input(stdscr, setting_string):
             
         input_win.clear()
         input_win.refresh()
+
+
+def get_uint32_list_input(stdscr):
+    popup_height = 5
+    popup_width = 40
+    y_start = (curses.LINES - popup_height) // 2
+    x_start = (curses.COLS - popup_width) // 2
+
+    try:
+        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
+    except curses.error as e:
+        print("Error occurred while initializing curses window:", e)
+
+    input_win.border()
+    input_win.keypad(True)
+    input_win.refresh()
+
+    input_text = ""
+
+    while True:
+        # Display the current input text
+        input_win.addstr(1, 1, input_text)
+        input_win.border()
+        input_win.refresh()
+
+        # Get a character from the user
+        key = stdscr.getch()
+
+        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
+            curses.curs_set(0)
+            input_win.clear()
+            input_win.refresh()
+            # Split input text at commas and parse each value as UINT32
+            uint32_values = [int(val.strip()) for val in input_text.split(',') if val.strip()]
+            return uint32_values, True
+        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
+            # Delete the last character from input_text
+            input_text = input_text[:-1]
+        elif (48 <= key <= 57) or key == 44:  # Numbers and comma (ASCII range)
+            # Append the character to input_text
+            input_text += chr(key)
+        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
+            curses.curs_set(0)
+            input_win.refresh()
+            return None, False
+            
+        input_win.clear()
+        input_win.refresh()
+
 
 def get_float_input(stdscr, setting_string):
     popup_height = 5
@@ -379,7 +364,6 @@ def change_setting(stdscr, interface, menu_path):
         menu_path.pop()
         return
         
-
     if len(menu_path) == 4:
         if menu_path[1] == "Radio Settings":
             setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
@@ -434,7 +418,10 @@ def change_setting(stdscr, interface, menu_path):
             return
 
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
-        setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
+        if field_descriptor.label == field_descriptor.LABEL_REPEATED:
+            setting_value, do_change_setting = get_uint32_list_input(stdscr)
+        else:
+            setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
         if not do_change_setting:
             stdscr.clear()
             stdscr.border()
@@ -576,9 +563,9 @@ def nested_menu(stdscr, menu, interface):
                 menu_item = max(0, menu_item - 1)
 
             elif char == curses.KEY_RIGHT:
-                if selected_key == "Region":
-                    settings_region(interface)
-                    break
+                # if selected_key == "Region":
+                #     settings_region(interface)
+                #     break
                 if selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                     menu_path.append(selected_key)
 
@@ -604,9 +591,9 @@ def nested_menu(stdscr, menu, interface):
                     menu_item = 0
 
             elif char == ord('\n'):
-                if selected_key == "Region":
-                    settings_region(interface)
-                elif selected_key == "Reboot":
+                # if selected_key == "Region":
+                #     settings_region(interface)
+                if selected_key == "Reboot":
                     settings_reboot(interface)
                 elif selected_key == "Reset NodeDB":
                     settings_reset_nodedb(interface)
@@ -667,7 +654,7 @@ def settings(stdscr, interface):
 
     # Add top-level menu items
     top_level_menu = {
-        "Region": None,
+        # "Region": None,
         "User Settings": user_config,
         "Radio Settings": radio_config,
         "Module Settings": module_config,
@@ -684,12 +671,12 @@ def settings(stdscr, interface):
     popup_win.clear()
     popup_win.refresh()
 
-def settings_region(interface):
-    selected_option, do_set = set_region(interface)
-    if do_set:
-        ourNode = interface.localNode
-        setattr(ourNode.localConfig.lora, "region", selected_option)
-        ourNode.writeConfig("lora")
+# def settings_region(interface):
+#     selected_option, do_set = set_region(interface)
+#     if do_set:
+#         ourNode = interface.localNode
+#         setattr(ourNode.localConfig.lora, "region", selected_option)
+#         ourNode.writeConfig("lora")
 
 def settings_reboot(interface):
     interface.localNode.reboot()
