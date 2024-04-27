@@ -166,8 +166,10 @@ def get_uint_input(stdscr, setting_string):
         input_win.refresh()
 
 
-def get_uint32_list_input(stdscr):
-    popup_height = 5
+def get_uint32_list_input(stdscr, setting_string):
+    setting_string = [str(num) for num in setting_string]
+
+    popup_height = 8  # Increased height to accommodate three lines
     popup_width = 40
     y_start = (curses.LINES - popup_height) // 2
     x_start = (curses.COLS - popup_width) // 2
@@ -181,11 +183,14 @@ def get_uint32_list_input(stdscr):
     input_win.keypad(True)
     input_win.refresh()
 
-    input_text = ""
+    input_text = setting_string[:]  # Copy the input strings
+    curses.curs_set(0)
 
     while True:
-        # Display the current input text
-        input_win.addstr(1, 1, input_text)
+        # Display the current input text for each line
+        for i, line in enumerate(input_text):
+            input_win.addstr(1 + i, 1, line)
+
         input_win.border()
         input_win.refresh()
 
@@ -193,18 +198,18 @@ def get_uint32_list_input(stdscr):
         key = stdscr.getch()
 
         if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)
             input_win.clear()
             input_win.refresh()
-            # Split input text at commas and parse each value as UINT32
-            uint32_values = [int(val.strip()) for val in input_text.split(',') if val.strip()]
-            return uint32_values, True
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
-            # Delete the last character from input_text
-            input_text = input_text[:-1]
-        elif (48 <= key <= 57) or key == 44:  # Numbers and comma (ASCII range)
-            # Append the character to input_text
-            input_text += chr(key)
+            return None, False  # TODO allow setting this
+        #     return input_text, True
+        # elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
+        #     # Delete the last character from the current line's input_text
+        #     current_y, current_x = input_win.getyx()
+        #     input_text[current_y - 1] = input_text[current_y - 1][:-1]
+        # elif (48 <= key <= 57) or key == 44:  # Numbers and comma (ASCII range)
+        #     # Append the character to the current line's input_text
+        #     current_y, current_x = input_win.getyx()
+        #     input_text[current_y - 1] += chr(key)
         elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
             curses.curs_set(0)
             input_win.refresh()
@@ -212,7 +217,6 @@ def get_uint32_list_input(stdscr):
             
         input_win.clear()
         input_win.refresh()
-
 
 def get_float_input(stdscr, setting_string):
     popup_height = 5
@@ -353,16 +357,55 @@ def change_setting(stdscr, interface, menu_path):
     stdscr.refresh()
     menu_header(stdscr, f"{menu_path[-1]}")
 
+    
+
     # Determine the level of nesting based on the length of menu_path
 
     if menu_path[1] == "User Settings":
-        # n = interface.getMyNodeInfo()
-        # setting_string = n['user'][snake_to_camel(menu_path[2])]
+        n = interface.getMyNodeInfo()
+        
+        try:
+            setting_string = n['user'][snake_to_camel(menu_path[2])]
+        except:
+            setting_string = 0
 
-        stdscr.clear()
-        stdscr.border()
-        menu_path.pop()
-        return
+        if menu_path[2] == "is_licensed":
+            setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
+        else:
+            setting_value, do_change_setting = get_string_input(stdscr, setting_string)
+
+        if not do_change_setting:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return
+        
+        if menu_path[2] == "long_name":
+            settings_set_owner(interface, long_name=setting_value)
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return
+        elif menu_path[2] == "short_name":
+            if len(setting_value) > 4:
+                setting_value = setting_value[:4]
+            settings_set_owner(interface, short_name=setting_value)
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return
+        elif menu_path[2] == "is_licensed":
+            ln = n['user']['longName']
+            settings_set_owner(interface, long_name=ln, is_licensed=setting_value)
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return
+        else:
+            stdscr.clear()
+            stdscr.border()
+            menu_path.pop()
+            return
         
     if len(menu_path) == 4:
         if menu_path[1] == "Radio Settings":
@@ -419,7 +462,7 @@ def change_setting(stdscr, interface, menu_path):
 
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
         if field_descriptor.label == field_descriptor.LABEL_REPEATED:
-            setting_value, do_change_setting = get_uint32_list_input(stdscr)
+            setting_value, do_change_setting = get_uint32_list_input(stdscr, setting_string)
         else:
             setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
         if not do_change_setting:
@@ -453,6 +496,10 @@ def change_setting(stdscr, interface, menu_path):
         # If setting_value is not "true" or "false", keep it as it is
         setting_value_int = setting_value
 
+    # if isinstance(setting_value_int, list):
+    #     value_string = ', '.join(str(item) for item in setting_value_int)
+    #     setting_value_int = value_string
+
     try:
         if len(menu_path) == 4:
             if menu_path[1] == "Radio Settings":
@@ -480,6 +527,7 @@ def snake_to_camel(snake_str):
 
 def display_values(stdscr, interface, key_list, menu_path):
     node = interface.localNode
+    user_settings = ["long_name", "short_name", "is_licensed"]
     for i, key in enumerate(key_list):
 
         if len(menu_path) == 2:
@@ -489,7 +537,8 @@ def display_values(stdscr, interface, key_list, menu_path):
                     setting = n['user'][snake_to_camel(key_list[i])]
                 except:
                     setting = None
-                stdscr.addstr(i+3, 40, str(setting))
+                if key_list[i] in user_settings:
+                    stdscr.addstr(i+3, 40, str(setting))
 
         if len(menu_path) == 3:
             if menu_path[1] == "Radio Settings":
@@ -644,7 +693,10 @@ def settings(stdscr, interface):
     from meshtastic import mesh_pb2
 
     user = mesh_pb2.User()
+    user_settings = ["long_name", "short_name", "is_licensed"]
     user_config = generate_menu_from_protobuf(user, interface)
+    user_config = {key: value for key, value in user_config.items() if key in user_settings}
+
 
     radio = config_pb2.Config()
     radio_config = generate_menu_from_protobuf(radio, interface)
@@ -691,6 +743,10 @@ def settings_factory_reset(interface):
     interface.localNode.factoryReset()
 
 def settings_set_owner(interface, long_name=None, short_name=None, is_licensed=False):
+    if is_licensed == 'True':
+        is_licensed = True
+    elif is_licensed == 'False':
+        is_licensed = False
     interface.localNode.setOwner(long_name, short_name, is_licensed)
 
 
