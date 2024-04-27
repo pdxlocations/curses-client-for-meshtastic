@@ -356,18 +356,13 @@ def change_setting(stdscr, interface, menu_path):
     stdscr.border()
     stdscr.refresh()
     menu_header(stdscr, f"{menu_path[-1]}")
-
-    
-
+        
     # Determine the level of nesting based on the length of menu_path
 
     if menu_path[1] == "User Settings":
         n = interface.getMyNodeInfo()
-        
-        try:
-            setting_string = n['user'][snake_to_camel(menu_path[2])]
-        except:
-            setting_string = 0
+
+        setting_string = n['user'].get(snake_to_camel(menu_path[2]), 0)
 
         if menu_path[2] == "is_licensed":
             setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
@@ -379,34 +374,21 @@ def change_setting(stdscr, interface, menu_path):
             stdscr.border()
             menu_path.pop()
             return
-        
-        if menu_path[2] == "long_name":
-            settings_set_owner(interface, long_name=setting_value)
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
-        elif menu_path[2] == "short_name":
-            if len(setting_value) > 4:
+
+        if menu_path[2] in ["long_name", "short_name"]:
+            if menu_path[2] == "short_name" and len(setting_value) > 4:
                 setting_value = setting_value[:4]
-            settings_set_owner(interface, short_name=setting_value)
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
+            settings_set_owner(interface, long_name=setting_value if menu_path[2] == "long_name" else None,
+                            short_name=setting_value if menu_path[2] == "short_name" else None)
         elif menu_path[2] == "is_licensed":
             ln = n['user']['longName']
             settings_set_owner(interface, long_name=ln, is_licensed=setting_value)
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
-        else:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
-        
+
+        stdscr.clear()
+        stdscr.border()
+        menu_path.pop()
+        return
+
     if len(menu_path) == 4:
         if menu_path[1] == "Radio Settings":
             setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
