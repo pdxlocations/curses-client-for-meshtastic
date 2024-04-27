@@ -412,55 +412,32 @@ def change_setting(stdscr, interface, menu_path):
         enum_values = [enum_value.name for enum_value in field_descriptor.enum_type.values]
         enum_option, do_change_setting = display_enum_menu(stdscr, enum_values, setting_string)
         setting_value = enum_option
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
 
     elif field_descriptor.type == 8:  # Field type 8 corresponds to BOOL
         setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
 
     elif field_descriptor.type == 9:  # Field type 9 corresponds to STRING
         setting_value, do_change_setting = get_string_input(stdscr, setting_string)
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
 
     elif field_descriptor.type == 2:  # Field type 2 corresponds to FLOAT
         setting_value, do_change_setting = get_float_input(stdscr, setting_string)
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
 
     elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
         if field_descriptor.label == field_descriptor.LABEL_REPEATED:
             setting_value, do_change_setting = get_uint32_list_input(stdscr, setting_string)
         else:
             setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
-        
+
     elif field_descriptor.type == 7:  # Field type 7 corresponds to FIXED32
         setting_value, do_change_setting = get_fixed32_input(stdscr, setting_string)
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
+
     else:
+        menu_path.pop()
+        return
+    
+    if not do_change_setting:
+        stdscr.clear()
+        stdscr.border()
         menu_path.pop()
         return
         
