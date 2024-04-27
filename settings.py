@@ -405,7 +405,7 @@ def change_setting(stdscr, interface, menu_path):
 
         elif menu_path[1] == "Module Settings":
             setting_string = getattr(getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3]), menu_path[4])
-            field_descriptor = getattr(getattr(node.moduleConfig, menu_path[2]), menu_path[3]).DESCRIPTOR.fields_by_name[menu_path[3]]
+            field_descriptor = getattr(getattr(node.moduleConfig, menu_path[2]), menu_path[3]).DESCRIPTOR.fields_by_name[menu_path[4]]
 
 
     if field_descriptor.enum_type is not None:
