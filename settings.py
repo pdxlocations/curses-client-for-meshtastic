@@ -1,5 +1,5 @@
 import curses
-from meshtastic import config_pb2, module_config_pb2
+from meshtastic import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
 import meshtastic.serial_interface, meshtastic.tcp_interface
 import ipaddress
 
@@ -389,6 +389,14 @@ def change_setting(stdscr, interface, menu_path):
         menu_path.pop()
         return
 
+    if menu_path[1] == "Channels":
+        return
+    #         n = interface.getChannelByChannelIndex()
+    #         setting_string = getattr(getattr(n.channelSettings, str(menu_path[2])), menu_path[3])
+    #         field_descriptor = getattr(n.channelSettings, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
+
+
+
     if len(menu_path) == 4:
         if menu_path[1] == "Radio Settings":
             setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
@@ -397,6 +405,7 @@ def change_setting(stdscr, interface, menu_path):
         elif menu_path[1] == "Module Settings":
             setting_string = getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3])
             field_descriptor = getattr(node.moduleConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
+
 
     elif len(menu_path) == 5:
         if menu_path[1] == "Radio Settings":
@@ -574,7 +583,9 @@ def nested_menu(stdscr, menu, interface):
                 # if selected_key == "Region":
                 #     settings_region(interface)
                 #     break
-                if selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
+                if selected_key == "Channels":
+                    channels_editor(interface, stdscr)
+                elif selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                     menu_path.append(selected_key)
 
                     if isinstance(selected_value, dict):
@@ -599,8 +610,8 @@ def nested_menu(stdscr, menu, interface):
                     menu_item = 0
 
             elif char == ord('\n'):
-                # if selected_key == "Region":
-                #     settings_region(interface)
+                if selected_key == "Channels":
+                    channels_editor(interface, stdscr)
                 if selected_key == "Reboot":
                     settings_reboot(interface)
                 elif selected_key == "Reset NodeDB":
@@ -649,12 +660,16 @@ def settings(stdscr, interface):
     popup_win.keypad(True)
     
     # Generate menu from protobuf for both radio and module settings
-    from meshtastic import mesh_pb2
+
 
     user = mesh_pb2.User()
     user_settings = ["long_name", "short_name", "is_licensed"]
     user_config = generate_menu_from_protobuf(user, interface)
     user_config = {key: value for key, value in user_config.items() if key in user_settings}
+
+    channel = channel_pb2.ChannelSettings()
+    channel_config = generate_menu_from_protobuf(channel, interface)
+    channel_config = [channel_config.copy() for i in range(8)]
 
 
     radio = config_pb2.Config()
@@ -665,8 +680,8 @@ def settings(stdscr, interface):
 
     # Add top-level menu items
     top_level_menu = {
-        # "Region": None,
         "User Settings": user_config,
+        "Channels": None,
         "Radio Settings": radio_config,
         "Module Settings": module_config,
         "Reboot": None,
@@ -707,6 +722,65 @@ def settings_set_owner(interface, long_name=None, short_name=None, is_licensed=F
     elif is_licensed == 'False':
         is_licensed = False
     interface.localNode.setOwner(long_name, short_name, is_licensed)
+
+
+
+def channels_editor(interface, stdscr):
+    # Define the list of channels
+    channels = [f"{i}" for i in range(8)]
+
+    # Initialize menu item index and selected channel
+    menu_item = 0
+    selected_channel = channels[menu_item]
+
+    while True:
+        # Display the list of channels in the curses window
+        menu_header(stdscr, "Channels")
+
+        # Fetch and print roles for each channel
+        for index, channel_index in enumerate(channels):
+            channel = interface.localNode.getChannelByChannelIndex(index)
+            role = "DISABLED" if channel.role == 0 else "PRIMARY" if channel.role == 1 else "SECONDARY"
+            channel_settings = channel.settings
+            channel_name = channel_settings.name
+            if not channel_name and role != "DISABLED":
+                config = interface.localNode.localConfig
+                channel_name_int = config.lora.modem_preset
+                channel_name = config_pb2.Config.LoRaConfig.ModemPreset.Name(channel_name_int)
+
+            channel_name_formatted = f"{channel_name:<13}"  # Adjust channel name to be 13 characters wide
+            role_formatted = f"{role:<9}"  # Adjust role to be 9 characters wide (SECONDARY =  9 chars)
+
+            if index == menu_item:
+                stdscr.addstr(index + 3, 1, f"{channel_index} ", curses.A_REVERSE)
+                stdscr.addstr(index + 3, 3, f"{channel_name_formatted}", curses.A_REVERSE)
+                stdscr.addstr(index + 3, 15, f"{role_formatted}", curses.A_REVERSE)
+            else:
+                stdscr.addstr(index + 3, 1, f"{channel_index}")
+                stdscr.addstr(index + 3, 3, f"{channel_name_formatted}")
+                stdscr.addstr(index + 3, 15, f"{role_formatted}")
+
+        stdscr.refresh()
+
+        key = stdscr.getch()
+
+        if key == curses.KEY_DOWN:
+            menu_item = min(len(channels) - 1, menu_item + 1)
+        elif key == curses.KEY_UP:
+            menu_item = max(0, menu_item - 1)
+        elif key == ord('\n'):
+            # Handle selection action
+            selected_channel = channels[menu_item]
+            # Perform action here, if needed
+        elif key == 27 or key == curses.KEY_LEFT: # escape to exit menu
+            break
+
+        selected_channel = channels[menu_item]
+
+    return selected_channel
+
+
+
 
 
 if __name__ == "__main__":
