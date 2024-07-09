@@ -9,8 +9,13 @@ V 0.1.7
 import curses
 import meshtastic.serial_interface, meshtastic.tcp_interface
 from pubsub import pub
-from meshtastic import config_pb2, BROADCAST_NUM
 import textwrap  # Import the textwrap module
+
+try:
+    from meshtastic.protobuf import config_pb2
+    from meshtastic import BROADCAST_NUM
+except ImportError:
+    from meshtastic import config_pb2, BROADCAST_NUM
 
 from settings import settings
 
