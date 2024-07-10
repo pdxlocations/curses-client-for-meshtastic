@@ -1,8 +1,11 @@
 import curses
-from meshtastic import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
 import meshtastic.serial_interface, meshtastic.tcp_interface
 import ipaddress
 
+try:
+    from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
+except ImportError:
+    from meshtastic import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
 
 def display_enum_menu(stdscr, enum_values, menu_item):
     menu_height = len(enum_values) + 2
