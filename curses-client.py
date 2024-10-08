@@ -29,16 +29,17 @@ except FileNotFoundError:
     config['settings'] = {'hostname': 'meshtastic.local'}
     config['settings'] = {'port': ''}
     config['settings'] = {'type': 'serial'}
+    config['settings'] = {'mac': 'AA:BB:CC:DD:EE:FF'}
     with open('curses-client.ini', 'w') as configfile:
         config.write(configfile)
 
 if config['settings']['type'] == 'serial':
-    interface = meshtastic.serial_interface.SerialInterface()
+    interface = meshtastic.serial_interface.SerialInterface(['settings']['port'])
 elif config['settings']['type'] == 'tcp':
-    interface = meshtastic.tcp_interface.TCPInterface(hostname={config['settings']['hostname']})
+    interface = meshtastic.tcp_interface.TCPInterface({config['settings']['hostname']})
 elif config['settings']['type'] == 'ble':
     print("discover ble with 'meshtsastic --ble-scan")
-    # interface = meshtastic.ble_interface.BLEInterface('AA:BB:CC:DD:EE:FF')
+    interface = meshtastic.ble_interface.BLEInterface({config['settings']['mac']})
 else:
     print("Invalid interface type. Please check the config file. Options are: serial, tcp, ble")
     exit()
