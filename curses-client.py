@@ -7,7 +7,7 @@ V 0.1.7
 '''
 
 import curses
-import meshtastic.serial_interface, meshtastic.tcp_interface
+import meshtastic.serial_interface, meshtastic.tcp_interface, meshtastic.ble_interface
 from pubsub import pub
 import textwrap  # Import the textwrap module
 
@@ -21,7 +21,9 @@ from settings import settings
 
 # Initialize Meshtastic interface
 interface = meshtastic.serial_interface.SerialInterface()
-# interface = meshtastic.tcp_interface.TCPInterface(hostname='192.168.xx.xx')
+# interface = meshtastic.tcp_interface.TCPInterface(hostname='meshtastic.local')
+# discover ble with 'meshtsastic --ble-scan' and replace the MAC address below
+# interface = meshtastic.ble_interface.BLEInterface('AA:BB:CC:DD:EE:FF')
 
 myinfo = interface.getMyNodeInfo()
 
