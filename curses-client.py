@@ -57,6 +57,7 @@ conn.add_argument(
 args = parser.parse_args()
 
 # Initialize Meshtastic interface
+
 if args.ble:
     interface = meshtastic.ble_interface.BLEInterface(args.ble if args.ble != "any" else None)
 elif args.host:
@@ -68,6 +69,7 @@ else:
         print("You probably need to add yourself to the `dialout` group to use a serial connection.")
     if interface.devPath is None:
         interface = meshtastic.tcp_interface.TCPInterface("localhost")
+
 
 myinfo = interface.getMyNodeInfo()
 
