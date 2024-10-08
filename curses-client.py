@@ -7,9 +7,10 @@ V 0.1.7
 '''
 
 import curses
-import meshtastic.serial_interface, meshtastic.tcp_interface
-from pubsub import pub
-import textwrap  # Import the textwrap module
+import meshtastic.serial_interface, meshtastic.tcp_interface, meshtastic.ble_interface # pip install meshtastic
+from pubsub import pub # pip install pubsub
+import textwrap  # pip install textwrap3
+import configparser # pip install configparser
 
 try:
     from meshtastic.protobuf import config_pb2
@@ -19,9 +20,28 @@ except ImportError:
 
 from settings import settings
 
-# Initialize Meshtastic interface
-interface = meshtastic.serial_interface.SerialInterface()
-# interface = meshtastic.tcp_interface.TCPInterface(hostname='192.168.xx.xx')
+# Read the config file
+config = configparser.ConfigParser()
+try:
+    config.read('curses-client.ini')
+except FileNotFoundError:
+    print("Config file not found. Creating a new one.")
+    config['settings'] = {'hostname': 'meshtastic.local'}
+    config['settings'] = {'port': ''}
+    config['settings'] = {'type': 'serial'}
+    with open('curses-client.ini', 'w') as configfile:
+        config.write(configfile)
+
+if config['settings']['type'] == 'serial':
+    interface = meshtastic.serial_interface.SerialInterface()
+elif config['settings']['type'] == 'tcp':
+    interface = meshtastic.tcp_interface.TCPInterface(hostname={config['settings']['hostname']})
+elif config['settings']['type'] == 'ble':
+    print("discover ble with 'meshtsastic --ble-scan")
+    # interface = meshtastic.ble_interface.BLEInterface('AA:BB:CC:DD:EE:FF')
+else:
+    print("Invalid interface type. Please check the config file. Options are: serial, tcp, ble")
+    exit()
 
 myinfo = interface.getMyNodeInfo()
 
