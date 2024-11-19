@@ -79,6 +79,7 @@ channel_list = []
 selected_channel = 0
 selected_node = 0
 direct_message = False
+displayLog = False
 
 def get_channels():
     global channel_list
@@ -138,6 +139,10 @@ def get_name_from_number(number, type='long'):
 def on_receive(packet, interface):
     global all_messages, selected_channel, channel_list
     try:
+        # send copy to packetlog
+        if displayLog:
+            update_packetlog_window(packet)
+
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
             get_node_list()
             draw_node_list()
@@ -273,7 +278,22 @@ def update_messages_window():
     messages_win.box()
     messages_win.refresh()
 
-
+packetBuffer = []
+def update_packetlog_window(packet):
+    global packetlog_win, packetBuffer
+    # if packet log is visible, update it else ignore
+    if displayLog:
+        # add packet to buffer and display in reverse order on packetlog window
+        packetBuffer.append(packet)
+        if len(packetBuffer) > 10:
+            # trim buffer to 10 packets
+            packetBuffer = packetBuffer[-10:]
+        packetlog_win.clear()
+        packetlog_win.addstr(1, 1, "Packet Log")
+        packetlog_win.box()
+        for i, packet in enumerate(reversed(packetBuffer)):
+            packetlog_win.addstr(i+2, 1, f"ID: {packet['id']} From: {packet['from']} To: {packet['to']} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}")
+        packetlog_win.refresh()
 
 def draw_text_field(win, text):
     win.clear()
@@ -357,7 +377,7 @@ def select_nodes(direction):
 
 
 def main(stdscr):
-    global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message
+    global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message, packetlog_win, displayLog
 
     stdscr.keypad(True)
 
@@ -380,13 +400,15 @@ def main(stdscr):
 
     channel_win = curses.newwin(height - 6, channel_width, 3, 0)
     messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)
+    packetlog_win = curses.newwin(int(height/3), messages_width, int(height - (height / 3) - 3), channel_width)
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send / Select DM    ESC = Quit  ` = Settings")
+    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send / Select DM   ` = Settings   / = Display Packet Log   ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
+    packetlog_win.scrollok(True)
     nodes_win.scrollok(True)
     channel_win.scrollok(True)
 
@@ -486,7 +508,18 @@ def main(stdscr):
             curses.curs_set(0)  # Hide cursor
             settings(stdscr, interface)
             curses.curs_set(1)  # Show cursor again
-            
+        
+        elif char == 47:
+            # Display packet log
+            if displayLog is False:
+                displayLog = True
+                packetlog_win.addstr(1, 1, "Packet Log")
+                packetlog_win.box()
+                packetlog_win.refresh()
+            else:
+                displayLog = False
+                packetlog_win.clear()
+                update_messages_window()
         else:
             # Append typed character to input text
             input_text += chr(char)
