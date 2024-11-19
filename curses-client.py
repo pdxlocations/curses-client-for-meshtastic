@@ -68,7 +68,7 @@ else:
     except PermissionError as ex:
         print("You probably need to add yourself to the `dialout` group to use a serial connection.")
     if interface.devPath is None:
-        interface = meshtastic.tcp_interface.TCPInterface("localhost")
+        interface = meshtastic.tcp_interface.TCPInterface("meshtastic.local")
 
 
 myinfo = interface.getMyNodeInfo()
