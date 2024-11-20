@@ -291,12 +291,35 @@ def update_packetlog_win():
         packetlog_win.box()
         # Get the dimensions of the packet log window
         height, width = packetlog_win.getmaxyx()
+        
+        # Add headers
+        headers = f"{'From':<20} {'To':<20} {'Port':<15} {'Payload':<30}"
+        packetlog_win.addstr(1, 1, headers[:width - 2],curses.A_UNDERLINE)  # Truncate headers if they exceed window width
+
         for i, packet in enumerate(reversed(packet_buffer)):
-            to_id = "BROADCAST" if str(packet['to']) == "4294967295" else get_name_from_number(packet['to'])
-            if i < height - 2:
-                logString = f"From: {get_name_from_number(packet['from'])} To: {to_id} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
-                logString = logString[:width - 5] + '-' if len(logString) > width - 5 else logString
-                packetlog_win.addstr(i+1, 1, logString.replace('\n', '').replace('\r', '') .strip())
+            if i >= height - 3:  # Skip if exceeds the window height
+                break
+            
+            # Format each field
+            from_id = get_name_from_number(packet['from']).ljust(20)
+            to_id = (
+                "BROADCAST".ljust(20) if str(packet['to']) == "4294967295"
+                else get_name_from_number(packet['to']).ljust(20)
+            )
+            port = packet['decoded']['portnum'].ljust(15)
+            payload = (
+                packet['decoded']['payload'].hex()[:27] + "..."  # Show first 27 chars
+                if len(packet['decoded']['payload']) > 14
+                else packet['decoded']['payload'].hex()
+            ).ljust(30)
+
+            # Combine and truncate if necessary
+            logString = f"{from_id} {to_id} {port} {payload}"
+            logString = logString[:width - 2]  # Truncate to fit window
+
+            # Add to the window
+            packetlog_win.addstr(i + 2, 1, logString)
+
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
@@ -403,7 +426,7 @@ def main(stdscr):
 
     channel_win = curses.newwin(height - 6, channel_width, 3, 0)
     messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)
-    packetlog_win = curses.newwin(int(height/3), messages_width, int(height - (height / 3) - 3), channel_width)
+    packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
@@ -515,12 +538,7 @@ def main(stdscr):
             # Display packet log
             if display_log is False:
                 display_log = True
-                if not packet_buffer:
-                    packetlog_win.addstr(1, 1, "Packet Log")
-                    packetlog_win.box()
-                    packetlog_win.refresh()
-                else:
-                    update_messages_window()
+                update_messages_window()
             else:
                 display_log = False
                 packetlog_win.clear()
