@@ -141,11 +141,12 @@ def on_receive(packet, interface):
     global all_messages, selected_channel, channel_list, packet_buffer
 
     # update packet log
+    packet_buffer.append(packet)
+    if len(packet_buffer) > 20:
+        # trim buffer to 20 packets
+        packet_buffer = packet_buffer[-20:]
+        
     if display_log:
-        packet_buffer.append(packet)
-        if len(packet_buffer) > 20:
-            # trim buffer to 20 packets
-            packet_buffer = packet_buffer[-20:]
         update_packetlog_win()
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
