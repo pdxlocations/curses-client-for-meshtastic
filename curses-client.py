@@ -146,6 +146,7 @@ def on_receive(packet, interface):
         if len(packetBuffer) > 10:
             # trim buffer to 20 packets
             packetBuffer = packetBuffer[-20:]
+        update_packetlog_win()
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
             get_node_list()
@@ -285,7 +286,6 @@ def update_messages_window():
 
 def update_packetlog_win():
     if displayLog:
-        # add packet to buffer and display in reverse order on packetlog window
         packetlog_win.clear()
         packetlog_win.addstr(1, 1, "Packet Log")
         packetlog_win.box()
