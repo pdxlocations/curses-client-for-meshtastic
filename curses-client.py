@@ -287,11 +287,13 @@ def update_messages_window():
 def update_packetlog_win():
     if displayLog:
         packetlog_win.clear()
-        packetlog_win.addstr(1, 1, "Packet Log")
         packetlog_win.box()
+        # Get the dimensions of the packet log window
+        height, width = packetlog_win.getmaxyx()
         for i, packet in enumerate(reversed(packetBuffer)):
-            logString = f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
-            packetlog_win.addstr(i+2, 1, logString.replace('\n', '').replace('\r', '') .strip())
+            if i < height - 2:
+                logString = f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
+                packetlog_win.addstr(i+1, 1, logString.replace('\n', '').replace('\r', '') .strip())
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
