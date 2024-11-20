@@ -292,8 +292,9 @@ def update_packetlog_win():
         # Get the dimensions of the packet log window
         height, width = packetlog_win.getmaxyx()
         for i, packet in enumerate(reversed(packet_buffer)):
+            to_id = "BROADCAST" if str(packet['to']) == "4294967295" else get_name_from_number(packet['to'])
             if i < height - 2:
-                logString = f"From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
+                logString = f"From: {get_name_from_number(packet['from'])} To: {to_id} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
                 logString = logString[:width - 5] + '-' if len(logString) > width - 5 else logString
                 packetlog_win.addstr(i+1, 1, logString.replace('\n', '').replace('\r', '') .strip())
         packetlog_win.refresh()
