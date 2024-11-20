@@ -514,9 +514,12 @@ def main(stdscr):
             # Display packet log
             if display_log is False:
                 display_log = True
-                packetlog_win.addstr(1, 1, "Packet Log")
-                packetlog_win.box()
-                packetlog_win.refresh()
+                if not packet_buffer:
+                    packetlog_win.addstr(1, 1, "Packet Log")
+                    packetlog_win.box()
+                    packetlog_win.refresh()
+                else:
+                    update_messages_window()
             else:
                 display_log = False
                 packetlog_win.clear()
