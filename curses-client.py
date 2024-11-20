@@ -143,7 +143,7 @@ def on_receive(packet, interface):
     # update packet log
     if displayLog:
         packetBuffer.append(packet)
-        if len(packetBuffer) > 10:
+        if len(packetBuffer) > 20:
             # trim buffer to 20 packets
             packetBuffer = packetBuffer[-20:]
         update_packetlog_win()
