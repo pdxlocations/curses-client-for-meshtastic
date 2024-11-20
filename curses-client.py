@@ -306,12 +306,16 @@ def update_packetlog_win():
                 "BROADCAST".ljust(20) if str(packet['to']) == "4294967295"
                 else get_name_from_number(packet['to']).ljust(20)
             )
-            port = packet['decoded']['portnum'].ljust(15)
-            payload = (packet['decoded']['payload']).ljust(30)
+            if 'decoded' in packet:
+                port = packet['decoded']['portnum'].ljust(15)
+                payload = (packet['decoded']['payload']).ljust(30)
+            else:
+                port = "NO KEY".ljust(15)
+                payload = "NO KEY".ljust(20)
 
             # Combine and truncate if necessary
             logString = f"{from_id} {to_id} {port} {payload}"
-            logString = logString[:width - 2]  # Truncate to fit window
+            logString = logString[:width - 2]
 
             # Add to the window
             packetlog_win.addstr(i + 2, 1, logString)
