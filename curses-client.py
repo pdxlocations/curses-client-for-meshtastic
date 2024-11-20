@@ -79,8 +79,8 @@ channel_list = []
 selected_channel = 0
 selected_node = 0
 direct_message = False
-packetBuffer = []
-displayLog = False
+packet_buffer = []
+display_log = False
 
 def get_channels():
     global channel_list
@@ -138,14 +138,14 @@ def get_name_from_number(number, type='long'):
         
 
 def on_receive(packet, interface):
-    global all_messages, selected_channel, channel_list, packetBuffer
+    global all_messages, selected_channel, channel_list, packet_buffer
 
     # update packet log
-    if displayLog:
-        packetBuffer.append(packet)
-        if len(packetBuffer) > 20:
+    if display_log:
+        packet_buffer.append(packet)
+        if len(packet_buffer) > 20:
             # trim buffer to 20 packets
-            packetBuffer = packetBuffer[-20:]
+            packet_buffer = packet_buffer[-20:]
         update_packetlog_win()
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
@@ -285,12 +285,12 @@ def update_messages_window():
     update_packetlog_win()
 
 def update_packetlog_win():
-    if displayLog:
+    if display_log:
         packetlog_win.clear()
         packetlog_win.box()
         # Get the dimensions of the packet log window
         height, width = packetlog_win.getmaxyx()
-        for i, packet in enumerate(reversed(packetBuffer)):
+        for i, packet in enumerate(reversed(packet_buffer)):
             if i < height - 2:
                 logString = f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
                 packetlog_win.addstr(i+1, 1, logString.replace('\n', '').replace('\r', '') .strip())
@@ -377,7 +377,7 @@ def select_nodes(direction):
 
 
 def main(stdscr):
-    global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message, packetlog_win, displayLog
+    global messages_win, nodes_win, channel_win, function_win, selected_node, selected_channel, direct_message, packetlog_win, display_log
 
     stdscr.keypad(True)
 
@@ -510,13 +510,13 @@ def main(stdscr):
         
         elif char == 47:
             # Display packet log
-            if displayLog is False:
-                displayLog = True
+            if display_log is False:
+                display_log = True
                 packetlog_win.addstr(1, 1, "Packet Log")
                 packetlog_win.box()
                 packetlog_win.refresh()
             else:
-                displayLog = False
+                display_log = False
                 packetlog_win.clear()
                 update_messages_window()
         else:
