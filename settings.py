@@ -647,7 +647,7 @@ def nested_menu(stdscr, menu, interface):
 
 
 def settings(stdscr, interface):
-    popup_height = 20
+    popup_height = 22
     popup_width = 60
     popup_win = None
     y_start = (curses.LINES - popup_height) // 2
