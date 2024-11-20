@@ -311,11 +311,11 @@ def update_packetlog_win():
                 payload = (packet['decoded']['payload']).ljust(30)
             else:
                 port = "NO KEY".ljust(15)
-                payload = "NO KEY".ljust(20)
+                payload = "NO KEY".ljust(30)
 
             # Combine and truncate if necessary
             logString = f"{from_id} {to_id} {port} {payload}"
-            logString = logString[:width - 2]
+            logString = logString[:width - 3]
 
             # Add to the window
             packetlog_win.addstr(i + 2, 1, logString)
