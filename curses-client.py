@@ -293,6 +293,7 @@ def update_packetlog_win():
         for i, packet in enumerate(reversed(packet_buffer)):
             if i < height - 2:
                 logString = f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
+                logString = logString[:width - 5] + '-' if len(logString) > width - 5 else logString
                 packetlog_win.addstr(i+1, 1, logString.replace('\n', '').replace('\r', '') .strip())
         packetlog_win.refresh()
 
