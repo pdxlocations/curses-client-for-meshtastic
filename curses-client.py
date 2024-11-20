@@ -290,7 +290,8 @@ def update_packetlog_win():
         packetlog_win.addstr(1, 1, "Packet Log")
         packetlog_win.box()
         for i, packet in enumerate(reversed(packetBuffer)):
-            packetlog_win.addstr(i+2, 1, f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}")
+            logString = f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}"
+            packetlog_win.addstr(i+2, 1, logString.replace('\n', '').replace('\r', '') .strip())
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
@@ -405,7 +406,6 @@ def main(stdscr):
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
-    packetlog_win.scrollok(True)
     nodes_win.scrollok(True)
     channel_win.scrollok(True)
 
