@@ -293,7 +293,7 @@ def update_packetlog_win():
         height, width = packetlog_win.getmaxyx()
         
         # Add headers
-        headers = f"{'From':<20} {'To':<20} {'Port':<15} {'Payload':<30}"
+        headers = f"{'From':<20} {'To':<20} {'Port':<15} {'Payload':<{width-55}}"
         packetlog_win.addstr(1, 1, headers[:width - 2],curses.A_UNDERLINE)  # Truncate headers if they exceed window width
 
         for i, packet in enumerate(reversed(packet_buffer)):
@@ -307,11 +307,7 @@ def update_packetlog_win():
                 else get_name_from_number(packet['to']).ljust(20)
             )
             port = packet['decoded']['portnum'].ljust(15)
-            payload = (
-                packet['decoded']['payload'].hex()[:27] + "..."  # Show first 27 chars
-                if len(packet['decoded']['payload']) > 14
-                else packet['decoded']['payload'].hex()
-            ).ljust(30)
+            payload = (packet['decoded']['payload']).ljust(30)
 
             # Combine and truncate if necessary
             logString = f"{from_id} {to_id} {port} {payload}"
