@@ -79,6 +79,7 @@ channel_list = []
 selected_channel = 0
 selected_node = 0
 direct_message = False
+packetBuffer = []
 displayLog = False
 
 def get_channels():
@@ -137,12 +138,15 @@ def get_name_from_number(number, type='long'):
         
 
 def on_receive(packet, interface):
-    global all_messages, selected_channel, channel_list
-    try:
-        # send copy to packetlog
-        if displayLog:
-            update_packetlog_window(packet)
+    global all_messages, selected_channel, channel_list, packetBuffer
 
+    # update packet log
+    if displayLog:
+        packetBuffer.append(packet)
+        if len(packetBuffer) > 10:
+            # trim buffer to 20 packets
+            packetBuffer = packetBuffer[-20:]
+    try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
             get_node_list()
             draw_node_list()
@@ -277,29 +281,22 @@ def update_messages_window():
 
     messages_win.box()
     messages_win.refresh()
+    update_packetlog_win()
 
-packetBuffer = []
-def update_packetlog_window(packet):
-    global packetlog_win, packetBuffer
-    # if packet log is visible, update it else ignore
+def update_packetlog_win():
     if displayLog:
         # add packet to buffer and display in reverse order on packetlog window
-        packetBuffer.append(packet)
-        if len(packetBuffer) > 10:
-            # trim buffer to 10 packets
-            packetBuffer = packetBuffer[-10:]
         packetlog_win.clear()
         packetlog_win.addstr(1, 1, "Packet Log")
         packetlog_win.box()
         for i, packet in enumerate(reversed(packetBuffer)):
-            packetlog_win.addstr(i+2, 1, f"ID: {packet['id']} From: {packet['from']} To: {packet['to']} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}")
+            packetlog_win.addstr(i+2, 1, f"ID: {packet['id']} From: {get_name_from_number(packet['from'])} To: {get_name_from_number(packet['to'])} Port: {packet['decoded']['portnum']} Payload: {packet['decoded']['payload']}")
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
     win.clear()
     win.border()
     win.addstr(1, 1, text)
-
 
 def draw_channel_list():
     global direct_message
