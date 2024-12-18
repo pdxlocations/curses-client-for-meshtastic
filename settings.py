@@ -1,11 +1,9 @@
 import curses
-import meshtastic.serial_interface, meshtastic.tcp_interface
 import ipaddress
 
-try:
-    from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
-except ImportError:
-    from meshtastic import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
+import meshtastic.serial_interface, meshtastic.tcp_interface
+from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
+
 
 def display_enum_menu(stdscr, enum_values, menu_item):
     menu_height = len(enum_values) + 2
@@ -381,11 +379,11 @@ def change_setting(stdscr, interface, menu_path):
         if menu_path[2] in ["long_name", "short_name"]:
             if menu_path[2] == "short_name" and len(setting_value) > 4:
                 setting_value = setting_value[:4]
-            settings_set_owner(interface, long_name=setting_value if menu_path[2] == "long_name" else None,
+            settings_set_owner(long_name=setting_value if menu_path[2] == "long_name" else None,
                             short_name=setting_value if menu_path[2] == "short_name" else None)
         elif menu_path[2] == "is_licensed":
             ln = n['user']['longName']
-            settings_set_owner(interface, long_name=ln, is_licensed=setting_value)
+            settings_set_owner(long_name=ln, is_licensed=setting_value)
 
         stdscr.clear()
         stdscr.border()
@@ -584,10 +582,10 @@ def nested_menu(stdscr, menu, interface):
 
             elif char == curses.KEY_RIGHT:
                 # if selected_key == "Region":
-                #     settings_region(interface)
+                #     settings_region()
                 #     break
                 if selected_key == "Channels":
-                    channels_editor(interface, stdscr)
+                    channels_editor(stdscr)
                 elif selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
                     menu_path.append(selected_key)
 
@@ -614,15 +612,15 @@ def nested_menu(stdscr, menu, interface):
 
             elif char == ord('\n'):
                 if selected_key == "Channels":
-                    channels_editor(interface, stdscr)
+                    channels_editor(stdscr)
                 if selected_key == "Reboot":
-                    settings_reboot(interface)
+                    settings_reboot()
                 elif selected_key == "Reset NodeDB":
-                    settings_reset_nodedb(interface)
+                    settings_reset_nodedb()
                 elif selected_key == "Shutdown":
-                    settings_shutdown(interface)
+                    settings_shutdown()
                 elif selected_key == "Factory Reset":
-                    settings_factory_reset(interface)
+                    settings_factory_reset()
 
                 elif selected_value is not None:
                     stdscr.refresh()
@@ -700,26 +698,26 @@ def settings(stdscr, interface):
     popup_win.clear()
     popup_win.refresh()
 
-# def settings_region(interface):
-#     selected_option, do_set = set_region(interface)
+# def settings_region():
+#     selected_option, do_set = set_region()
 #     if do_set:
 #         ourNode = interface.localNode
 #         setattr(ourNode.localConfig.lora, "region", selected_option)
 #         ourNode.writeConfig("lora")
 
-def settings_reboot(interface):
+def settings_reboot():
     interface.localNode.reboot()
 
-def settings_reset_nodedb(interface):
+def settings_reset_nodedb():
     interface.localNode.resetNodeDb()
 
-def settings_shutdown(interface):
+def settings_shutdown():
     interface.localNode.shutdown()
 
-def settings_factory_reset(interface):
+def settings_factory_reset():
     interface.localNode.factoryReset()
 
-def settings_set_owner(interface, long_name=None, short_name=None, is_licensed=False):
+def settings_set_owner(long_name=None, short_name=None, is_licensed=False):
     if is_licensed == 'True':
         is_licensed = True
     elif is_licensed == 'False':
@@ -728,7 +726,7 @@ def settings_set_owner(interface, long_name=None, short_name=None, is_licensed=F
 
 
 
-def channels_editor(interface, stdscr):
+def channels_editor(stdscr):
     # Define the list of channels
     channels = [f"{i}" for i in range(8)]
 

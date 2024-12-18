@@ -1,0 +1,9 @@
+all_messages = {}
+channel_list = []
+packet_buffer = []
+myNodeNum = 0
+selected_channel = 0
+selected_node = 0
+direct_message = False
+interface = None
+display_log = False
