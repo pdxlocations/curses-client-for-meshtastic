@@ -1,6 +1,5 @@
 all_messages = {}
 channel_list = []
-defined_channels = []
 packet_buffer = []
 myNodeNum = 0
 selected_channel = 0

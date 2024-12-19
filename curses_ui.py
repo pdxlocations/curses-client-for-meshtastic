@@ -11,20 +11,18 @@ def add_notification(channel_number):
     global channel_win
     _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
 
-    # if isinstance([channel_number], str):
-    #     channel_name = globals.channel_list[channel_number]
-    # elif isinstance([channel_number], int):
-    #     channel_name = get_name_from_number(globals.channel_list[channel_number])
-
-    if globals.channel_list[channel_number] in globals.defined_channels:
+    # Channels
+    if isinstance(globals.channel_list[channel_number], str):
         channel_name = globals.channel_list[channel_number]
-    else:
-        channel_name = get_name_from_number(globals.channel_list[channel_number])   
+
+    # DM's
+    elif isinstance(globals.channel_list[channel_number], int):
+        channel_name = get_name_from_number(globals.channel_list[channel_number])
 
     # Truncate the channel name if it's too long to fit in the window
-    # truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
 
-    # channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
+    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
     channel_win.refresh()
 
 
@@ -38,27 +36,18 @@ def remove_notification(channel_number):
     channel_name = ""
     _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
 
-
-    if globals.channel_list[channel_number] in globals.defined_channels:
+    # Channels
+    if isinstance(globals.channel_list[channel_number], str):
         channel_name = globals.channel_list[channel_number]
-    else:
-        channel_name = get_name_from_number(globals.channel_list[channel_number])  
-         
 
-    
-    draw_debug(f"{globals.channel_list[channel_number]} {channel_name} {type(channel_name)}")
-
-    # if isinstance([channel_number], str):
-    #     channel_name = globals.channel_list[channel_number]
-
-    # elif isinstance([channel_number], int):
-    #     channel_name = get_name_from_number(globals.channel_list[channel_number])
-
+    # DM's
+    elif isinstance(globals.channel_list[channel_number], int):
+        channel_name = get_name_from_number(globals.channel_list[channel_number])
 
     # Truncate the channel name if it's too long to fit in the window
-    # truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
 
-    # channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
+    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
     channel_win.refresh()
 
 
@@ -321,6 +310,7 @@ def main_ui(stdscr):
                 node_list = get_node_list()
                 if node_list[globals.selected_node] not in globals.channel_list:
                     globals.channel_list.append(node_list[globals.selected_node])
+                    # globals.channel_list.append(int(node_list[globals.selected_node]))
                     globals.all_messages[node_list[globals.selected_node]] = []
 
                 globals.selected_channel = globals.channel_list.index(node_list[globals.selected_node])

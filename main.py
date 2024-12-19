@@ -24,6 +24,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
     globals.interface = initialize_interface(args)
     globals.channel_list = get_channels()
-    globals.defined_channels = globals.channel_list
     pub.subscribe(on_receive, 'meshtastic.receive')
     curses.wrapper(main_ui)
