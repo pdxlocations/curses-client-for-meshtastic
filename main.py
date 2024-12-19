@@ -3,21 +3,18 @@
 '''
 Curses Client for Meshtastic by http://github.com/pdxlocations
 Powered by Meshtastic.org
-V 0.1.8
+V 0.2.0
 '''
 
 import curses
 from pubsub import pub
 
-
 from parsers import setup_parser
 from interfaces import initialize_interface
-from handlers import on_receive
+from rx_handlers import on_receive
 from curses_ui import main_ui
 from utils import get_channels
 import globals
-
-
 
 if __name__ == "__main__":
     parser = setup_parser()

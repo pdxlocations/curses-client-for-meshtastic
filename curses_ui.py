@@ -4,8 +4,7 @@ from meshtastic import BROADCAST_NUM
 import globals
 from utils import get_node_list, get_name_from_number, get_channels
 from settings import settings
-
-
+from tx_handlers import send_message
 
 def add_notification(channel_number):
     global channel_win
@@ -25,12 +24,6 @@ def add_notification(channel_number):
     channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
     channel_win.refresh()
 
-
-
-
-
-
-
 def remove_notification(channel_number):
     global channel_win
     channel_name = ""
@@ -49,15 +42,6 @@ def remove_notification(channel_number):
 
     channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
     channel_win.refresh()
-
-
-
-
-
-
-
-
-
 
 def update_messages_window():
     global messages_win
@@ -97,8 +81,13 @@ def update_packetlog_win():
         # Get the dimensions of the packet log window
         height, width = packetlog_win.getmaxyx()
         
+        columns = [10,10,15,30]
+        span = 0
+        for column in columns[:-1]:
+            span += column
+
         # Add headers
-        headers = f"{'From':<20} {'To':<20} {'Port':<15} {'Payload':<{width-55}}"
+        headers = f"{'From':<{columns[0]}} {'To':<{columns[1]}} {'Port':<{columns[2]}} {'Payload':<{width-span}}"
         packetlog_win.addstr(1, 1, headers[:width - 2],curses.A_UNDERLINE)  # Truncate headers if they exceed window width
 
         for i, packet in enumerate(reversed(globals.packet_buffer)):
@@ -106,17 +95,18 @@ def update_packetlog_win():
                 break
             
             # Format each field
-            from_id = get_name_from_number(packet['from']).ljust(20)
+
+            from_id = get_name_from_number(packet['from'], 'short').ljust(columns[0])
             to_id = (
-                "BROADCAST".ljust(20) if str(packet['to']) == "4294967295"
-                else get_name_from_number(packet['to']).ljust(20)
+                "BROADCAST".ljust(columns[1]) if str(packet['to']) == "4294967295"
+                else get_name_from_number(packet['to'], 'short').ljust(columns[1])
             )
             if 'decoded' in packet:
-                port = packet['decoded']['portnum'].ljust(15)
-                payload = (packet['decoded']['payload']).ljust(30)
+                port = packet['decoded']['portnum'].ljust(columns[2])
+                payload = (packet['decoded']['payload']).ljust(columns[3])
             else:
-                port = "NO KEY".ljust(15)
-                payload = "NO KEY".ljust(30)
+                port = "NO KEY".ljust(columns[2])
+                payload = "NO KEY".ljust(columns[3])
 
             # Combine and truncate if necessary
             logString = f"{from_id} {to_id} {port} {payload}"
@@ -152,9 +142,7 @@ def draw_channel_list():
 
     channel_win.refresh()
 
-
 def draw_node_list():
-
     nodes_win.clear()                 
     height, width = nodes_win.getmaxyx()
     start_index = max(0, globals.selected_node - (height - 3))  # Calculate starting index based on selected node and window height
@@ -170,16 +158,12 @@ def draw_node_list():
     nodes_win.box()
     nodes_win.refresh()
 
-
-
 def draw_debug(value):
-    function_win.addstr(1, 150, f"debug: {value}    ")
+    function_win.addstr(1, 100, f"debug: {value}    ")
     function_win.refresh()
 
 def select_channels(direction):
-
     channel_list_length = len(globals.channel_list)
-
     globals.selected_channel += direction
 
     if globals.selected_channel < 0:
@@ -192,7 +176,6 @@ def select_channels(direction):
 
 def select_nodes(direction):
     node_list_length = len(get_node_list())
-
     globals.selected_node += direction
 
     if globals.selected_node < 0:
@@ -202,14 +185,11 @@ def select_nodes(direction):
 
     draw_node_list()
 
-
-
 def main_ui(stdscr):
     global messages_win, nodes_win, channel_win, function_win, packetlog_win
-
     stdscr.keypad(True)
-
     get_channels()
+
     # Initialize colors
     curses.start_color()
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
@@ -233,7 +213,7 @@ def main_ui(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send / Select DM   ` = Settings   / = Display Packet Log   ESC = Quit")
+    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send / Select DM   ` = Settings   / = Toggle Log   ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
@@ -310,7 +290,6 @@ def main_ui(stdscr):
                 node_list = get_node_list()
                 if node_list[globals.selected_node] not in globals.channel_list:
                     globals.channel_list.append(node_list[globals.selected_node])
-                    # globals.channel_list.append(int(node_list[globals.selected_node]))
                     globals.all_messages[node_list[globals.selected_node]] = []
 
                 globals.selected_channel = globals.channel_list.index(node_list[globals.selected_node])
@@ -352,32 +331,3 @@ def main_ui(stdscr):
             # Append typed character to input text
             input_text += chr(char)
 
-        # draw_debug(char)
-
-def send_message(message, destination=BROADCAST_NUM, channel=0):
-    
-    # FIXME if sending a DM, always send on channel 0
-    send_on_channel = 0
-    if isinstance([channel], int):
-        send_on_channel = 0
-        destination = globals.channel_list[channel]
-    elif isinstance([channel], str):
-        send_on_channel = channel
-
-    globals.interface.sendText(
-        text=message,
-        destinationId=destination,
-        wantAck=False,
-        wantResponse=False,
-        onResponse=None,
-        channelIndex=send_on_channel,
-    )
-
-    # Add sent message to the messages dictionary
-    if globals.channel_list[channel] in globals.all_messages:
-        globals.all_messages[globals.channel_list[channel]].append((">> Sent: ", message))
-    else:
-        globals.all_messages[globals.channel_list[channel]] = [(">> Sent: ", message)]
-
-    # update_messages_window()
-    # messages_win.refresh()
