@@ -2,9 +2,8 @@
 import globals
 from meshtastic.protobuf import config_pb2
 
-
-def get_nodeNum(interface):
-    myinfo = interface.getMyNodeInfo()
+def get_nodeNum():
+    myinfo = globals.interface.getMyNodeInfo()
     myNodeNum = myinfo['num']
     return myNodeNum
 
@@ -27,9 +26,7 @@ def get_channels():
                 channel_output.append(convert_to_camel_case(modem_preset_string))
                 globals.all_messages[convert_to_camel_case(modem_preset_string)] = []
 
-    globals.channel_list = list(globals.all_messages.keys())
-
-
+    return list(globals.all_messages.keys())
 
 def get_node_list():
     node_list = []
@@ -59,6 +56,6 @@ def get_name_from_number(number, type='long'):
             else:
                 pass
         else:
-            name =  str(decimal_to_hex(number))  # If long name not found, use the ID as string
+            name = str(decimal_to_hex(number))  # If long name not found, use the ID as string
     return name
         

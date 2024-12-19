@@ -1,9 +1,9 @@
 import curses
 import textwrap
 from meshtastic import BROADCAST_NUM
-from utils import get_node_list, get_name_from_number
-from settings import settings
 import globals
+from utils import get_node_list, get_name_from_number, get_channels
+from settings import settings
 
 
 
@@ -11,32 +11,64 @@ def add_notification(channel_number):
     global channel_win
     _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
 
-    if isinstance([channel_number], str):
+    # if isinstance([channel_number], str):
+    #     channel_name = globals.channel_list[channel_number]
+    # elif isinstance([channel_number], int):
+    #     channel_name = get_name_from_number(globals.channel_list[channel_number])
+
+    if globals.channel_list[channel_number] in globals.defined_channels:
         channel_name = globals.channel_list[channel_number]
-    elif isinstance([channel_number], int):
-        channel_name = get_name_from_number(globals.channel_list[channel_number])
+    else:
+        channel_name = get_name_from_number(globals.channel_list[channel_number])   
 
     # Truncate the channel name if it's too long to fit in the window
-    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+    # truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
 
-    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
+    # channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
     channel_win.refresh()
+
+
+
+
+
+
 
 def remove_notification(channel_number):
     global channel_win
     channel_name = ""
     _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
 
-    if isinstance([channel_number], str):
+
+    if globals.channel_list[channel_number] in globals.defined_channels:
         channel_name = globals.channel_list[channel_number]
-    elif isinstance([channel_number], int):
-        channel_name = get_name_from_number(globals.channel_list[channel_number])
+    else:
+        channel_name = get_name_from_number(globals.channel_list[channel_number])  
+         
+
+    
+    draw_debug(f"{globals.channel_list[channel_number]} {channel_name} {type(channel_name)}")
+
+    # if isinstance([channel_number], str):
+    #     channel_name = globals.channel_list[channel_number]
+
+    # elif isinstance([channel_number], int):
+    #     channel_name = get_name_from_number(globals.channel_list[channel_number])
+
 
     # Truncate the channel name if it's too long to fit in the window
-    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+    # truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
 
-    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
+    # channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
     channel_win.refresh()
+
+
+
+
+
+
+
+
+
 
 def update_messages_window():
     global messages_win
@@ -152,7 +184,7 @@ def draw_node_list():
 
 
 def draw_debug(value):
-    function_win.addstr(1, 100, f"debug: {value}    ")
+    function_win.addstr(1, 150, f"debug: {value}    ")
     function_win.refresh()
 
 def select_channels(direction):
@@ -188,6 +220,7 @@ def main_ui(stdscr):
 
     stdscr.keypad(True)
 
+    get_channels()
     # Initialize colors
     curses.start_color()
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
@@ -218,7 +251,6 @@ def main_ui(stdscr):
     nodes_win.scrollok(True)
     channel_win.scrollok(True)
 
-    # channel_list = get_channels(all_messages)
     channel_win.refresh()
     draw_channel_list()
     draw_node_list()
