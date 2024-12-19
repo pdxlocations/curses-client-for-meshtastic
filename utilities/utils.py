@@ -1,11 +1,5 @@
-
 import globals
 from meshtastic.protobuf import config_pb2
-
-def get_nodeNum():
-    myinfo = globals.interface.getMyNodeInfo()
-    myNodeNum = myinfo['num']
-    return myNodeNum
 
 def get_channels():
     node = globals.interface.getNode('^local')
@@ -34,6 +28,11 @@ def get_node_list():
         for node in globals.interface.nodes.values():
             node_list.append(node['num'])
     return node_list
+
+def get_nodeNum():
+    myinfo = globals.interface.getMyNodeInfo()
+    myNodeNum = myinfo['num']
+    return myNodeNum
 
 def decimal_to_hex(decimal_number):
     return f"!{decimal_number:08x}"

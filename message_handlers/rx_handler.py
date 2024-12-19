@@ -1,7 +1,7 @@
 from meshtastic import BROADCAST_NUM
-from utils import get_node_list, decimal_to_hex, get_nodeNum
+from utilities.utils import get_node_list, decimal_to_hex, get_nodeNum
 import globals
-from curses_ui import update_packetlog_win, draw_node_list, update_messages_window, draw_channel_list, add_notification
+from ui.curses_ui import update_packetlog_win, draw_node_list, update_messages_window, draw_channel_list, add_notification
 
 
 def on_receive(packet):

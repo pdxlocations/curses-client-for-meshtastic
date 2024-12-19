@@ -1,9 +1,9 @@
 import curses
 import textwrap
 import globals
-from utils import get_node_list, get_name_from_number, get_channels
+from utilities.utils import get_node_list, get_name_from_number, get_channels
 from settings import settings
-from tx_handler import send_message
+from message_handlers.tx_handler import send_message
 
 def handle_notification(channel_number, add=True):
     global channel_win

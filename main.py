@@ -9,11 +9,11 @@ V 0.2.0
 import curses
 from pubsub import pub
 
-from parsers import setup_parser
-from interfaces import initialize_interface
-from rx_handler import on_receive
-from curses_ui import main_ui
-from utils import get_channels
+from utilities.arg_parser import setup_parser
+from utilities.interfaces import initialize_interface
+from message_handlers.rx_handler import on_receive
+from ui.curses_ui import main_ui
+from utilities.utils import get_channels
 import globals
 
 if __name__ == "__main__":
