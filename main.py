@@ -11,7 +11,7 @@ from pubsub import pub
 
 from parsers import setup_parser
 from interfaces import initialize_interface
-from rx_handlers import on_receive
+from rx_handler import on_receive
 from curses_ui import main_ui
 from utils import get_channels
 import globals

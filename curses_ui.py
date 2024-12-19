@@ -4,44 +4,33 @@ from meshtastic import BROADCAST_NUM
 import globals
 from utils import get_node_list, get_name_from_number, get_channels
 from settings import settings
-from tx_handlers import send_message
+from tx_handler import send_message
+
+def handle_notification(channel_number, add=True):
+    global channel_win
+    _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
+
+    # Get the channel name
+    if isinstance(globals.channel_list[channel_number], str):  # Channels
+        channel_name = globals.channel_list[channel_number]
+    elif isinstance(globals.channel_list[channel_number], int):  # DM's
+        channel_name = get_name_from_number(globals.channel_list[channel_number])
+    else:
+        return
+
+    # Truncate the channel name if it's too long to fit in the window
+    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
+
+    # Add or remove the notification indicator
+    notification = " *" if add else "  "
+    channel_win.addstr(channel_number + 1, len(truncated_channel_name) + 1, notification, curses.color_pair(4))
+    channel_win.refresh()
 
 def add_notification(channel_number):
-    global channel_win
-    _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
-
-    # Channels
-    if isinstance(globals.channel_list[channel_number], str):
-        channel_name = globals.channel_list[channel_number]
-
-    # DM's
-    elif isinstance(globals.channel_list[channel_number], int):
-        channel_name = get_name_from_number(globals.channel_list[channel_number])
-
-    # Truncate the channel name if it's too long to fit in the window
-    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
-
-    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, " *", curses.color_pair(4))
-    channel_win.refresh()
+    handle_notification(channel_number, add=True)
 
 def remove_notification(channel_number):
-    global channel_win
-    channel_name = ""
-    _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
-
-    # Channels
-    if isinstance(globals.channel_list[channel_number], str):
-        channel_name = globals.channel_list[channel_number]
-
-    # DM's
-    elif isinstance(globals.channel_list[channel_number], int):
-        channel_name = get_name_from_number(globals.channel_list[channel_number])
-
-    # Truncate the channel name if it's too long to fit in the window
-    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
-
-    channel_win.addstr(channel_number + 1, len(str(truncated_channel_name))+1, "  ", curses.color_pair(4))
-    channel_win.refresh()
+    handle_notification(channel_number, add=False)
 
 def update_messages_window():
     global messages_win
