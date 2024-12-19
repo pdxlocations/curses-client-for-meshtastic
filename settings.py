@@ -3,7 +3,7 @@ import ipaddress
 
 import meshtastic.serial_interface, meshtastic.tcp_interface
 from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
-
+import globals
 
 def display_enum_menu(stdscr, enum_values, menu_item):
     menu_height = len(enum_values) + 2
@@ -334,7 +334,7 @@ def display_bool_menu(stdscr, setting_value):
     return display_enum_menu(stdscr, bool_options, setting_value)
 
 
-def generate_menu_from_protobuf(message_instance, interface):
+def generate_menu_from_protobuf(message_instance):
     if not hasattr(message_instance, "DESCRIPTOR"):
         return  # This is not a protobuf message instance, exit
     menu = {}
@@ -344,12 +344,12 @@ def generate_menu_from_protobuf(message_instance, interface):
         field_descriptor = message_instance.DESCRIPTOR.fields_by_name[field_name]
         if field_descriptor is not None:
             nested_message_instance = getattr(message_instance, field_name)
-            menu[field_name] = generate_menu_from_protobuf(nested_message_instance, interface)
+            menu[field_name] = generate_menu_from_protobuf(nested_message_instance)
     return menu
 
 
-def change_setting(stdscr, interface, menu_path):
-    node = interface.localNode
+def change_setting(stdscr, menu_path):
+    node = globals.interface.localNode
     field_descriptor = None
     setting_value = 0
     
@@ -361,7 +361,7 @@ def change_setting(stdscr, interface, menu_path):
     # Determine the level of nesting based on the length of menu_path
 
     if menu_path[1] == "User Settings":
-        n = interface.getMyNodeInfo()
+        n = globals.interface.getMyNodeInfo()
 
         setting_string = n['user'].get(snake_to_camel(menu_path[2]), 0)
 
@@ -454,7 +454,7 @@ def change_setting(stdscr, interface, menu_path):
     # formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
     # menu_header(stdscr,formatted_text,2)
 
-    ourNode = interface.localNode
+    ourNode = globals.interface.localNode
     
     # Convert "true" to 1, "false" to 0, leave other values as they are
     if setting_value == "True" or setting_value == "1":
@@ -494,14 +494,14 @@ def snake_to_camel(snake_str):
     return components[0] + ''.join(x.title() for x in components[1:])
 
 
-def display_values(stdscr, interface, key_list, menu_path):
-    node = interface.localNode
+def display_values(stdscr, key_list, menu_path):
+    node = globals.interface.localNode
     user_settings = ["long_name", "short_name", "is_licensed"]
     for i, key in enumerate(key_list):
 
         if len(menu_path) == 2:
             if menu_path[1] == 'User Settings':
-                n = interface.getMyNodeInfo()
+                n = globals.interface.getMyNodeInfo()
                 try:
                     setting = n['user'][snake_to_camel(key_list[i])]
                 except:
@@ -535,7 +535,7 @@ def menu_header(window, text, start_y=1):
     window.addstr(start_y, start_x, formatted_text)
     window.refresh()
 
-def nested_menu(stdscr, menu, interface):
+def nested_menu(stdscr, menu):
     menu_item = 0
     current_menu = menu
     prev_menu = []
@@ -563,7 +563,7 @@ def nested_menu(stdscr, menu, interface):
                     stdscr.addstr(i+3, 1, key)
 
             # Display current values
-            display_values(stdscr, interface, key_list, menu_path)
+            display_values(stdscr, key_list, menu_path)
 
             char = stdscr.getch()
 
@@ -641,10 +641,10 @@ def nested_menu(stdscr, menu, interface):
 
         if last_menu_level == True:
             if not isinstance(current_menu.get(next_key), dict):
-                change_setting(stdscr, interface, menu_path)
+                change_setting(stdscr, menu_path)
 
 
-def settings(stdscr, interface):
+def settings(stdscr):
     popup_height = 22
     popup_width = 60
     popup_win = None
@@ -665,19 +665,19 @@ def settings(stdscr, interface):
 
     user = mesh_pb2.User()
     user_settings = ["long_name", "short_name", "is_licensed"]
-    user_config = generate_menu_from_protobuf(user, interface)
+    user_config = generate_menu_from_protobuf(user)
     user_config = {key: value for key, value in user_config.items() if key in user_settings}
 
     channel = channel_pb2.ChannelSettings()
-    channel_config = generate_menu_from_protobuf(channel, interface)
+    channel_config = generate_menu_from_protobuf(channel)
     channel_config = [channel_config.copy() for i in range(8)]
 
 
     radio = config_pb2.Config()
-    radio_config = generate_menu_from_protobuf(radio, interface)
+    radio_config = generate_menu_from_protobuf(radio)
 
     module = module_config_pb2.ModuleConfig()
-    module_config = generate_menu_from_protobuf(module, interface)
+    module_config = generate_menu_from_protobuf(module)
 
     # Add top-level menu items
     top_level_menu = {
@@ -692,7 +692,7 @@ def settings(stdscr, interface):
     }
 
     # Call nested_menu function to display and handle the nested menu
-    nested_menu(popup_win, top_level_menu, interface)
+    nested_menu(popup_win, top_level_menu)
 
     # Close the popup window
     popup_win.clear()
@@ -706,23 +706,23 @@ def settings(stdscr, interface):
 #         ourNode.writeConfig("lora")
 
 def settings_reboot():
-    interface.localNode.reboot()
+    globals.interface.localNode.reboot()
 
 def settings_reset_nodedb():
-    interface.localNode.resetNodeDb()
+    globals.interface.localNode.resetNodeDb()
 
 def settings_shutdown():
-    interface.localNode.shutdown()
+    globals.interface.localNode.shutdown()
 
 def settings_factory_reset():
-    interface.localNode.factoryReset()
+    globals.interface.localNode.factoryReset()
 
 def settings_set_owner(long_name=None, short_name=None, is_licensed=False):
     if is_licensed == 'True':
         is_licensed = True
     elif is_licensed == 'False':
         is_licensed = False
-    interface.localNode.setOwner(long_name, short_name, is_licensed)
+    globals.interface.localNode.setOwner(long_name, short_name, is_licensed)
 
 
 
@@ -740,12 +740,12 @@ def channels_editor(stdscr):
 
         # Fetch and print roles for each channel
         for index, channel_index in enumerate(channels):
-            channel = interface.localNode.getChannelByChannelIndex(index)
+            channel = globals.interface.localNode.getChannelByChannelIndex(index)
             role = "DISABLED" if channel.role == 0 else "PRIMARY" if channel.role == 1 else "SECONDARY"
             channel_settings = channel.settings
             channel_name = channel_settings.name
             if not channel_name and role != "DISABLED":
-                config = interface.localNode.localConfig
+                config = globals.interface.localNode.localConfig
                 channel_name_int = config.lora.modem_preset
                 channel_name = config_pb2.Config.LoRaConfig.ModemPreset.Name(channel_name_int)
 
@@ -786,7 +786,7 @@ def channels_editor(stdscr):
 
 if __name__ == "__main__":
 
-    interface = meshtastic.serial_interface.SerialInterface()
+    globals.interface = meshtastic.serial_interface.SerialInterface()
 
     # radio = config_pb2.Config()
     # module = module_config_pb2.ModuleConfig()
@@ -796,6 +796,6 @@ if __name__ == "__main__":
     def main(stdscr):
         stdscr.keypad(True)
         while True:
-            settings(stdscr, interface)
+            settings(stdscr)
         
     curses.wrapper(main)
