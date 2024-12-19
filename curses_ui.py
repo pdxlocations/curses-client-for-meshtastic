@@ -1,6 +1,5 @@
 import curses
 import textwrap
-from meshtastic import BROADCAST_NUM
 import globals
 from utils import get_node_list, get_name_from_number, get_channels
 from settings import settings
