@@ -16,6 +16,12 @@ from curses_ui import main_ui
 from utils import get_channels
 import globals
 
+from app_state import AppState
+
+# Create a global app state instance
+state = AppState()
+
+
 if __name__ == "__main__":
     parser = setup_parser()
     args = parser.parse_args()
