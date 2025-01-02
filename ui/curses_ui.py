@@ -303,7 +303,7 @@ def main_ui(stdscr):
             
         elif char == 96:
             curses.curs_set(0)  # Hide cursor
-            settings(stdscr, globals.interface)
+            settings(stdscr)
             curses.curs_set(1)  # Show cursor again
         
         elif char == 47:
