@@ -201,7 +201,7 @@ def main_ui(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"↑↓ = Switch Channels   ← → = Channels/Nodes   ENTER = Send / Select DM   ` = Settings   / = Toggle Log   ESC = Quit")
+    draw_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    / = Toggle Log    ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
