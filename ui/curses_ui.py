@@ -330,7 +330,13 @@ def main_ui(stdscr):
                 entry_win.refresh()
 
         elif char == curses.KEY_BACKSPACE or char == 127:
-            input_text = input_text[:-1]
+            if input_text:
+                input_text = input_text[:-1]
+                y, x = entry_win.getyx()
+                entry_win.move(y, x - 1)
+                entry_win.addch(' ')  #
+                entry_win.move(y, x - 1)
+            entry_win.refresh()
             
         elif char == 96:
             curses.curs_set(0)  # Hide cursor
