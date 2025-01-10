@@ -110,6 +110,14 @@ def draw_text_field(win, text):
     win.border()
     win.addstr(1, 1, text)
 
+def draw_centered_text_field(win, text):
+    height, width = win.getmaxyx()
+    x = (width - len(text)) // 2
+    y = height // 2
+    
+    win.addstr(y, x, text)
+    win.refresh()
+
 def draw_channel_list():
     # Get the dimensions of the channel window
     _, win_width = channel_win.getmaxyx()
@@ -201,7 +209,7 @@ def main_ui(stdscr):
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
-    draw_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    / = Toggle Log    ESC = Quit")
+    draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    / = Toggle Log    ESC = Quit")
 
     # Enable scrolling for messages and nodes windows
     messages_win.scrollok(True)
