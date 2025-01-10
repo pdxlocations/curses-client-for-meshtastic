@@ -110,13 +110,35 @@ def draw_text_field(win, text):
     win.border()
     win.addstr(1, 1, text)
 
-def draw_centered_text_field(win, text):
+def draw_centered_text_field(win, text, y_offset = 0):
     height, width = win.getmaxyx()
     x = (width - len(text)) // 2
-    y = height // 2
+    y = (height // 2) + y_offset
     
     win.addstr(y, x, text)
     win.refresh()
+
+def draw_splash(stdscr):
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Green text on black background
+    curses.curs_set(0)
+
+    stdscr.clear()
+    height, width = stdscr.getmaxyx()
+    message_1 = "/ Λ"
+    message_2 = "/ / \\"
+    message_3 = "P W R D"
+    message_4 = "connecting..."
+
+    start_x = width // 2 - len(message_1) // 2
+    start_x2 = width // 2 - len(message_4) // 2
+    start_y = height // 2 - 1
+    stdscr.addstr(start_y, start_x, message_1, curses.color_pair(1) | curses.A_BOLD)
+    stdscr.addstr(start_y+1, start_x-1, message_2, curses.color_pair(1) | curses.A_BOLD)
+    stdscr.addstr(start_y+2, start_x-2, message_3, curses.color_pair(1) | curses.A_BOLD)
+    stdscr.addstr(start_y+4, start_x2, message_4)
+    stdscr.box()
+    stdscr.refresh()
 
 def draw_channel_list():
     # Get the dimensions of the channel window
