@@ -14,6 +14,7 @@ from utilities.interfaces import initialize_interface
 from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui
 from utilities.utils import get_channels
+from database import initialize_database
 import globals
 
 if __name__ == "__main__":
@@ -21,5 +22,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     globals.interface = initialize_interface(args)
     globals.channel_list = get_channels()
+    initialize_database()
     pub.subscribe(on_receive, 'meshtastic.receive')
     curses.wrapper(main_ui)

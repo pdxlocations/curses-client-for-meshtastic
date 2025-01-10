@@ -2,9 +2,12 @@ from meshtastic import BROADCAST_NUM
 from utilities.utils import get_node_list, decimal_to_hex, get_nodeNum
 import globals
 from ui.curses_ui import update_packetlog_win, draw_node_list, update_messages_window, draw_channel_list, add_notification
+from database import save_message_to_db, maybe_store_nodeinfo_in_db
+
 
 
 def on_receive(packet):
+
     # update packet log
     globals.packet_buffer.append(packet)
     if len(globals.packet_buffer) > 20:
@@ -17,6 +20,7 @@ def on_receive(packet):
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
             get_node_list()
             draw_node_list()
+            maybe_store_nodeinfo_in_db(packet)
 
         elif 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
@@ -55,6 +59,8 @@ def on_receive(packet):
                 globals.all_messages[globals.channel_list[channel_number]] = [(f">> {message_from_string} ", message_string)]
                 draw_channel_list()
             update_messages_window()
+
+            save_message_to_db(globals.channel_list[channel_number], message_from_id, message_string)
 
     except KeyError as e:
         print(f"Error processing packet: {e}")

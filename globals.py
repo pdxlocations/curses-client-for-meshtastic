@@ -7,3 +7,4 @@ selected_node = 0
 direct_message = False
 interface = None
 display_log = False
+db_file_path = "client.db"
