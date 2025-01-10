@@ -106,7 +106,7 @@ def update_packetlog_win():
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
-    win.clear()
+    # win.clear()
     win.border()
     win.addstr(1, 1, text)
 
@@ -260,6 +260,7 @@ def main_ui(stdscr):
     globals.direct_message = False
 
     entry_win.keypad(True)
+    curses.curs_set(1)
 
     while True:
         draw_text_field(entry_win, f"Input: {input_text}")
