@@ -110,13 +110,19 @@ def draw_text_field(win, text):
     win.border()
     win.addstr(1, 1, text)
 
-def draw_centered_text_field(win, text):
+def draw_centered_text_field(win, text, y_offset = 0):
     height, width = win.getmaxyx()
     x = (width - len(text)) // 2
-    y = height // 2
+    y = (height // 2) + y_offset
     
     win.addstr(y, x, text)
     win.refresh()
+
+def draw_splash(win):
+    height, width = win.getmaxyx()
+    ui_win = curses.newwin(height, width, 0, 0)
+    ui_win.box()
+    ui_win.refresh()
 
 def draw_channel_list():
     # Get the dimensions of the channel window
