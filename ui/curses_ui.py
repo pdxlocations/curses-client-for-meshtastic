@@ -106,7 +106,6 @@ def update_packetlog_win():
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
-    # win.clear()
     win.border()
     win.addstr(1, 1, text)
 
@@ -241,6 +240,7 @@ def main_ui(stdscr):
     channel_win.refresh()
     draw_channel_list()
     draw_node_list()
+    update_messages_window()
 
     # Draw boxes around windows
     channel_win.box()

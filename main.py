@@ -14,7 +14,7 @@ from utilities.interfaces import initialize_interface
 from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels
-from database import initialize_database
+from database import init_nodedb, load_messages_from_db
 import globals
 
 def main(stdscr):
@@ -23,9 +23,11 @@ def main(stdscr):
     args = parser.parse_args()
     globals.interface = initialize_interface(args)
     globals.channel_list = get_channels()
-    initialize_database()
     pub.subscribe(on_receive, 'meshtastic.receive')
+    init_nodedb()
+    load_messages_from_db()
     main_ui(stdscr)
+
 
 if __name__ == "__main__":
     curses.wrapper(main)

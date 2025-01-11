@@ -2,7 +2,7 @@ from meshtastic import BROADCAST_NUM
 from utilities.utils import get_node_list, decimal_to_hex, get_nodeNum
 import globals
 from ui.curses_ui import update_packetlog_win, draw_node_list, update_messages_window, draw_channel_list, add_notification
-from database import save_message_to_db, maybe_store_nodeinfo_in_db
+from database import init_nodedb, save_message_to_db, maybe_store_nodeinfo_in_db
 
 
 
@@ -54,9 +54,9 @@ def on_receive(packet):
                     message_from_string = str(decimal_to_hex(message_from_id))  # If long name not found, use the ID as string
         
             if globals.channel_list[channel_number] in globals.all_messages:
-                globals.all_messages[globals.channel_list[channel_number]].append((f">> {message_from_string} ", message_string))
+                globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string} ", message_string))
             else:
-                globals.all_messages[globals.channel_list[channel_number]] = [(f">> {message_from_string} ", message_string)]
+                globals.all_messages[globals.channel_list[channel_number]] = [(f"{globals.message_prefix} {message_from_string} ", message_string)]
                 draw_channel_list()
             update_messages_window()
 

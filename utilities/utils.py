@@ -1,5 +1,6 @@
 import globals
 from meshtastic.protobuf import config_pb2
+import re
 
 def get_channels():
     node = globals.interface.getNode('^local')
@@ -9,16 +10,21 @@ def get_channels():
     for device_channel in device_channels:
         if device_channel.role:
             if device_channel.settings.name:
-                channel_output.append(device_channel.settings.name)
-                globals.all_messages[device_channel.settings.name] = []
-
+                # Use the channel name
+                channel_name = device_channel.settings.name
             else:
                 # If channel name is blank, use the modem preset
                 lora_config = node.localConfig.lora
                 modem_preset_enum = lora_config.modem_preset
                 modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
-                channel_output.append(convert_to_camel_case(modem_preset_string))
-                globals.all_messages[convert_to_camel_case(modem_preset_string)] = []
+                channel_name = convert_to_camel_case(modem_preset_string)
+
+            # Add channel to output
+            channel_output.append(channel_name)
+
+            # Only initialize globals.all_messages[channel_name] if it doesn't already exist
+            if channel_name not in globals.all_messages:
+                globals.all_messages[channel_name] = []
 
     return list(globals.all_messages.keys())
 
@@ -57,4 +63,14 @@ def get_name_from_number(number, type='long'):
         else:
             name = str(decimal_to_hex(number))  # If long name not found, use the ID as string
     return name
-        
+
+def sanitize_string(input_str: str) -> str:
+    """Check if the string starts with a letter (a-z, A-Z) or an underscore (_), and replace all non-alpha/numeric/underscore characters with underscores."""
+
+    if not re.match(r'^[a-zA-Z_]', input_str):
+        # If not, add "_"
+        input_str = '_' + input_str
+
+    # Replace special characters with underscores (for database tables)
+    sanitized_str: str = re.sub(r'[^a-zA-Z0-9_]', '_', input_str)
+    return sanitized_str
