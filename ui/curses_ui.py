@@ -349,7 +349,7 @@ def main_ui(stdscr):
                 globals.display_log = True
                 update_messages_window()
             else:
-                display_log = False
+                globals.display_log = False
                 packetlog_win.clear()
                 update_messages_window()
         else:
