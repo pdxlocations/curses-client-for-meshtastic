@@ -5,39 +5,6 @@ from utilities.utils import get_node_list, get_name_from_number, get_channels
 from settings import settings
 from message_handlers.tx_handler import send_message
 
-# def handle_notification(channel_number, add=True):
-#     global channel_win
-#     _, win_width = channel_win.getmaxyx()  # Get the width of the channel window
-
-#     # Get the channel name
-#     if isinstance(globals.channel_list[channel_number], str):  # Channels
-#         channel_name = globals.channel_list[channel_number]
-#     elif isinstance(globals.channel_list[channel_number], int):  # DM's
-#         channel_name = get_name_from_number(globals.channel_list[channel_number])
-#     else:
-#         return
-
-#     # Truncate the channel name if it's too long to fit in the window
-#     truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
-
-#     # Add or remove the notification indicator
-#     notification = " *" if add else "  "
-#     channel_win.addstr(channel_number + 1, len(truncated_channel_name) + 1, notification, curses.color_pair(4))
-#     channel_win.refresh()
-
-# def handle_notification(channel_number, add=True):
-#     # Modify the channel name in globals.channel_list to include or remove the notification
-#     if add:
-#         # Avoid adding multiple `*` notifications
-#         if not globals.channel_list[channel_number].endswith(" *"):
-#             globals.channel_list[channel_number] += " *"
-#     else:
-#         # Remove the `*` notification if it exists
-#         if globals.channel_list[channel_number].endswith(" *"):
-#             globals.channel_list[channel_number] = globals.channel_list[channel_number][:-2]
-
-#     # Redraw the channel list to reflect the changes
-#     # draw_channel_list()
 
 def handle_notification(channel_number, add=True):
     if add:
@@ -45,18 +12,12 @@ def handle_notification(channel_number, add=True):
     else:
         globals.notifications.discard(channel_number)  # Remove the channel from the notification tracker
 
-    # Redraw the channel list to reflect the notification state
-    # draw_channel_list()
-
-
-
 def add_notification(channel_number):
     handle_notification(channel_number, add=True)
 
 def remove_notification(channel_number):
     handle_notification(channel_number, add=False)
     channel_win.box()
-    channel_win.refresh()
 
 def update_messages_window():
     global messages_win
@@ -354,12 +315,11 @@ def main_ui(stdscr):
                 # Enter key pressed, send user input as message
                 send_message(input_text, channel=globals.selected_channel)
                 update_messages_window()
-                messages_win.refresh()
 
                 # Clear entry window and reset input text
                 input_text = ""
                 entry_win.clear()       
-                entry_win.refresh()
+                # entry_win.refresh()
 
         elif char == curses.KEY_BACKSPACE or char == 127:
             if input_text:
