@@ -10,3 +10,4 @@ interface = None
 display_log = False
 db_file_path = "client.db"
 message_prefix = ">>"
+notification_symbol = "*"

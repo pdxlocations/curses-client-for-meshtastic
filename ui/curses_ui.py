@@ -55,6 +55,8 @@ def add_notification(channel_number):
 
 def remove_notification(channel_number):
     handle_notification(channel_number, add=False)
+    channel_win.box()
+    channel_win.refresh()
 
 def update_messages_window():
     global messages_win
@@ -165,7 +167,7 @@ def draw_splash(stdscr):
 
 
 def draw_channel_list():
-    # global channel_win
+
     channel_win.clear() 
     win_height, win_width = channel_win.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))  # Leave room for borders
@@ -176,13 +178,12 @@ def draw_channel_list():
             channel = get_name_from_number(channel, type='long')
 
         # Determine whether to add the notification
-        notification = " *" if start_index + i in globals.notifications else ""
+        notification = " " + globals.notification_symbol if start_index + i in globals.notifications else ""
 
         # Truncate the channel name if it's too long to fit in the window
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
         if i < win_height - 2   :  # Check if there is enough space in the window
             if start_index + i == globals.selected_channel and not globals.direct_message:
-            # if globals.selected_channel == i and not globals.direct_message:
                 channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(3))
                 remove_notification(globals.selected_channel)
             else:
@@ -192,7 +193,7 @@ def draw_channel_list():
 
 
 def draw_node_list():
-    # global nodes_win
+
     nodes_win.clear()                 
     win_height, _ = nodes_win.getmaxyx()
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
