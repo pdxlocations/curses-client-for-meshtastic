@@ -18,9 +18,10 @@ def on_receive(packet):
         update_packetlog_win()
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
-            get_node_list()
-            draw_node_list()
-            maybe_store_nodeinfo_in_db(packet)
+            if "user" in packet['decoded'] and "longName" in packet['decoded']["user"]: 
+                get_node_list()
+                draw_node_list()
+                maybe_store_nodeinfo_in_db(packet)
 
         elif 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
