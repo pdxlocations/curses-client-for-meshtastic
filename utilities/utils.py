@@ -8,7 +8,7 @@ def get_channels():
     device_channels = node.channels
 
     # Clear and rebuild channel list
-    globals.channel_list = []
+    # globals.channel_list = []
 
     for device_channel in device_channels:
         if device_channel.role:

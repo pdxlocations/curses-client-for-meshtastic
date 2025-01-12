@@ -43,8 +43,6 @@ def init_nodedb():
         print(f"Unexpected error in init_and_update_nodedb: {e}")
 
 
-
-
 def save_message_to_db(channel, user_id, message_text):
     """Save messages to the database, ensuring the table exists."""
     try:
@@ -91,9 +89,6 @@ def load_messages_from_db():
             db_cursor.execute(query, (f"{str(get_nodeNum())}_%_messages",))
             tables = [row[0] for row in db_cursor.fetchall()]
 
-            # Reset the channel list before populating
-            globals.channel_list = []
-
             # Iterate through each table and fetch its messages
             for table_name in tables:
                 query = f'SELECT user_id, message_text FROM "{table_name}"'
@@ -105,37 +100,33 @@ def load_messages_from_db():
                     
                     # Extract the channel name from the table name
                     channel = table_name.split("_")[1]
-
-                    # Determine the correct channel name
-                    if channel.isdigit():
-                        friendly_channel_name = get_name_from_number(int(channel))
-                    else:
-                        friendly_channel_name = channel
-
+                    
+                    # Convert the channel to an integer if it's numeric, otherwise keep it as a string
+                    channel = int(channel) if channel.isdigit() else channel
+                    
                     # Add the channel to globals.channel_list if not already present
-                    if friendly_channel_name not in globals.channel_list:
-                        globals.channel_list.append(friendly_channel_name)
+                    if channel not in globals.channel_list:
+                        globals.channel_list.append(channel)
 
                     # Ensure the channel exists in globals.all_messages
-                    if friendly_channel_name not in globals.all_messages:
-                        globals.all_messages[friendly_channel_name] = []
+                    if channel not in globals.all_messages:
+                        globals.all_messages[channel] = []
 
                     # Add messages to globals.all_messages in tuple format
                     for user_id, message in db_messages:
-
-                        formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
-                        if formatted_message not in globals.all_messages[friendly_channel_name]:
-                            globals.all_messages[friendly_channel_name].append(formatted_message)
-
+                        if user_id == str(get_nodeNum()):
+                            formatted_message = (f"{globals.message_prefix} Sent: ", message)
+                        else:    
+                            formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'long')}: ", message)
+                            
+                        if formatted_message not in globals.all_messages[channel]:
+                            globals.all_messages[channel].append(formatted_message)
 
                 except sqlite3.Error as e:
                     print(f"SQLite error while loading messages from table '{table_name}': {e}")
 
-
     except sqlite3.Error as e:
         print(f"SQLite error in load_messages_from_db: {e}")
-
-
 
 
 def maybe_store_nodeinfo_in_db(packet):

@@ -139,6 +139,7 @@ def draw_splash(stdscr):
     stdscr.box()
     stdscr.refresh()
 
+
 def draw_channel_list():
     # Get the dimensions of the channel window
     _, win_width = channel_win.getmaxyx()
@@ -159,7 +160,9 @@ def draw_channel_list():
 
     channel_win.refresh()
 
+
 def draw_node_list():
+    global nodes_win
     nodes_win.clear()                 
     height, width = nodes_win.getmaxyx()
     start_index = max(0, globals.selected_node - (height - 3))  # Calculate starting index based on selected node and window height
@@ -355,4 +358,3 @@ def main_ui(stdscr):
         else:
             # Append typed character to input text
             input_text += chr(char)
-
