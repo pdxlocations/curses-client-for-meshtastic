@@ -358,3 +358,4 @@ def main_ui(stdscr):
         else:
             # Append typed character to input text
             input_text += chr(char)
+            
