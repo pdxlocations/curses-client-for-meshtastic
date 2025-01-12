@@ -3,14 +3,17 @@ from meshtastic.protobuf import config_pb2
 import re
 
 def get_channels():
+    """Retrieve channels from the node and update globals.channel_list and globals.all_messages."""
     node = globals.interface.getNode('^local')
     device_channels = node.channels
 
-    channel_output = []
+    # Clear and rebuild channel list
+    globals.channel_list = []
+
     for device_channel in device_channels:
         if device_channel.role:
+            # Use the channel name if available, otherwise use the modem preset
             if device_channel.settings.name:
-                # Use the channel name
                 channel_name = device_channel.settings.name
             else:
                 # If channel name is blank, use the modem preset
@@ -19,14 +22,16 @@ def get_channels():
                 modem_preset_string = config_pb2._CONFIG_LORACONFIG_MODEMPRESET.values_by_number[modem_preset_enum].name
                 channel_name = convert_to_camel_case(modem_preset_string)
 
-            # Add channel to output
-            channel_output.append(channel_name)
+            # Add channel to globals.channel_list if not already present
+            if channel_name not in globals.channel_list:
+                globals.channel_list.append(channel_name)
 
-            # Only initialize globals.all_messages[channel_name] if it doesn't already exist
+            # Initialize globals.all_messages[channel_name] if it doesn't exist
             if channel_name not in globals.all_messages:
                 globals.all_messages[channel_name] = []
 
-    return list(globals.all_messages.keys())
+
+    return globals.channel_list
 
 def get_node_list():
     node_list = []

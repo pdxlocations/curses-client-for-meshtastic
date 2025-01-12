@@ -53,7 +53,7 @@ def save_message_to_db(channel, user_id, message_text):
 
             # Construct the table name
             table_name = f"{str(get_nodeNum())}_{channel}_messages"
-            quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we might begin with numerics
+            quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics
 
             # Ensure the table exists
             create_table_query = f'''

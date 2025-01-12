@@ -1,3 +1,4 @@
 .venv/
 __pycache__/
 client.db
+.DS_Store

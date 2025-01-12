@@ -60,7 +60,7 @@ def on_receive(packet):
                 draw_channel_list()
             update_messages_window()
 
-            save_message_to_db(globals.channel_list[channel_number], message_from_id, message_string)
+            save_message_to_db(node['num'], message_from_id, message_string)
 
     except KeyError as e:
         print(f"Error processing packet: {e}")
