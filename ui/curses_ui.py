@@ -25,37 +25,28 @@ from message_handlers.tx_handler import send_message
 #     channel_win.addstr(channel_number + 1, len(truncated_channel_name) + 1, notification, curses.color_pair(4))
 #     channel_win.refresh()
 
+# def handle_notification(channel_number, add=True):
+#     # Modify the channel name in globals.channel_list to include or remove the notification
+#     if add:
+#         # Avoid adding multiple `*` notifications
+#         if not globals.channel_list[channel_number].endswith(" *"):
+#             globals.channel_list[channel_number] += " *"
+#     else:
+#         # Remove the `*` notification if it exists
+#         if globals.channel_list[channel_number].endswith(" *"):
+#             globals.channel_list[channel_number] = globals.channel_list[channel_number][:-2]
+
+#     # Redraw the channel list to reflect the changes
+#     # draw_channel_list()
+
 def handle_notification(channel_number, add=True):
-    global channel_win
-
-    # Get the dimensions of the window
-    win_height, win_width = channel_win.getmaxyx()
-
-    # Calculate the starting index for scrolling
-    start_index = max(0, globals.selected_channel - (win_height - 3))  # Match logic in draw_channel_list
-
-    # Check if the channel_number is visible in the current viewport
-    if channel_number < start_index or channel_number >= start_index + (win_height - 2):
-        return  # Channel is not visible, so no need to update
-
-    # Calculate the visible row for the channel
-    visible_row = channel_number - start_index + 1
-
-    # Get the channel name
-    if isinstance(globals.channel_list[channel_number], str):  # Channels
-        channel_name = globals.channel_list[channel_number]
-    elif isinstance(globals.channel_list[channel_number], int):  # DM's
-        channel_name = get_name_from_number(globals.channel_list[channel_number])
+    if add:
+        globals.notifications.add(channel_number)  # Add the channel to the notification tracker
     else:
-        return
+        globals.notifications.discard(channel_number)  # Remove the channel from the notification tracker
 
-    # Truncate the channel name if it's too long to fit in the window
-    truncated_channel_name = channel_name[:win_width - 5] + '-' if len(channel_name) > win_width - 5 else channel_name
-
-    # Add or remove the notification indicator
-    notification = " *" if add else "  "
-    channel_win.addstr(visible_row, len(truncated_channel_name) + 1, notification, curses.color_pair(4))
-    channel_win.refresh()
+    # Redraw the channel list to reflect the notification state
+    # draw_channel_list()
 
 
 
@@ -184,15 +175,18 @@ def draw_channel_list():
         if isinstance(channel, int):
             channel = get_name_from_number(channel, type='long')
 
+        # Determine whether to add the notification
+        notification = " *" if start_index + i in globals.notifications else ""
+
         # Truncate the channel name if it's too long to fit in the window
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
         if i < win_height - 2   :  # Check if there is enough space in the window
             if start_index + i == globals.selected_channel and not globals.direct_message:
             # if globals.selected_channel == i and not globals.direct_message:
-                channel_win.addstr(i + 1, 1, truncated_channel, curses.color_pair(3))
+                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(3))
                 remove_notification(globals.selected_channel)
             else:
-                channel_win.addstr(i + 1, 1, truncated_channel, curses.color_pair(4))
+                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(4))
     channel_win.box()
     channel_win.refresh()
 

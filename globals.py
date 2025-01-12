@@ -1,5 +1,6 @@
 all_messages = {}
 channel_list = []
+notifications = set()
 packet_buffer = []
 myNodeNum = 0
 selected_channel = 0
