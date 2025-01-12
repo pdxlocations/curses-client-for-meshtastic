@@ -158,7 +158,7 @@ def maybe_store_nodeinfo_in_db(packet):
                         UPDATE {nodeinfo_table}
                         SET long_name=?, short_name=?
                         WHERE user_id=?
-                    ''', (packet['longName'], packet['shortName'], packet['from']))
+                    ''', (packet['decoded']['user']['longName'], packet['decoded']['user']['shortName'], packet['from']))
                     db_connection.commit()
 
                     # Fetch the updated record
