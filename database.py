@@ -117,7 +117,7 @@ def load_messages_from_db():
                         if user_id == str(get_nodeNum()):
                             formatted_message = (f"{globals.message_prefix} Sent: ", message)
                         else:    
-                            formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'long')}: ", message)
+                            formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
                             
                         if formatted_message not in globals.all_messages[channel]:
                             globals.all_messages[channel].append(formatted_message)
