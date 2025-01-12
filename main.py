@@ -8,6 +8,7 @@ V 0.2.0
 
 import curses
 from pubsub import pub
+import os
 
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
@@ -15,6 +16,11 @@ from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels
 import globals
+
+# Set environment variables for ncurses compatibility
+os.environ["NCURSES_NO_UTF8_ACS"] = "1"
+os.environ["TERM"] = "screen"
+os.environ["LANG"] = "C.UTF-8"
 
 def main(stdscr):
     draw_splash(stdscr)
