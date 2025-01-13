@@ -10,4 +10,5 @@ interface = None
 display_log = False
 db_file_path = "client.db"
 message_prefix = ">>"
+sent_message_prefix =">> Sent:"
 notification_symbol = "*"

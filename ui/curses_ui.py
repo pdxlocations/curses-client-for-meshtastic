@@ -42,7 +42,7 @@ def update_messages_window():
             wrapped_messages = textwrap.wrap(full_message, messages_win.getmaxyx()[1] - 2)
 
             for wrapped_message in wrapped_messages:
-                messages_win.addstr(row, 1, wrapped_message, curses.color_pair(1) if prefix.startswith(">> Sent:") else curses.color_pair(2))
+                messages_win.addstr(row, 1, wrapped_message, curses.color_pair(1) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2))
                 row += 1
 
     messages_win.box()

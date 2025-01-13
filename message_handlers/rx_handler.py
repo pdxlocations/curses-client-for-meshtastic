@@ -49,7 +49,7 @@ def on_receive(packet):
             message_from_string = ""
             for node in globals.interface.nodes.values():
                 if message_from_id == node['num']:
-                    message_from_string = node["user"]["longName"]  # Get the long name using the node ID
+                    message_from_string = node["user"]["shortName"]  # Get the long name using the node ID
                     break
                 else:
                     message_from_string = str(decimal_to_hex(message_from_id))  # If long name not found, use the ID as string
