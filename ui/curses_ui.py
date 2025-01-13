@@ -155,7 +155,7 @@ def select_channels(direction):
     draw_channel_list()
     draw_messages_window()
 
-def scroll_message_window(direction):
+def select_messages(direction):
     messages_length = len(globals.all_messages[globals.channel_list[globals.selected_channel]])
 
     globals.selected_message += direction
@@ -295,7 +295,7 @@ def main_ui(stdscr):
                 select_channels(-1)
                 globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
             elif globals.current_window == 1:
-                scroll_message_window(-1)
+                select_messages(-1)
             elif globals.current_window == 2:
                 select_nodes(-1)
 
@@ -304,7 +304,7 @@ def main_ui(stdscr):
                 select_channels(1)
                 globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
             elif globals.current_window == 1:
-                scroll_message_window(1)
+                select_messages(1)
             elif globals.current_window == 2:
                 select_nodes(1)
 
