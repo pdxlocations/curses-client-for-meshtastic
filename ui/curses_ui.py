@@ -17,14 +17,17 @@ def add_notification(channel_number):
 
 def remove_notification(channel_number):
     handle_notification(channel_number, add=False)
-    channel_win.box()
+    # channel_win.box()
 
 def update_messages_window():
-    global messages_win
+
     messages_win.clear()
 
     # Calculate how many messages can fit in the window
     max_messages = messages_win.getmaxyx()[0] - 2  # Subtract 2 for the top and bottom border
+    packetlog_height = packetlog_win.getmaxyx()[0]
+    if globals.display_log:
+        max_messages -= packetlog_height - 1
 
     # Determine the starting index for displaying messages
     if globals.channel_list[globals.selected_channel] in globals.all_messages:
@@ -50,14 +53,14 @@ def update_messages_window():
     update_packetlog_win()
 
 def update_packetlog_win():
+
+    columns = [10,10,15,30]
+    span = 0
+
     if globals.display_log:
         packetlog_win.clear()
-        packetlog_win.box()
-        # Get the dimensions of the packet log window
         height, width = packetlog_win.getmaxyx()
         
-        columns = [10,10,15,30]
-        span = 0
         for column in columns[:-1]:
             span += column
 
@@ -70,7 +73,6 @@ def update_packetlog_win():
                 break
             
             # Format each field
-
             from_id = get_name_from_number(packet['from'], 'short').ljust(columns[0])
             to_id = (
                 "BROADCAST".ljust(columns[1]) if str(packet['to']) == "4294967295"
@@ -90,6 +92,7 @@ def update_packetlog_win():
             # Add to the window
             packetlog_win.addstr(i + 2, 1, logString)
 
+        packetlog_win.box()
         packetlog_win.refresh()
 
 def draw_text_field(win, text):
@@ -100,7 +103,6 @@ def draw_centered_text_field(win, text, y_offset = 0):
     height, width = win.getmaxyx()
     x = (width - len(text)) // 2
     y = (height // 2) + y_offset
-    
     win.addstr(y, x, text)
     win.refresh()
 
@@ -133,7 +135,8 @@ def draw_channel_list():
     win_height, win_width = channel_win.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))  # Leave room for borders
 
-    for i, (channel, _) in enumerate(list(globals.all_messages.items())[start_index:], start=0):
+    for i, channel in enumerate(list(globals.all_messages.keys())[start_index:], start=0):
+
         # Convert node number to long name if it's an integer
         if isinstance(channel, int):
             channel = get_name_from_number(channel, type='long')
@@ -156,7 +159,7 @@ def draw_channel_list():
 def draw_node_list():
 
     nodes_win.clear()                 
-    win_height, _ = nodes_win.getmaxyx()
+    win_height = nodes_win.getmaxyx()[0]
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
 
     for i, node in enumerate(get_node_list()[start_index:], start=1):
