@@ -25,8 +25,8 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
 
     # Add sent message to the messages dictionary
     if globals.channel_list[channel] in globals.all_messages:
-        globals.all_messages[globals.channel_list[channel]].append((">> Sent: ", message))
+        globals.all_messages[globals.channel_list[channel]].append((globals.sent_message_prefix + " ", message))
     else:
-        globals.all_messages[globals.channel_list[channel]] = [(">> Sent: ", message)]
+        globals.all_messages[globals.channel_list[channel]] = [(globals.sent_message_prefix + " ", message)]
 
     save_message_to_db(globals.channel_list[channel], myid, message)
