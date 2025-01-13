@@ -1,7 +1,7 @@
 from meshtastic import BROADCAST_NUM
 from utilities.utils import get_node_list, decimal_to_hex, get_nodeNum
 import globals
-from ui.curses_ui import update_packetlog_win, draw_node_list, update_messages_window, draw_channel_list, add_notification
+from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
 from database import save_message_to_db, maybe_store_nodeinfo_in_db
 
 
@@ -15,7 +15,7 @@ def on_receive(packet):
         globals.packet_buffer = globals.packet_buffer[-20:]
         
     if globals.display_log:
-        update_packetlog_win()
+        draw_packetlog_win()
     try:
         if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
             if "user" in packet['decoded'] and "longName" in packet['decoded']["user"]: 
@@ -60,7 +60,7 @@ def on_receive(packet):
                 globals.all_messages[globals.channel_list[channel_number]] = [(f"{globals.message_prefix} {message_from_string} ", message_string)]
 
             draw_channel_list()
-            update_messages_window()
+            draw_messages_window()
             save_message_to_db(globals.channel_list[channel_number], message_from_id, message_string)
 
     except KeyError as e:
