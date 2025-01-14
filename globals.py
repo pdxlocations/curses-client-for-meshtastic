@@ -1,9 +1,15 @@
 all_messages = {}
 channel_list = []
+notifications = set()
 packet_buffer = []
 myNodeNum = 0
 selected_channel = 0
+selected_message = 0
 selected_node = 0
-direct_message = False
+current_window = 0
 interface = None
 display_log = False
+db_file_path = "client.db"
+message_prefix = ">>"
+sent_message_prefix =">> Sent:"
+notification_symbol = "*"

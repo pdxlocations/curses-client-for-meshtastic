@@ -3,7 +3,7 @@
 '''
 Curses Client for Meshtastic by http://github.com/pdxlocations
 Powered by Meshtastic.org
-V 0.2.0
+V 0.3.0
 '''
 
 import curses
@@ -15,6 +15,7 @@ from utilities.interfaces import initialize_interface
 from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels
+from db_handler import init_nodedb, load_messages_from_db
 import globals
 
 # Set environment variables for ncurses compatibility
@@ -29,7 +30,10 @@ def main(stdscr):
     globals.interface = initialize_interface(args)
     globals.channel_list = get_channels()
     pub.subscribe(on_receive, 'meshtastic.receive')
+    init_nodedb()
+    load_messages_from_db()
     main_ui(stdscr)
+
 
 if __name__ == "__main__":
     curses.wrapper(main)
