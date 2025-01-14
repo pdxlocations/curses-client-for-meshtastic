@@ -1,5 +1,5 @@
 from meshtastic import BROADCAST_NUM
-from database import save_message_to_db
+from db_handler import save_message_to_db
 from utilities.utils import get_nodeNum
 import globals
 

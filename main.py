@@ -15,7 +15,7 @@ from utilities.interfaces import initialize_interface
 from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels
-from database import init_nodedb, load_messages_from_db
+from db_handler import init_nodedb, load_messages_from_db
 import globals
 
 # Set environment variables for ncurses compatibility

@@ -2,7 +2,7 @@ from meshtastic import BROADCAST_NUM
 from utilities.utils import get_node_list, decimal_to_hex, get_nodeNum
 import globals
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
-from database import save_message_to_db, maybe_store_nodeinfo_in_db
+from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
 
 
 def on_receive(packet):

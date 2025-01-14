@@ -1,6 +1,7 @@
 import sqlite3
 import globals
-from utilities.utils import get_nodeNum, get_node_list, get_name_from_number
+import time
+from utilities.utils import get_nodeNum, get_name_from_number
 
 
 def init_nodedb():
@@ -18,22 +19,38 @@ def init_nodedb():
                 CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
                     user_id TEXT PRIMARY KEY,
                     long_name TEXT,
-                    short_name TEXT
+                    short_name TEXT,
+                    hw_model TEXT,
+                    is_licensed TEXT,
+                    role TEXT,
+                    public_key TEXT
                 )
             '''
             db_cursor.execute(create_table_query)
 
-            # Step 2: Get the list of nodes from the interface
-            node_list = get_node_list()
 
-            # Step 3: Insert nodes into the database if they don't already exist
-            for node in node_list:
-                insert_query = f'''
-                    INSERT OR IGNORE INTO {nodeinfo_table} (user_id, long_name, short_name)
-                    VALUES (?, ?, ?)
-                '''
-                # Replace placeholders with actual data for the node
-                db_cursor.execute(insert_query, (node, get_name_from_number(node, "long"), get_name_from_number(node, "short")))
+
+            # Step 2 and 3: Iterate over nodes and insert them into the database
+            if globals.interface.nodes:
+                for node in globals.interface.nodes.values():
+                    role = node['user'].get('role', 'CLIENT')
+                    is_licensed = node['user'].get('isLicensed', 'FALSE')
+                    public_key = node['user'].get('publicKey', '')
+
+                    insert_query = f'''
+                        INSERT OR IGNORE INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    '''
+                    # Replace placeholders with actual data for the node
+                    db_cursor.execute(insert_query, (
+                        node['num'],
+                        node['user']['longName'],
+                        node['user']['shortName'],
+                        node['user']['hwModel'],
+                        is_licensed,
+                        role,
+                        public_key
+                    ))
 
             db_connection.commit()
 
@@ -57,17 +74,18 @@ def save_message_to_db(channel, user_id, message_text):
             create_table_query = f'''
                 CREATE TABLE IF NOT EXISTS {quoted_table_name} (
                     user_id TEXT,
-                    message_text TEXT
+                    message_text TEXT,
+                    timestamp INTEGER
                 )
             '''
             db_cursor.execute(create_table_query)
 
             # Insert the message
             insert_query = f'''
-                INSERT INTO {quoted_table_name} (user_id, message_text)
-                VALUES (?, ?)
+                INSERT INTO {quoted_table_name} (user_id, message_text, timestamp)
+                VALUES (?, ?, ?)
             '''
-            db_cursor.execute(insert_query, (user_id, message_text))
+            db_cursor.execute(insert_query, (user_id, message_text, int(time.time())))
 
             db_connection.commit()
 
@@ -142,12 +160,15 @@ def maybe_store_nodeinfo_in_db(packet):
             existing_record = db_cursor.execute(f'SELECT * FROM {nodeinfo_table} WHERE user_id=?', (packet['from'],)).fetchone()
 
             if existing_record is None:
+                role = packet['decoded']['user'].get('role', 'CLIENT')
+                is_licensed = packet['decoded']['user'].get('isLicensed', 'FALSE')
+                public_key = packet['decoded']['user'].get('publicKey', '')
 
                 # No existing record, insert the new record
                 db_cursor.execute(f'''
-                    INSERT INTO {nodeinfo_table} (user_id, long_name, short_name)
-                    VALUES (?, ?, ?)
-                ''', (packet['from'], packet['decoded']['user']['longName'], packet['decoded']['user']['shortName']))
+                    INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (packet['from'], packet['decoded']['user']['longName'], packet['decoded']['user']['shortName'], packet['decoded']['user']['hwModel'], is_licensed, role, public_key))
                 db_connection.commit()
 
             else:
