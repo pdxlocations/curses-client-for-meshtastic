@@ -76,7 +76,7 @@ def load_messages_from_db():
                     # Add messages to globals.all_messages in tuple format
                     for user_id, message in db_messages:
                         if user_id == str(get_nodeNum()):
-                            formatted_message = (f"{globals.message_prefix} Sent: ", message)
+                            formatted_message = (f"{globals.sent_message_prefix}: ", message)
                         else:    
                             formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
                             

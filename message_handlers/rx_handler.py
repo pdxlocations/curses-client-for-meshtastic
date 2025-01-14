@@ -5,7 +5,7 @@ from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_windo
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
 
 
-def on_receive(packet):
+def on_receive(packet, interface):
     global nodes_win
 
     # update packet log
