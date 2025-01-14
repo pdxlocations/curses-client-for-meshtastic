@@ -3,63 +3,6 @@ import globals
 import time
 from utilities.utils import get_nodeNum, get_name_from_number
 
-
-def init_nodedb():
-    """Initialize the node database and update it with nodes from the interface."""
-    try:
-        with sqlite3.connect(globals.db_file_path) as db_connection:
-            db_cursor = db_connection.cursor()
-
-            # Table name construction
-            table_name = f"{str(get_nodeNum())}_nodedb"
-            nodeinfo_table = f'"{table_name}"'  # Quote the table name because it might begin with numerics
-
-            # Step 1: Create the table if it doesn't exist
-            create_table_query = f'''
-                CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
-                    user_id TEXT PRIMARY KEY,
-                    long_name TEXT,
-                    short_name TEXT,
-                    hw_model TEXT,
-                    is_licensed TEXT,
-                    role TEXT,
-                    public_key TEXT
-                )
-            '''
-            db_cursor.execute(create_table_query)
-
-
-
-            # Step 2 and 3: Iterate over nodes and insert them into the database
-            if globals.interface.nodes:
-                for node in globals.interface.nodes.values():
-                    role = node['user'].get('role', 'CLIENT')
-                    is_licensed = node['user'].get('isLicensed', 'FALSE')
-                    public_key = node['user'].get('publicKey', '')
-
-                    insert_query = f'''
-                        INSERT OR IGNORE INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    '''
-                    # Replace placeholders with actual data for the node
-                    db_cursor.execute(insert_query, (
-                        node['num'],
-                        node['user']['longName'],
-                        node['user']['shortName'],
-                        node['user']['hwModel'],
-                        is_licensed,
-                        role,
-                        public_key
-                    ))
-
-            db_connection.commit()
-
-    except sqlite3.Error as e:
-        print(f"SQLite error in init_nodedb: {e}")
-    except Exception as e:
-        print(f"Unexpected error in init_nodedb: {e}")
-
-
 def save_message_to_db(channel, user_id, message_text):
     """Save messages to the database, ensuring the table exists."""
     try:
@@ -147,6 +90,59 @@ def load_messages_from_db():
         print(f"SQLite error in load_messages_from_db: {e}")
 
 
+def init_nodedb():
+    """Initialize the node database and update it with nodes from the interface."""
+    try:
+        with sqlite3.connect(globals.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+
+            # Table name construction
+            table_name = f"{str(get_nodeNum())}_nodedb"
+            nodeinfo_table = f'"{table_name}"'  # Quote the table name because it might begin with numerics
+
+            # Create the table if it doesn't exist
+            create_table_query = f'''
+                CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
+                    user_id TEXT PRIMARY KEY,
+                    long_name TEXT,
+                    short_name TEXT,
+                    hw_model TEXT,
+                    is_licensed TEXT,
+                    role TEXT,
+                    public_key TEXT
+                )
+            '''
+            db_cursor.execute(create_table_query)
+
+            # Iterate over nodes and insert them into the database
+            if globals.interface.nodes:
+                for node in globals.interface.nodes.values():
+                    role = node['user'].get('role', 'CLIENT')
+                    is_licensed = node['user'].get('isLicensed', '0')
+                    public_key = node['user'].get('publicKey', '')
+
+                    insert_query = f'''
+                        INSERT OR IGNORE INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    '''
+
+                    db_cursor.execute(insert_query, (
+                        node['num'],
+                        node['user']['longName'],
+                        node['user']['shortName'],
+                        node['user']['hwModel'],
+                        is_licensed,
+                        role,
+                        public_key
+                    ))
+                    
+            db_connection.commit()
+
+    except sqlite3.Error as e:
+        print(f"SQLite error in init_nodedb: {e}")
+    except Exception as e:
+        print(f"Unexpected error in init_nodedb: {e}")
+
 def maybe_store_nodeinfo_in_db(packet):
     """Save nodeinfo unless that record is already there."""
     try:
@@ -161,30 +157,69 @@ def maybe_store_nodeinfo_in_db(packet):
 
             if existing_record is None:
                 role = packet['decoded']['user'].get('role', 'CLIENT')
-                is_licensed = packet['decoded']['user'].get('isLicensed', 'FALSE')
+                is_licensed = packet['decoded']['user'].get('isLicensed', '0')
                 public_key = packet['decoded']['user'].get('publicKey', '')
 
                 # No existing record, insert the new record
-                db_cursor.execute(f'''
+                insert_query = f'''
                     INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (packet['from'], packet['decoded']['user']['longName'], packet['decoded']['user']['shortName'], packet['decoded']['user']['hwModel'], is_licensed, role, public_key))
-                db_connection.commit()
+                '''
+
+                db_cursor.execute(insert_query, (
+                    packet['from'], 
+                    packet['decoded']['user']['longName'], 
+                    packet['decoded']['user']['shortName'], 
+                    packet['decoded']['user']['hwModel'], 
+                    is_licensed, 
+                    role, 
+                    public_key
+                ))
+
+                db_connection.commit() 
 
             else:
-                # Check if long_name or short_name is different, update if necessary
-                if existing_record[1] != packet['decoded']['user']['longName'] or existing_record[2] != packet['decoded']['user']['shortName']:
+                # Check if values are different, update if necessary
+                # Extract existing values
+                existing_long_name = existing_record[1]
+                existing_short_name = existing_record[2]
+                existing_is_licensed = existing_record[4]
+                existing_role = existing_record[5]
+                existing_public_key = existing_record[6]
 
-                    db_cursor.execute(f'''
+                # Extract new values from the packet
+                new_long_name = packet['decoded']['user']['longName']
+                new_short_name = packet['decoded']['user']['shortName']
+                new_is_licensed = packet['decoded']['user'].get('isLicensed', '0')
+                new_role = packet['decoded']['user'].get('role', 'CLIENT')
+                new_public_key = packet['decoded']['user'].get('publicKey', '')
+
+                # Check for any differences
+                if (
+                    existing_long_name != new_long_name or
+                    existing_short_name != new_short_name or
+                    existing_is_licensed != new_is_licensed or
+                    existing_role != new_role or
+                    existing_public_key != new_public_key
+                ):
+                    # Perform necessary updates
+                    update_query = f'''
                         UPDATE {nodeinfo_table}
-                        SET long_name=?, short_name=?
-                        WHERE user_id=?
-                    ''', (packet['decoded']['user']['longName'], packet['decoded']['user']['shortName'], packet['from']))
-                    db_connection.commit()
+                        SET long_name = ?, short_name = ?, is_licensed = ?,  role = ?, public_key = ?
+                        WHERE user_id = ?
+                    '''
+                    db_cursor.execute(update_query, (
+                        new_long_name, 
+                        new_short_name, 
+                        new_is_licensed, 
+                        new_role, 
+                        new_public_key, 
+                        packet['from']
+                    ))
 
-                    # Fetch the updated record
+                db_connection.commit()
+
                     # TODO display new node name in nodelist
-                    # updated_record = db_cursor.execute(f'SELECT * FROM {nodeinfo_table} WHERE user_id=?', (packet['from'],)).fetchone()
 
 
     except sqlite3.Error as e:
