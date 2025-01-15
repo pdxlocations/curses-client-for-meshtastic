@@ -34,11 +34,13 @@ def get_channels():
     return globals.channel_list
 
 def get_node_list():
-    node_list = []
     if globals.interface.nodes:
-        for node in globals.interface.nodes.values():
-            node_list.append(node['num'])
-    return node_list
+        sorted_nodes = sorted(
+            globals.interface.nodes.values(),
+            key = lambda node: (node['lastHeard'] if 'lastHeard' in node else 0),
+            reverse = True)
+        return [node['num'] for node in sorted_nodes]
+    return []
 
 def get_nodeNum():
     myinfo = globals.interface.getMyNodeInfo()

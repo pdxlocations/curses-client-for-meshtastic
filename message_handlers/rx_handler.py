@@ -17,13 +17,19 @@ def on_receive(packet, interface):
     if globals.display_log:
         draw_packetlog_win()
     try:
-        if 'decoded' in packet and packet['decoded']['portnum'] == 'NODEINFO_APP':
+        if 'decoded' not in packet:
+            return
+
+        # Assume any incoming packet could update the last seen time for a node, so we
+        # may need to reorder the list. This could probably be limited to specific packets.
+        globals.node_list = get_node_list()
+        draw_node_list()
+
+        if packet['decoded']['portnum'] == 'NODEINFO_APP':
             if "user" in packet['decoded'] and "longName" in packet['decoded']["user"]: 
-                get_node_list()
-                draw_node_list()
                 maybe_store_nodeinfo_in_db(packet)
 
-        elif 'decoded' in packet and packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
+        elif packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
             message_string = message_bytes.decode('utf-8')
             if packet.get('channel'):
