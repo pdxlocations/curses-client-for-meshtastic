@@ -3,7 +3,7 @@
 '''
 Curses Client for Meshtastic by http://github.com/pdxlocations
 Powered by Meshtastic.org
-V 0.3.0
+V 1.0.0
 '''
 
 import curses
