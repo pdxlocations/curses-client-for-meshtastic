@@ -55,6 +55,7 @@ def draw_splash(stdscr):
     stdscr.addstr(start_y+4, start_x2, message_4)
     stdscr.box()
     stdscr.refresh()
+    curses.napms(500)
 
 
 def draw_channel_list():
