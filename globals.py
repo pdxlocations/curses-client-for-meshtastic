@@ -17,3 +17,4 @@ display_log = False
 message_prefix = ">>"
 sent_message_prefix = message_prefix + " Sent"
 notification_symbol = "*"
+node_list = []

@@ -1,7 +1,7 @@
 import curses
 import textwrap
 import globals
-from utilities.utils import get_node_list, get_name_from_number, get_channels
+from utilities.utils import get_name_from_number, get_channels
 from settings import settings
 from message_handlers.tx_handler import send_message
 
@@ -133,7 +133,7 @@ def draw_node_list():
     win_height = nodes_win.getmaxyx()[0]
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
 
-    for i, node in enumerate(get_node_list()[start_index:], start=1):
+    for i, node in enumerate(globals.node_list[start_index:], start=1):
         if i < win_height - 1   :  # Check if there is enough space in the window
             if globals.selected_node + 1 == start_index + i and globals.current_window == 2:
                 nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(3))
@@ -169,7 +169,7 @@ def select_messages(direction):
     draw_messages_window()
 
 def select_nodes(direction):
-    node_list_length = len(get_node_list())
+    node_list_length = len(globals.node_list)
     globals.selected_node += direction
 
     if globals.selected_node < 0:
@@ -327,7 +327,7 @@ def main_ui(stdscr):
             
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
             if globals.current_window == 2:
-                node_list = get_node_list()
+                node_list = globals.node_list
                 if node_list[globals.selected_node] not in globals.channel_list:
                     globals.channel_list.append(node_list[globals.selected_node])
                     globals.all_messages[node_list[globals.selected_node]] = []
