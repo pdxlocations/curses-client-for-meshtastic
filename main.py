@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-Curses Client for Meshtastic by http://github.com/pdxlocations
+Contact - A Console UI for Meshtastic by http://github.com/pdxlocations
 Powered by Meshtastic.org
 V 1.0.0
 '''
