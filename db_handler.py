@@ -3,40 +3,69 @@ import globals
 import time
 from utilities.utils import get_nodeNum, get_name_from_number
 
+def get_table_name(channel):
+    # Construct the table name
+    table_name = f"{str(get_nodeNum())}_{channel}_messages"
+    quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics and contain spaces
+    return quoted_table_name
+
 def save_message_to_db(channel, user_id, message_text):
     """Save messages to the database, ensuring the table exists."""
     try:
         with sqlite3.connect(globals.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
 
-            # Construct the table name
-            table_name = f"{str(get_nodeNum())}_{channel}_messages"
-            quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics and contain spaces
+            quoted_table_name = get_table_name(channel)
 
             # Ensure the table exists
             create_table_query = f'''
                 CREATE TABLE IF NOT EXISTS {quoted_table_name} (
                     user_id TEXT,
                     message_text TEXT,
-                    timestamp INTEGER
+                    timestamp INTEGER,
+                    ack_type TEXT
                 )
             '''
+
             db_cursor.execute(create_table_query)
+
+            timestamp = int(time.time())
 
             # Insert the message
             insert_query = f'''
-                INSERT INTO {quoted_table_name} (user_id, message_text, timestamp)
-                VALUES (?, ?, ?)
+                INSERT INTO {quoted_table_name} (user_id, message_text, timestamp, ack_type)
+                VALUES (?, ?, ?, ?)
             '''
-            db_cursor.execute(insert_query, (user_id, message_text, int(time.time())))
-
+            db_cursor.execute(insert_query, (user_id, message_text, timestamp, None))
             db_connection.commit()
+
+            return timestamp
 
     except sqlite3.Error as e:
         print(f"SQLite error in save_message_to_db: {e}")
 
     except Exception as e:
         print(f"Unexpected error in save_message_to_db: {e}")
+
+def update_ack_nak(channel, timestamp, message, ack):
+    try:
+        with sqlite3.connect(globals.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+            update_query = f"""
+                UPDATE {get_table_name(channel)}
+                SET ack_type = '{ack}'
+                WHERE user_id = {str(get_nodeNum())} AND
+                      timestamp = {timestamp} AND
+                      message_text = '{message}'
+            """
+            db_cursor.execute(update_query)
+            db_connection.commit()
+
+    except sqlite3.Error as e:
+        print(f"SQLite error in update_ack_nak: {e}")
+
+    except Exception as e:
+        print(f"Unexpected error in update_ack_nak: {e}")
 
 
 def load_messages_from_db():
@@ -52,12 +81,18 @@ def load_messages_from_db():
 
             # Iterate through each table and fetch its messages
             for table_name in tables:
-                query = f'SELECT user_id, message_text FROM "{table_name}"'
+                quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics and contain spaces
+                table_columns = [i[1] for i in db_cursor.execute(f'PRAGMA table_info({quoted_table_name})')]
+                if("ack_type" not in table_columns):
+                    update_table_query = f"ALTER TABLE {quoted_table_name} ADD COLUMN ack_type TEXT"
+                    db_cursor.execute(update_table_query)
+
+                query = f'SELECT user_id, message_text, ack_type FROM {quoted_table_name}'
 
                 try:
                     # Fetch all messages from the table
                     db_cursor.execute(query)
-                    db_messages = [(row[0], row[1]) for row in db_cursor.fetchall()]  # Save as tuples
+                    db_messages = [(row[0], row[1], row[2]) for row in db_cursor.fetchall()]  # Save as tuples
                     
                     # Extract the channel name from the table name
                     channel = table_name.split("_")[1]
@@ -74,9 +109,17 @@ def load_messages_from_db():
                         globals.all_messages[channel] = []
 
                     # Add messages to globals.all_messages in tuple format
-                    for user_id, message in db_messages:
+                    for user_id, message, ack_type in db_messages:
                         if user_id == str(get_nodeNum()):
-                            formatted_message = (f"{globals.sent_message_prefix}: ", message)
+                            ack_str = globals.ack_unknown_str
+                            if(ack_type == "Implicit"):
+                                ack_str = globals.ack_implicit_str
+                            elif(ack_type == "Ack"):
+                                ack_str = globals.ack_str
+                            elif(ack_type == "Nak"):
+                                ack_str = globals.nak_str
+
+                            formatted_message = (f"{globals.sent_message_prefix}{ack_str}: ", message)
                         else:    
                             formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
                             
@@ -224,6 +267,5 @@ def maybe_store_nodeinfo_in_db(packet):
 
     except sqlite3.Error as e:
         print(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
-
     finally:
         db_connection.close()

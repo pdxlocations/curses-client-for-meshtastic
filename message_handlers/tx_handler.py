@@ -1,5 +1,5 @@
 from meshtastic import BROADCAST_NUM
-from db_handler import save_message_to_db
+from db_handler import save_message_to_db, update_ack_nak
 from utilities.utils import get_nodeNum
 import globals
 
@@ -17,15 +17,21 @@ def onAckNak(packet):
     message = globals.all_messages[acknak['channel']][acknak['messageIndex']][1]
 
     confirm_string = " "
+    ack_type = None
     if(packet['decoded']['routing']['errorReason'] == "NONE"):
         if(packet['from'] == get_nodeNum()): # Ack "from" ourself means implicit ACK
-            confirm_string = "[◌]"
+            confirm_string = globals.ack_implicit_str
+            ack_type = "Implicit"
         else:
-            confirm_string = "[✓]"
+            confirm_string = globals.ack_str
+            ack_type = "Ack"
     else:
-        confirm_string = "[x]"
+        confirm_string = globals.nak_str
+        ack_type = "Nak"
 
     globals.all_messages[acknak['channel']][acknak['messageIndex']] = (globals.sent_message_prefix + confirm_string + ": ", message)
+
+    update_ack_nak(acknak['channel'], acknak['timestamp'], message, ack_type)
 
     draw_messages_window()
 
@@ -50,12 +56,12 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
     )
 
     # Add sent message to the messages dictionary
-    if channel_id in globals.all_messages:
-        globals.all_messages[channel_id].append((globals.sent_message_prefix + "[…]: ", message))
-    else:
-        globals.all_messages[channel_id] = [(globals.sent_message_prefix + "[…]: ", message)]
+    if channel_id not in globals.all_messages:
+        globals.all_messages[channel_id] = []
 
-    ack_naks[sent_message_data.id] = {'channel' : channel_id, 'messageIndex' : len(globals.all_messages[channel_id]) - 1 }
+    globals.all_messages[channel_id].append((globals.sent_message_prefix + globals.ack_unknown_str + ": ", message))
 
+    timestamp = save_message_to_db(channel_id, myid, message)
 
-    save_message_to_db(channel_id, myid, message)
+    ack_naks[sent_message_data.id] = {'channel' : channel_id, 'messageIndex' : len(globals.all_messages[channel_id]) - 1, 'timestamp' : timestamp }
+
