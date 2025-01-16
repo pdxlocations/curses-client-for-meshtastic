@@ -26,7 +26,7 @@ os.environ["TERM"] = "screen"
 os.environ["LANG"] = "C.UTF-8"
 
 # Configure logging
-# Run `tail -f contact.log` in another terminal to view live
+# Run `tail -f client.log` in another terminal to view live
 logging.basicConfig(
     filename=globals.log_file_path,
     level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
