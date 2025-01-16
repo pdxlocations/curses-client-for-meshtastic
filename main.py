@@ -9,6 +9,8 @@ V 1.0.1
 import curses
 from pubsub import pub
 import os
+import logging
+import traceback
 
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
@@ -23,18 +25,34 @@ os.environ["NCURSES_NO_UTF8_ACS"] = "1"
 os.environ["TERM"] = "screen"
 os.environ["LANG"] = "C.UTF-8"
 
-def main(stdscr):
-    draw_splash(stdscr)
-    parser = setup_parser()
-    args = parser.parse_args()
-    globals.interface = initialize_interface(args)
-    globals.channel_list = get_channels()
-    pub.subscribe(on_receive, 'meshtastic.receive')
-    globals.node_list = get_node_list()
-    init_nodedb()
-    load_messages_from_db()
-    main_ui(stdscr)
+# Configure logging
+# Run `tail -f contact.log` in another terminal to view live
+logging.basicConfig(
+    filename=globals.log_file_path,
+    level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
+def main(stdscr):
+    try:
+        draw_splash(stdscr)
+        parser = setup_parser()
+        args = parser.parse_args()
+        globals.interface = initialize_interface(args)
+        globals.channel_list = get_channels()
+        pub.subscribe(on_receive, 'meshtastic.receive')
+        globals.node_list = get_node_list()
+        init_nodedb()
+        load_messages_from_db()
+        main_ui(stdscr)
+    except Exception as e:
+        logging.error("An error occurred: %s", e)
+        logging.error("Traceback: %s", traceback.format_exc())
+        raise
 
 if __name__ == "__main__":
-    curses.wrapper(main)
+    try:
+        curses.wrapper(main)
+    except Exception as e:
+        logging.error("Fatal error in curses wrapper: %s", e)
+        logging.error("Traceback: %s", traceback.format_exc())

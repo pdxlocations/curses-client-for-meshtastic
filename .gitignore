@@ -2,3 +2,4 @@
 __pycache__/
 client.db
 .DS_Store
+contact.log

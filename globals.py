@@ -2,6 +2,7 @@ import os
 
 app_directory = os.path.dirname(os.path.abspath(__file__))
 db_file_path = os.path.join(app_directory, "client.db")
+log_file_path = os.path.join(app_directory, "client.log")
 
 all_messages = {}
 channel_list = []
