@@ -1,5 +1,5 @@
 from meshtastic import BROADCAST_NUM
-from utilities.utils import get_node_list, decimal_to_hex, get_nodeNum, get_name_from_number
+from utilities.utils import get_node_list, decimal_to_hex, get_name_from_number
 import globals
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db

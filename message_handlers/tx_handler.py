@@ -1,7 +1,7 @@
 from meshtastic import BROADCAST_NUM
 from db_handler import save_message_to_db, update_ack_nak
 from meshtastic.protobuf import mesh_pb2, portnums_pb2
-from utilities.utils import get_nodeNum, get_name_from_number
+from utilities.utils import get_name_from_number
 import globals
 import google.protobuf.json_format
 
