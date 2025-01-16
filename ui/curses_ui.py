@@ -3,8 +3,7 @@ import textwrap
 import globals
 from utilities.utils import get_name_from_number, get_channels
 from settings import settings
-from message_handlers.tx_handler import send_message
-
+from message_handlers.tx_handler import send_message, send_traceroute
 
 def add_notification(channel_number):
     handle_notification(channel_number, add=True)
@@ -324,7 +323,11 @@ def main_ui(stdscr):
         # Check for Esc
         elif char == 27:
             break
-            
+
+        # Check for Ctrl + t
+        elif char == 20:
+            send_traceroute()
+
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
             if globals.current_window == 2:
                 node_list = globals.node_list
