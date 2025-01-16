@@ -1,7 +1,7 @@
 import sqlite3
 import globals
 import time
-from utilities.utils import get_nodeNum, get_name_from_number
+from utilities.utils import get_name_from_number
 
 def get_table_name(channel):
     # Construct the table name
