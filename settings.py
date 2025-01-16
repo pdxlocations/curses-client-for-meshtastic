@@ -2,6 +2,24 @@ import curses
 from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
 import meshtastic.serial_interface
 
+
+def settings_reboot(interface):
+    interface.localNode.reboot()
+
+def settings_reset_nodedb(interface):
+    interface.localNode.resetNodeDb()
+
+def settings_shutdown(interface):
+    interface.localNode.shutdown()
+
+def settings_factory_reset(interface):
+    interface.localNode.factoryReset()
+
+def settings_set_owner(interface, long_name=None, short_name=None, is_licensed=False):
+    if isinstance(is_licensed, str):
+        is_licensed = is_licensed.lower() == 'true'
+    interface.localNode.setOwner(long_name, short_name, is_licensed)
+
 # Function to generate the menu structure from protobuf messages
 def generate_menu_from_protobuf(interface):
     def extract_fields(message_instance, current_config=None):
@@ -37,7 +55,7 @@ def generate_menu_from_protobuf(interface):
     current_user_config = interface.getMyNodeInfo()["user"] if interface else None
     menu_structure["Main Menu"]["User Settings"] = extract_fields(user, current_user_config)
 
-    # Add Channels (example with 8 channels)
+    # Add Channels
     channel = channel_pb2.ChannelSettings()
     menu_structure["Main Menu"]["Channels"] = {}
     if interface:
@@ -46,6 +64,12 @@ def generate_menu_from_protobuf(interface):
             if current_channel:
                 channel_config = extract_fields(channel, current_channel.settings)
                 menu_structure["Main Menu"]["Channels"][f"Channel {i + 1}"] = channel_config
+
+    # Add additional settings options
+    menu_structure["Main Menu"]["Reboot"] = settings_reboot
+    menu_structure["Main Menu"]["Reset Node DB"] = settings_reset_nodedb
+    menu_structure["Main Menu"]["Shutdown"] = settings_shutdown
+    menu_structure["Main Menu"]["Factory Reset"] = settings_factory_reset
 
     # Add Exit option
     menu_structure["Main Menu"]["Exit"] = None
@@ -131,20 +155,22 @@ def get_bool_selection(stdscr, current_value):
     options = ["True", "False"]
     selected_index = 0 if current_value == "True" else 1
 
+    # Set dimensions and position to match other windows
     height = 7
     width = 60
     start_y = (curses.LINES - height) // 2
     start_x = (curses.COLS - width) // 2
 
+    # Create a curses window for boolean selection
     bool_win = curses.newwin(height, width, start_y, start_x)
-    bool_win.clear()
-    bool_win.border()
+    bool_win.keypad(True)
 
     while True:
         bool_win.clear()
         bool_win.border()
         bool_win.addstr(1, 2, "Select True or False:", curses.A_BOLD)
 
+        # Display options
         for idx, option in enumerate(options):
             if idx == selected_index:
                 bool_win.addstr(idx + 3, 4, option, curses.A_REVERSE)
@@ -158,9 +184,9 @@ def get_bool_selection(stdscr, current_value):
             selected_index = max(0, selected_index - 1)
         elif key == curses.KEY_DOWN:
             selected_index = min(len(options) - 1, selected_index + 1)
-        elif key == ord('\n'):
+        elif key == ord('\n'):  # Enter key to select
             return options[selected_index]
-        elif key == 27:  # Escape key
+        elif key == 27:  # Escape key to cancel
             return current_value
 
 def get_repeated_input(stdscr, current_value):
@@ -190,28 +216,40 @@ def get_repeated_input(stdscr, current_value):
 def select_enum_option(stdscr, options, current_value):
     selected_index = options.index(current_value) if current_value in options else 0
 
-    while True:
-        stdscr.clear()
-        stdscr.addstr(1, 2, "Select an option:", curses.A_BOLD)
+    # Set dimensions and position to match other windows
+    height = min(len(options) + 4, curses.LINES - 2)  # Dynamic height based on options
+    width = 60
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
 
+    # Create a curses window for enum selection
+    enum_win = curses.newwin(height, width, start_y, start_x)
+    enum_win.keypad(True)
+
+    while True:
+        enum_win.clear()
+        enum_win.border()
+        enum_win.addstr(1, 2, "Select an option:", curses.A_BOLD)
+
+        # Display options
         for idx, option in enumerate(options):
             if idx == selected_index:
-                stdscr.addstr(idx + 3, 4, option, curses.A_REVERSE)
+                enum_win.addstr(idx + 2, 4, option, curses.A_REVERSE)
             else:
-                stdscr.addstr(idx + 3, 4, option)
+                enum_win.addstr(idx + 2, 4, option)
 
-        stdscr.refresh()
-        key = stdscr.getch()
+        enum_win.refresh()
+        key = enum_win.getch()
 
         if key == curses.KEY_UP:
             selected_index = max(0, selected_index - 1)
         elif key == curses.KEY_DOWN:
             selected_index = min(len(options) - 1, selected_index + 1)
-        elif key == ord('\n'):
+        elif key == ord('\n'):  # Enter key to select
             return options[selected_index]
-        elif key == 27:  # Escape key
+        elif key == 27:  # Escape key to cancel
             return current_value
-
+        
 def save_changes(interface, menu_path, settings):
     try:
         # Determine the specific subcategory (config_name) based on the menu path
@@ -219,6 +257,8 @@ def save_changes(interface, menu_path, settings):
             config_name = menu_path[2]  # The second level in the menu specifies the subcategory
         elif menu_path[1] == "Module Settings":
             config_name = menu_path[2]  # Similarly, handle module settings subcategories
+        elif menu_path[1] == "User Settings":
+            config_name = menu_path[1]  # Similarly, handle user settings subcategories
         else:
             print("Unsupported config path for saving changes.")
             return
@@ -233,8 +273,18 @@ def save_changes(interface, menu_path, settings):
                     print(f"Updated {key} to {new_value}")  # Debugging log
 
         # Write the changes back to the radio for the specific config_name
-        interface.localNode.writeConfig(config_name)
-        print(f"Changes saved to {config_name}.")  # Confirmation log
+        if config_name == "User Settings":
+            # Extract values for settings_set_owner
+            long_name = settings.get("long_name", "")
+            short_name = settings.get("short_name", "")
+            is_licensed = settings.get("is_licensed", False)
+
+            # Call settings_set_owner with extracted values
+            settings_set_owner(interface, long_name=long_name, short_name=short_name, is_licensed=is_licensed)
+            print("User settings saved.")
+        else:
+            interface.localNode.writeConfig(config_name)
+            print(f"Changes saved to {config_name}.")
 
     except Exception as e:
         print(f"Error saving changes: {e}")
@@ -248,7 +298,8 @@ def nested_menu(stdscr, menu, interface):
     while True:
         # Extract keys of the current menu
         options = list(current_menu.keys())
-        show_save_option = "Radio Settings" in menu_path or "Module Settings" in menu_path
+
+        show_save_option = "Radio Settings" in menu_path or "Module Settings" in menu_path or "User Settings" in menu_path
 
         # Display the menu
         display_menu(stdscr, current_menu, menu_path, selected_index, show_save_option)
@@ -273,19 +324,48 @@ def nested_menu(stdscr, menu, interface):
 
             if selected_option == "Exit":
                 break
+            elif selected_option == "Reboot":
+                settings_reboot(interface)
+                stdscr.addstr(1, 2, "Rebooting... Press any key to continue.", curses.A_BOLD)
+                stdscr.refresh()
+                stdscr.getch()
+                break
+            elif selected_option == "Reset Node DB":
+                settings_reset_nodedb(interface)
+                stdscr.addstr(1, 2, "Node DB reset. Press any key to continue.", curses.A_BOLD)
+                stdscr.refresh()
+                stdscr.getch()
+            elif selected_option == "Shutdown":
+                settings_shutdown(interface)
+                stdscr.addstr(1, 2, "Shutting down... Press any key to exit.", curses.A_BOLD)
+                stdscr.refresh()
+                stdscr.getch()
+                break
+            elif selected_option == "Factory Reset":
+                settings_factory_reset(interface)
+                stdscr.addstr(1, 2, "Factory reset complete. Press any key to continue.", curses.A_BOLD)
+                stdscr.refresh()
+                stdscr.getch()
 
             field_info = current_menu.get(selected_option)
 
             if isinstance(field_info, tuple):
                 field, current_value = field_info
 
-                if field.type == field.TYPE_BOOL:
+                if field.type == field.TYPE_BOOL:  # Handle boolean type
                     new_value = get_bool_selection(stdscr, str(current_value))
+
+                    # Update the modified settings and current menu
+                    modified_settings[selected_option] = (field, new_value)
+                    current_menu[selected_option] = (field, new_value)
                 elif field.label == field.LABEL_REPEATED:
                     new_value = get_repeated_input(stdscr, current_value)
                 elif field.enum_type:  # Enum field
                     enum_options = [v.name for v in field.enum_type.values]
                     new_value = select_enum_option(stdscr, enum_options, current_value)
+
+                    modified_settings[selected_option] = (field, new_value)
+                    current_menu[selected_option] = (field, new_value)
                 else:
                     new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
 
@@ -315,6 +395,8 @@ def main(stdscr):
 
     # Generate menu structure from protobuf
     menu_structure = generate_menu_from_protobuf(interface)
+    stdscr.clear()
+    stdscr.refresh()
     nested_menu(stdscr, menu_structure, interface)
 
 if __name__ == "__main__":
