@@ -36,8 +36,7 @@ def on_receive(packet, interface):
                 channel_number = packet['channel']
             else:
                 channel_number = 0
-            myNodeNum = get_nodeNum()
-            if packet['to'] == myNodeNum:
+            if packet['to'] == globals.myNodeNum:
                 if packet['from'] in globals.channel_list:
                     pass
                 else:

@@ -19,7 +19,7 @@ def onAckNak(packet):
     confirm_string = " "
     ack_type = None
     if(packet['decoded']['routing']['errorReason'] == "NONE"):
-        if(packet['from'] == get_nodeNum()): # Ack "from" ourself means implicit ACK
+        if(packet['from'] == globals.myNodeNum): # Ack "from" ourself means implicit ACK
             confirm_string = globals.ack_implicit_str
             ack_type = "Implicit"
         else:
@@ -37,7 +37,7 @@ def onAckNak(packet):
 
 def send_message(message, destination=BROADCAST_NUM, channel=0):
 
-    myid = get_nodeNum()
+    myid = globals.myNodeNum
     send_on_channel = 0
     channel_id = globals.channel_list[channel]
     if isinstance(channel_id, int):

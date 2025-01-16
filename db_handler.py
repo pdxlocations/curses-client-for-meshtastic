@@ -5,7 +5,7 @@ from utilities.utils import get_nodeNum, get_name_from_number
 
 def get_table_name(channel):
     # Construct the table name
-    table_name = f"{str(get_nodeNum())}_{channel}_messages"
+    table_name = f"{str(globals.myNodeNum)}_{channel}_messages"
     quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics and contain spaces
     return quoted_table_name
 
@@ -54,7 +54,7 @@ def update_ack_nak(channel, timestamp, message, ack):
             update_query = f"""
                 UPDATE {get_table_name(channel)}
                 SET ack_type = '{ack}'
-                WHERE user_id = {str(get_nodeNum())} AND
+                WHERE user_id = {str(globals.myNodeNum)} AND
                       timestamp = {timestamp} AND
                       message_text = '{message}'
             """
@@ -76,7 +76,7 @@ def load_messages_from_db():
 
             # Retrieve all table names that match the pattern
             query = "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?"
-            db_cursor.execute(query, (f"{str(get_nodeNum())}_%_messages",))
+            db_cursor.execute(query, (f"{str(globals.myNodeNum)}_%_messages",))
             tables = [row[0] for row in db_cursor.fetchall()]
 
             # Iterate through each table and fetch its messages
@@ -110,7 +110,7 @@ def load_messages_from_db():
 
                     # Add messages to globals.all_messages in tuple format
                     for user_id, message, ack_type in db_messages:
-                        if user_id == str(get_nodeNum()):
+                        if user_id == str(globals.myNodeNum):
                             ack_str = globals.ack_unknown_str
                             if(ack_type == "Implicit"):
                                 ack_str = globals.ack_implicit_str
@@ -140,7 +140,7 @@ def init_nodedb():
             db_cursor = db_connection.cursor()
 
             # Table name construction
-            table_name = f"{str(get_nodeNum())}_nodedb"
+            table_name = f"{str(globals.myNodeNum)}_nodedb"
             nodeinfo_table = f'"{table_name}"'  # Quote the table name because it might begin with numerics
 
             # Create the table if it doesn't exist
@@ -191,7 +191,7 @@ def maybe_store_nodeinfo_in_db(packet):
     try:
         with sqlite3.connect(globals.db_file_path) as db_connection:
 
-            table_name = f"{str(get_nodeNum())}_nodedb"
+            table_name = f"{str(globals.myNodeNum)}_nodedb"
             nodeinfo_table = f'"{table_name}"'  # Quote the table name becuase we might begin with numerics
             db_cursor = db_connection.cursor()
 
