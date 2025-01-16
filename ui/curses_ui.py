@@ -4,6 +4,7 @@ import globals
 from utilities.utils import get_name_from_number, get_channels
 from settings import settings
 from message_handlers.tx_handler import send_message, send_traceroute
+import ui.dialog
 
 def add_notification(channel_number):
     handle_notification(channel_number, add=True)
@@ -327,6 +328,9 @@ def main_ui(stdscr):
         # Check for Ctrl + t
         elif char == 20:
             send_traceroute()
+            curses.curs_set(0)  # Hide cursor
+            ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window")
+            curses.curs_set(1)  # Show cursor again
 
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
             if globals.current_window == 2:
