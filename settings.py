@@ -53,17 +53,23 @@ def generate_menu_from_protobuf(interface):
     return menu_structure
 
 def display_menu(stdscr, current_menu, menu_path, selected_index, show_save_option):
-    stdscr.clear()
-    stdscr.border()
+    # Calculate the dynamic height based on the number of menu items
+    num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
+    height = min(curses.LINES - 2, num_items + 5)  # Ensure the menu fits within the terminal height
+    width = 60
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
 
-    # Get screen dimensions
-    height, width = stdscr.getmaxyx()
+    # Create a new curses window with dynamic dimensions
+    menu_win = curses.newwin(height, width, start_y, start_x)
+    menu_win.clear()
+    menu_win.border()
 
     # Display the current menu path as a header
     header = " > ".join(menu_path)
     if len(header) > width - 4:
         header = header[:width - 7] + "..."
-    stdscr.addstr(1, 2, header, curses.A_BOLD)
+    menu_win.addstr(1, 2, header, curses.A_BOLD)
 
     # Display the menu options
     for idx, option in enumerate(current_menu):
@@ -74,9 +80,9 @@ def display_menu(stdscr, current_menu, menu_path, selected_index, show_save_opti
 
         try:
             if idx == selected_index:
-                stdscr.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE)
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE)
             else:
-                stdscr.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}")
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}")
         except curses.error:
             pass
 
@@ -85,39 +91,68 @@ def display_menu(stdscr, current_menu, menu_path, selected_index, show_save_opti
         save_option = "Save Changes"
         save_position = height - 2
         if selected_index == len(current_menu):
-            stdscr.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.A_REVERSE)
+            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.A_REVERSE)
         else:
-            stdscr.addstr(save_position, (width - len(save_option)) // 2, save_option)
+            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option)
 
-    stdscr.refresh()
+    menu_win.refresh()
 
 def get_user_input(stdscr, prompt):
+    # Calculate the dynamic height and width for the input window
+    height = 7  # Fixed height for input prompt
+    width = 60
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
+
+    # Create a new window for user input
+    input_win = curses.newwin(height, width, start_y, start_x)
+    input_win.clear()
+    input_win.border()
+
+    # Display the prompt
+    input_win.addstr(1, 2, prompt, curses.A_BOLD)
+    input_win.addstr(3, 2, "Enter value: ")
+    input_win.refresh()
+
+    # Enable user input
     curses.echo()
-    stdscr.clear()
-    stdscr.addstr(1, 2, prompt, curses.A_BOLD)
-    stdscr.addstr(3, 2, "Enter value: ")
     curses.curs_set(1)
-    user_input = stdscr.getstr(3, 15).decode("utf-8")
+    user_input = input_win.getstr(3, 15).decode("utf-8")
     curses.curs_set(0)
     curses.noecho()
+
+    # Clear the input window
+    input_win.clear()
+    input_win.refresh()
+
     return user_input
 
 def get_bool_selection(stdscr, current_value):
     options = ["True", "False"]
     selected_index = 0 if current_value == "True" else 1
 
+    height = 7
+    width = 60
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
+
+    bool_win = curses.newwin(height, width, start_y, start_x)
+    bool_win.clear()
+    bool_win.border()
+
     while True:
-        stdscr.clear()
-        stdscr.addstr(1, 2, "Select True or False:", curses.A_BOLD)
+        bool_win.clear()
+        bool_win.border()
+        bool_win.addstr(1, 2, "Select True or False:", curses.A_BOLD)
 
         for idx, option in enumerate(options):
             if idx == selected_index:
-                stdscr.addstr(idx + 3, 4, option, curses.A_REVERSE)
+                bool_win.addstr(idx + 3, 4, option, curses.A_REVERSE)
             else:
-                stdscr.addstr(idx + 3, 4, option)
+                bool_win.addstr(idx + 3, 4, option)
 
-        stdscr.refresh()
-        key = stdscr.getch()
+        bool_win.refresh()
+        key = bool_win.getch()
 
         if key == curses.KEY_UP:
             selected_index = max(0, selected_index - 1)
@@ -129,15 +164,27 @@ def get_bool_selection(stdscr, current_value):
             return current_value
 
 def get_repeated_input(stdscr, current_value):
-    stdscr.clear()
+    height = 10
+    width = 60
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
+
+    repeated_win = curses.newwin(height, width, start_y, start_x)
+    repeated_win.clear()
+    repeated_win.border()
+
     curses.echo()
-    stdscr.addstr(1, 2, "Enter comma-separated values:", curses.A_BOLD)
-    stdscr.addstr(3, 2, f"Current: {current_value}")
-    stdscr.addstr(5, 2, "New value: ")
-    curses.curs_set(1)
-    user_input = stdscr.getstr(5, 13).decode("utf-8")
-    curses.curs_set(0)
+    repeated_win.addstr(1, 2, "Enter comma-separated values:", curses.A_BOLD)
+    repeated_win.addstr(3, 2, f"Current: {current_value}")
+    repeated_win.addstr(5, 2, "New value: ")
+    repeated_win.refresh()
+
+    user_input = repeated_win.getstr(5, 13).decode("utf-8")
     curses.noecho()
+
+    repeated_win.clear()
+    repeated_win.refresh()
+
     return user_input.split(",")
 
 def select_enum_option(stdscr, options, current_value):
@@ -167,22 +214,28 @@ def select_enum_option(stdscr, options, current_value):
 
 def save_changes(interface, menu_path, settings):
     try:
-        # Traverse and update the corresponding settings in the radio
+        # Determine the specific subcategory (config_name) based on the menu path
         if menu_path[1] == "Radio Settings":
-            config = interface.localNode.localConfig
+            config_name = menu_path[2]  # The second level in the menu specifies the subcategory
         elif menu_path[1] == "Module Settings":
-            config = interface.localNode.moduleConfig
+            config_name = menu_path[2]  # Similarly, handle module settings subcategories
         else:
+            print("Unsupported config path for saving changes.")
             return
 
+        # Apply modified settings to the corresponding config object
         for key, value in settings.items():
             if isinstance(value, tuple):
                 field, new_value = value
-                if hasattr(config, key):
-                    setattr(config, key, new_value)
+                # Update the relevant field in localConfig
+                if hasattr(interface.localNode.localConfig, key):
+                    setattr(interface.localNode.localConfig, key, new_value)
+                    print(f"Updated {key} to {new_value}")  # Debugging log
 
-        # Write changes back to the radio
-        interface.localNode.writeConfig()
+        # Write the changes back to the radio for the specific config_name
+        interface.localNode.writeConfig(config_name)
+        print(f"Changes saved to {config_name}.")  # Confirmation log
+
     except Exception as e:
         print(f"Error saving changes: {e}")
 
