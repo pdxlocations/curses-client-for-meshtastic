@@ -78,7 +78,7 @@ def on_response_traceroute(packet):
                          + " (" + (str(msg_dict["snrBack"][idx] / 4) if msg_dict["snrBack"][idx] != UNK_SNR else "?") + "dB)"
 
         # End with destination of response (us)
-        route_str += " --> " + (get_name_from_number(packet["to"]) or f"{p['to']:08x}") \
+        route_str += " --> " + (get_name_from_number(packet["to"]) or f"{packet['to']:08x}") \
                  + " (" + (str(msg_dict["snrBack"][-1] / 4) if msg_dict["snrBack"][-1] != UNK_SNR else "?") + "dB)"
 
         msg_str += route_str + "\n" # Print the route back to us
