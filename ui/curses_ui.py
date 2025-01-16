@@ -329,7 +329,7 @@ def main_ui(stdscr):
         elif char == 20:
             send_traceroute()
             curses.curs_set(0)  # Hide cursor
-            ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window")
+            ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
             curses.curs_set(1)  # Show cursor again
 
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
