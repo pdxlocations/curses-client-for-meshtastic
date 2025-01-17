@@ -35,11 +35,16 @@ def onAckNak(packet):
 
     update_ack_nak(acknak['channel'], acknak['timestamp'], message, ack_type)
 
-    draw_messages_window()
+    channel_number = globals.channel_list.index(acknak['channel'])
+    if globals.channel_list[channel_number] == globals.channel_list[globals.selected_channel]:
+        draw_messages_window()
 
 def on_response_traceroute(packet):
     """on response for trace route"""
     from ui.curses_ui import draw_channel_list, draw_messages_window, add_notification
+
+    refresh_channels = False
+    refresh_messages = False
 
     UNK_SNR = -128 # Value representing unknown SNR
 
@@ -85,11 +90,15 @@ def on_response_traceroute(packet):
 
     if(packet['from'] not in globals.channel_list):
         globals.channel_list.append(packet['from'])
+        refresh_channels = True
 
     channel_number = globals.channel_list.index(packet['from'])
 
-    if globals.channel_list[channel_number] != globals.channel_list[globals.selected_channel]:
+    if globals.channel_list[channel_number] == globals.channel_list[globals.selected_channel]:
+        refresh_messages = True
+    else:
         add_notification(channel_number)
+        refresh_channels = True
 
     message_from_string = get_name_from_number(packet['from'], type='short') + ":\n"
 
@@ -97,8 +106,10 @@ def on_response_traceroute(packet):
         globals.all_messages[globals.channel_list[channel_number]] = []
     globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string}", msg_str))
 
-    draw_channel_list()
-    draw_messages_window()
+    if(refresh_channels):
+        draw_channel_list()
+    if(refresh_messages):
+        draw_messages_window()
     save_message_to_db(globals.channel_list[channel_number], packet['from'], msg_str)
 
 def send_message(message, destination=BROADCAST_NUM, channel=0):
