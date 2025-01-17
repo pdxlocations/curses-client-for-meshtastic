@@ -71,13 +71,3 @@ def get_name_from_number(number, type='long'):
             name = str(decimal_to_hex(number))  # If long name not found, use the ID as string
     return name
 
-def sanitize_string(input_str: str) -> str:
-    """Check if the string starts with a letter (a-z, A-Z) or an underscore (_), and replace all non-alpha/numeric/underscore characters with underscores."""
-
-    if not re.match(r'^[a-zA-Z_]', input_str):
-        # If not, add "_"
-        input_str = '_' + input_str
-
-    # Replace special characters with underscores (for database tables)
-    sanitized_str: str = re.sub(r'[^a-zA-Z0-9_]', '_', input_str)
-    return sanitized_str
