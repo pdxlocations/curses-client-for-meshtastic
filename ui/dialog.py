@@ -33,7 +33,8 @@ def dialog(stdscr, title, message):
     # Get user input
     while True:
         char = win.getch()
-        if char == curses.KEY_ENTER or char == 10 or char == 13:
+        # Close dialog with enter, space, or esc
+        if char in(curses.KEY_ENTER, 10, 13, 32, 27):
             win.clear()
             win.refresh()
             return
