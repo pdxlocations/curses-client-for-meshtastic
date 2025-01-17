@@ -34,6 +34,10 @@ def on_receive(packet, interface):
         elif packet['decoded']['portnum'] == 'TEXT_MESSAGE_APP':
             message_bytes = packet['decoded']['payload']
             message_string = message_bytes.decode('utf-8')
+
+            refresh_channels = False
+            refresh_messages = False
+
             if packet.get('channel'):
                 channel_number = packet['channel']
             else:
@@ -44,12 +48,15 @@ def on_receive(packet, interface):
                 else:
                     globals.channel_list.append(packet['from'])
                     globals.all_messages[packet['from']] = []
-                    draw_channel_list()
+                    refresh_channels = True
 
                 channel_number = globals.channel_list.index(packet['from'])
 
             if globals.channel_list[channel_number] != globals.channel_list[globals.selected_channel]:
                 add_notification(channel_number)
+                refresh_channels = True
+            else:
+                refresh_messages = True
 
             # Add received message to the messages list
             message_from_id = packet['from']
@@ -60,8 +67,11 @@ def on_receive(packet, interface):
 
             globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string} ", message_string))
 
-            draw_channel_list()
-            draw_messages_window()
+            if(refresh_channels):
+                draw_channel_list()
+            if(refresh_messages):
+                draw_messages_window()
+
             save_message_to_db(globals.channel_list[channel_number], message_from_id, message_string)
 
     except KeyError as e:
