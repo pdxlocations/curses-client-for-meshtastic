@@ -22,8 +22,10 @@ def on_receive(packet, interface):
 
         # Assume any incoming packet could update the last seen time for a node, so we
         # may need to reorder the list. This could probably be limited to specific packets.
-        globals.node_list = get_node_list()
-        draw_node_list()
+        new_node_list = get_node_list()
+        if(new_node_list != globals.node_list):
+            globals.node_list = new_node_list
+            draw_node_list()
 
         if packet['decoded']['portnum'] == 'NODEINFO_APP':
             if "user" in packet['decoded'] and "longName" in packet['decoded']["user"]: 
