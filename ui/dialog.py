@@ -25,7 +25,7 @@ def dialog(stdscr, title, message):
         win.addstr(2 + i, 2, l)
 
     # Add button
-    win.addstr(dialog_height - 2, (dialog_width - 4) // 2, " Ok ")
+    win.addstr(dialog_height - 2, (dialog_width - 4) // 2, " Ok ", curses.color_pair(3))
 
     # Refresh dialog window
     win.refresh()
@@ -33,7 +33,8 @@ def dialog(stdscr, title, message):
     # Get user input
     while True:
         char = win.getch()
-        if char == curses.KEY_ENTER or char == 10 or char == 13:
+        # Close dialog with enter, space, or esc
+        if char in(curses.KEY_ENTER, 10, 13, 32, 27):
             win.clear()
             win.refresh()
             return
