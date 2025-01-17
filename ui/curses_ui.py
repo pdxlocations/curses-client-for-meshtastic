@@ -2,7 +2,7 @@ import curses
 import textwrap
 import globals
 from utilities.utils import get_name_from_number, get_channels
-from settings import settings
+from settings.settings import settings
 from message_handlers.tx_handler import send_message
 
 
