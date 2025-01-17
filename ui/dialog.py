@@ -25,7 +25,7 @@ def dialog(stdscr, title, message):
         win.addstr(2 + i, 2, l)
 
     # Add button
-    win.addstr(dialog_height - 2, (dialog_width - 4) // 2, " Ok ")
+    win.addstr(dialog_height - 2, (dialog_width - 4) // 2, " Ok ", curses.color_pair(3))
 
     # Refresh dialog window
     win.refresh()
