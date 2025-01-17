@@ -5,7 +5,8 @@ import time
 configurations = {
     "device": {
         "role": "CLIENT_MUTE",
-        "node_info_broadcast_secs": 10801
+        "node_info_broadcast_secs": 10801,
+        "serial_enabled": False
     }
 }
 

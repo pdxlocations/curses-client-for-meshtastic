@@ -1,0 +1,37 @@
+2025-01-17 12:41:51,705 - WARNING - Section 'mqtt' not found in localConfig
+2025-01-17 12:41:51,812 - INFO - Changes written to section: mqtt
+2025-01-17 12:47:31,688 - ERROR - Error saving changes: 'str' object cannot be interpreted as an integer
+2025-01-17 12:48:05,749 - WARNING - Option 'enabled' not found in section 'device'
+2025-01-17 12:48:05,750 - INFO - Updated device.role to CLIENT_MUTE
+2025-01-17 12:48:05,855 - INFO - Changes written to section: device
+2025-01-17 12:48:45,578 - WARNING - Option 'enabled' not found in section 'power'
+2025-01-17 12:48:45,579 - WARNING - Option 'role' not found in section 'power'
+2025-01-17 12:56:39,966 - INFO - Updated device.node_info_broadcast_secs to 1234
+2025-01-17 12:56:40,072 - INFO - Changes written to section: device
+2025-01-17 13:00:06,771 - INFO - Updated device.role to ROUTER
+2025-01-17 13:00:06,878 - INFO - Changes written to section: device
+2025-01-17 13:01:02,231 - INFO - Updated device.role to CLIENT_MUTE
+2025-01-17 13:20:40,434 - INFO - Updated device.role to ROUTER_CLIENT
+2025-01-17 13:20:40,543 - INFO - Changes written to section: device
+2025-01-17 13:20:52,734 - INFO - Updated device.role to ROUTER_CLIENT
+2025-01-17 13:20:52,735 - INFO - Updated device.node_info_broadcast_secs to 34555
+2025-01-17 13:20:52,841 - INFO - Changes written to section: device
+2025-01-17 13:22:56,451 - ERROR - Error saving changes: expected bytes, str found
+2025-01-17 13:23:08,945 - WARNING - Option 'private_key' not found in section 'mqtt'
+2025-01-17 13:23:08,946 - WARNING - Option 'admin_key' not found in section 'mqtt'
+2025-01-17 13:23:39,904 - ERROR - Error saving changes: 'str' object cannot be interpreted as an integer
+2025-01-17 13:23:53,783 - WARNING - Option 'private_key' not found in section 'device'
+2025-01-17 13:23:53,784 - WARNING - Option 'admin_key' not found in section 'device'
+2025-01-17 13:23:53,784 - WARNING - Option 'enabled' not found in section 'device'
+2025-01-17 13:26:56,498 - INFO - Updated device.serial_enabled to False
+2025-01-17 13:26:56,600 - INFO - Changes written to section: device
+2025-01-17 13:27:09,308 - INFO - Updated device.serial_enabled to False
+2025-01-17 13:27:09,309 - INFO - Updated device.led_heartbeat_disabled to True
+2025-01-17 13:27:09,412 - INFO - Changes written to section: device
+2025-01-17 13:28:33,090 - INFO - Updated lora.modem_preset to MEDIUM_FAST
+2025-01-17 13:28:33,091 - INFO - Updated lora.hop_limit to 4
+2025-01-17 13:28:33,091 - INFO - Updated lora.channel_num to 20
+2025-01-17 13:28:33,092 - INFO - Updated lora.config_ok_to_mqtt to True
+2025-01-17 13:28:33,194 - INFO - Changes written to section: lora
+2025-01-17 13:29:47,128 - ERROR - Error saving changes: Assignment not allowed to message, map, or repeated field "ignore_incoming" in protocol message object.
+2025-01-17 13:30:37,755 - INFO - Telling node to factory reset (config reset)

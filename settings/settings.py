@@ -129,18 +129,43 @@ def nested_menu(stdscr, menu, interface):
             if isinstance(field_info, tuple):
                 field, current_value = field_info
 
-                if field.type == field.TYPE_BOOL:  # Handle boolean type
+                if field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(stdscr, str(current_value))
+                    try:
+                        # Convert the input into a valid boolean
+                        if isinstance(new_value, str):
+                            # Handle string representations of booleans
+                            new_value = new_value.lower() in ("true", "yes", "1", "on")
+                        else:
+                            # Convert other types directly to bool
+                            new_value = bool(new_value)
+                        isbool = True
+                    except ValueError:
+                        stdscr.addstr(1, 2, "Invalid input for boolean. Please try again.", curses.A_BOLD)
+                        stdscr.refresh()
+                        stdscr.getch()
+
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
                     new_value = get_repeated_input(stdscr, current_value)
+                    isrepeated = True
+
                 elif field.enum_type:  # Enum field
                     enum_options = [v.name for v in field.enum_type.values]
                     new_value = get_enum_input(stdscr, enum_options, current_value)
+                    isemnum = True
+
+                elif field.type == 13: # Field type 13 corresponds to UINT32
+                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    new_value = int(new_value)
+                    isint = True
+
                 else:  # Handle other field types
                     new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    isother = True
 
                 # Update the modified settings and current menu
-                modified_settings[selected_option] = (field, new_value)
+                modified_settings[selected_option] = (new_value)
+                # modified_settings[selected_option] = (field, new_value)
                 current_menu[selected_option] = (field, new_value)
             else:
                 current_menu = current_menu[selected_option]

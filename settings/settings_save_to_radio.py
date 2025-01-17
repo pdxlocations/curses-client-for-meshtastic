@@ -32,10 +32,19 @@ def save_changes(interface, menu_path, modified_settings):
         node = interface.getNode('^local')
 
         # Apply the changes to the localConfig dynamically
-        for option, (field, new_value) in modified_settings.items():
+        for option, new_value in modified_settings.items():
+        # for option, (field, new_value) in modified_settings.items():
             section = menu_path[-1].lower()  # Determine the configuration section (e.g., 'device')
             if hasattr(node.localConfig, section):
                 section_config = getattr(node.localConfig, section)
+                if hasattr(section_config, option):
+                    setattr(section_config, option, new_value)
+                    logging.info(f"Updated {section}.{option} to {new_value}")
+                else:
+                    logging.warning(f"Option '{option}' not found in section '{section}'")
+
+            elif hasattr(node.moduleConfig, section):
+                section_config = getattr(node.moduleConfig, section)
                 if hasattr(section_config, option):
                     setattr(section_config, option, new_value)
                     logging.info(f"Updated {section}.{option} to {new_value}")
