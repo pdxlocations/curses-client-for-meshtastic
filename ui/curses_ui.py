@@ -309,17 +309,18 @@ def main_ui(stdscr):
             elif globals.current_window == 2:
                 select_nodes(1)
 
-        elif char == curses.KEY_LEFT:
-            globals.current_window = (globals.current_window - 1) % 3
-            draw_channel_list()
-            draw_node_list()
-            draw_messages_window()
+        elif char == curses.KEY_LEFT or char == curses.KEY_RIGHT:
+            delta = -1 if char == curses.KEY_LEFT else 1
 
-        elif char == curses.KEY_RIGHT:
-            globals.current_window = (globals.current_window + 1) % 3
-            draw_channel_list()
-            draw_node_list()
-            draw_messages_window()
+            old_window = globals.current_window
+            globals.current_window = (globals.current_window + delta) % 3
+
+            if old_window == 0 or globals.current_window == 0:
+                draw_channel_list()
+            if old_window == 1 or globals.current_window == 1:
+                draw_messages_window()
+            if old_window == 2 or globals.current_window == 2:
+                draw_node_list()
 
         # Check for Esc
         elif char == 27:
