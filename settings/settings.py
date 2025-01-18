@@ -1,9 +1,9 @@
 import curses
 from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
 import meshtastic.serial_interface
-from settings_util import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_set_owner, settings_shutdown, generate_menu_from_protobuf
-from setting_input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
-from settings_save_to_radio import save_changes
+from utilities import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_set_owner, settings_shutdown, generate_menu_from_protobuf
+from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
+from save_to_radio import save_changes
 
 
 import logging
@@ -74,7 +74,11 @@ def nested_menu(stdscr, menu, interface):
         # Extract keys of the current menu
         options = list(current_menu.keys())
 
-        show_save_option = "Radio Settings" in menu_path or "Module Settings" in menu_path or "User Settings" in menu_path
+        show_save_option = (
+            len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
+        ) or (
+            len(menu_path) == 2 and "User Settings" in menu_path 
+        )
 
         # Display the menu
         display_menu(stdscr, current_menu, menu_path, selected_index, show_save_option)
@@ -84,17 +88,24 @@ def nested_menu(stdscr, menu, interface):
 
         if key == curses.KEY_UP:
             selected_index = max(0, selected_index - 1)
+            
         elif key == curses.KEY_DOWN:
-            selected_index = min(len(options) if not show_save_option else len(options) + 1 - 1, selected_index + 1)
+            max_index = len(options) + (1 if show_save_option else 0) - 1
+            selected_index = min(max_index, selected_index + 1)
+
         elif key == curses.KEY_RIGHT or key == ord('\n'):
+            stdscr.clear()
+            stdscr.refresh()
             if show_save_option and selected_index == len(options):
-
-                # Save changes
                 save_changes(interface, menu_path, modified_settings)
-
-                stdscr.addstr(1, 2, "Changes saved! Press any key to continue.", curses.A_BOLD)
-                stdscr.refresh()
-                stdscr.getch()
+                modified_settings.clear()
+                logging.info("Changes Saved")
+                if len(menu_path) > 1:
+                    menu_path.pop()
+                    current_menu = menu["Main Menu"]
+                    for step in menu_path[1:]:
+                        current_menu = current_menu.get(step, {})
+                    selected_index = 0
                 continue
 
             selected_option = options[selected_index]
@@ -103,77 +114,85 @@ def nested_menu(stdscr, menu, interface):
                 break
             elif selected_option == "Reboot":
                 settings_reboot(interface)
-                stdscr.addstr(1, 2, "Rebooting... Press any key to continue.", curses.A_BOLD)
-                stdscr.refresh()
-                stdscr.getch()
+                logging.info(f"Node Reboot Requested by menu")
                 break
             elif selected_option == "Reset Node DB":
                 settings_reset_nodedb(interface)
-                stdscr.addstr(1, 2, "Node DB reset. Press any key to continue.", curses.A_BOLD)
-                stdscr.refresh()
-                stdscr.getch()
+                logging.info(f"Node DB Reset Requested by menu")
+                break
             elif selected_option == "Shutdown":
                 settings_shutdown(interface)
-                stdscr.addstr(1, 2, "Shutting down... Press any key to exit.", curses.A_BOLD)
-                stdscr.refresh()
-                stdscr.getch()
+                logging.info(f"Node Shutdown Requested by menu")
                 break
             elif selected_option == "Factory Reset":
                 settings_factory_reset(interface)
-                stdscr.addstr(1, 2, "Factory reset complete. Press any key to continue.", curses.A_BOLD)
-                stdscr.refresh()
-                stdscr.getch()
+                logging.info(f"Factory Reset Requested by menu")
+                break
+    
+
 
             field_info = current_menu.get(selected_option)
+
 
             if isinstance(field_info, tuple):
                 field, current_value = field_info
 
-                if field.type == 8:  # Handle boolean type
+                if selected_option == 'longName' or selected_option == 'shortName':
+                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    modified_settings[selected_option] = (new_value)
+                    current_menu[selected_option] = (field, new_value)
+
+                elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(stdscr, str(current_value))
                     try:
-                        # Convert the input into a valid boolean
+                        # Validate and convert input to a valid boolean
                         if isinstance(new_value, str):
                             # Handle string representations of booleans
-                            new_value = new_value.lower() in ("true", "yes", "1", "on")
+                            new_value_lower = new_value.lower()
+                            if new_value_lower in ("true", "yes", "1", "on"):
+                                new_value = True
+                            elif new_value_lower in ("false", "no", "0", "off"):
+                                new_value = False
+                            else:
+                                raise ValueError("Invalid string for boolean")
                         else:
                             # Convert other types directly to bool
                             new_value = bool(new_value)
-                        isbool = True
-                    except ValueError:
-                        stdscr.addstr(1, 2, "Invalid input for boolean. Please try again.", curses.A_BOLD)
-                        stdscr.refresh()
-                        stdscr.getch()
+                        
+                    except ValueError as e:
+                        logging.info(f"Invalid input for boolean: {e}")
+
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
                     new_value = get_repeated_input(stdscr, current_value)
-                    isrepeated = True
 
                 elif field.enum_type:  # Enum field
                     enum_options = [v.name for v in field.enum_type.values]
                     new_value = get_enum_input(stdscr, enum_options, current_value)
-                    isemnum = True
 
                 elif field.type == 13: # Field type 13 corresponds to UINT32
                     new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
                     new_value = int(new_value)
-                    isint = True
+
+                elif field.type == 2: # Field type 13 corresponds to INT64
+                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    new_value = float(new_value)
 
                 else:  # Handle other field types
                     new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
-                    isother = True
 
                 # Update the modified settings and current menu
                 modified_settings[selected_option] = (new_value)
-                # modified_settings[selected_option] = (field, new_value)
                 current_menu[selected_option] = (field, new_value)
             else:
                 current_menu = current_menu[selected_option]
                 menu_path.append(selected_option)
                 selected_index = 0
 
-
         elif key == curses.KEY_LEFT:
+
+            stdscr.clear()
+            stdscr.refresh()
             # Navigate back to the previous menu
             if len(menu_path) > 1:
                 menu_path.pop()
@@ -181,6 +200,7 @@ def nested_menu(stdscr, menu, interface):
                 for step in menu_path[1:]:
                     current_menu = current_menu.get(step, {})
                 selected_index = 0
+
         elif key == 27:  # Escape key
             break
 

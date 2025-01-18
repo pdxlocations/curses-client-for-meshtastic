@@ -1,15 +1,22 @@
 from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
-from settings_save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_set_owner, settings_shutdown
-
+from save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_set_owner, settings_shutdown
+import logging, traceback
 
 # Function to generate the menu structure from protobuf messages
 def generate_menu_from_protobuf(interface):
+
     def extract_fields(message_instance, current_config=None):
+        if isinstance(current_config, dict):  # Handle dictionaries
+            return {key: (None, current_config.get(key, "Not Set")) for key in current_config}
+        
         if not hasattr(message_instance, "DESCRIPTOR"):
             return {}
+        
         menu = {}
         fields = message_instance.DESCRIPTOR.fields
         for field in fields:
+            if field.name == "sessionkey":
+                continue
             if field.message_type:  # Nested message
                 nested_instance = getattr(message_instance, field.name)
                 nested_config = getattr(current_config, field.name, None) if current_config else None
@@ -33,9 +40,23 @@ def generate_menu_from_protobuf(interface):
     menu_structure["Main Menu"]["Module Settings"] = extract_fields(module, current_module_config)
 
     # Add User Settings
-    user = mesh_pb2.User()
-    current_user_config = interface.getMyNodeInfo()["user"] if interface else None
-    menu_structure["Main Menu"]["User Settings"] = extract_fields(user, current_user_config)
+    current_node_info = interface.getMyNodeInfo() if interface else None
+
+    if current_node_info:
+        print("Node Info:", current_node_info)
+        current_user_config = current_node_info.get("user", None)
+        if current_user_config and isinstance(current_user_config, dict):
+            # Only include longName and shortName
+            menu_structure["Main Menu"]["User Settings"] = {
+                "longName": (None, current_user_config.get("longName", "Not Set")),
+                "shortName": (None, current_user_config.get("shortName", "Not Set"))
+            }
+        else:
+            logging.info("User settings not found in Node Info")
+            menu_structure["Main Menu"]["User Settings"] = "No user settings available"
+    else:
+        logging.info("Node Info not available")
+        menu_structure["Main Menu"]["User Settings"] = "Node Info not available"
 
     # Add Channels
     channel = channel_pb2.ChannelSettings()

@@ -1,37 +1,34 @@
-2025-01-17 12:41:51,705 - WARNING - Section 'mqtt' not found in localConfig
-2025-01-17 12:41:51,812 - INFO - Changes written to section: mqtt
-2025-01-17 12:47:31,688 - ERROR - Error saving changes: 'str' object cannot be interpreted as an integer
-2025-01-17 12:48:05,749 - WARNING - Option 'enabled' not found in section 'device'
-2025-01-17 12:48:05,750 - INFO - Updated device.role to CLIENT_MUTE
-2025-01-17 12:48:05,855 - INFO - Changes written to section: device
-2025-01-17 12:48:45,578 - WARNING - Option 'enabled' not found in section 'power'
-2025-01-17 12:48:45,579 - WARNING - Option 'role' not found in section 'power'
-2025-01-17 12:56:39,966 - INFO - Updated device.node_info_broadcast_secs to 1234
-2025-01-17 12:56:40,072 - INFO - Changes written to section: device
-2025-01-17 13:00:06,771 - INFO - Updated device.role to ROUTER
-2025-01-17 13:00:06,878 - INFO - Changes written to section: device
-2025-01-17 13:01:02,231 - INFO - Updated device.role to CLIENT_MUTE
-2025-01-17 13:20:40,434 - INFO - Updated device.role to ROUTER_CLIENT
-2025-01-17 13:20:40,543 - INFO - Changes written to section: device
-2025-01-17 13:20:52,734 - INFO - Updated device.role to ROUTER_CLIENT
-2025-01-17 13:20:52,735 - INFO - Updated device.node_info_broadcast_secs to 34555
-2025-01-17 13:20:52,841 - INFO - Changes written to section: device
-2025-01-17 13:22:56,451 - ERROR - Error saving changes: expected bytes, str found
-2025-01-17 13:23:08,945 - WARNING - Option 'private_key' not found in section 'mqtt'
-2025-01-17 13:23:08,946 - WARNING - Option 'admin_key' not found in section 'mqtt'
-2025-01-17 13:23:39,904 - ERROR - Error saving changes: 'str' object cannot be interpreted as an integer
-2025-01-17 13:23:53,783 - WARNING - Option 'private_key' not found in section 'device'
-2025-01-17 13:23:53,784 - WARNING - Option 'admin_key' not found in section 'device'
-2025-01-17 13:23:53,784 - WARNING - Option 'enabled' not found in section 'device'
-2025-01-17 13:26:56,498 - INFO - Updated device.serial_enabled to False
-2025-01-17 13:26:56,600 - INFO - Changes written to section: device
-2025-01-17 13:27:09,308 - INFO - Updated device.serial_enabled to False
-2025-01-17 13:27:09,309 - INFO - Updated device.led_heartbeat_disabled to True
-2025-01-17 13:27:09,412 - INFO - Changes written to section: device
-2025-01-17 13:28:33,090 - INFO - Updated lora.modem_preset to MEDIUM_FAST
-2025-01-17 13:28:33,091 - INFO - Updated lora.hop_limit to 4
-2025-01-17 13:28:33,091 - INFO - Updated lora.channel_num to 20
-2025-01-17 13:28:33,092 - INFO - Updated lora.config_ok_to_mqtt to True
-2025-01-17 13:28:33,194 - INFO - Changes written to section: lora
-2025-01-17 13:29:47,128 - ERROR - Error saving changes: Assignment not allowed to message, map, or repeated field "ignore_incoming" in protocol message object.
-2025-01-17 13:30:37,755 - INFO - Telling node to factory reset (config reset)
+2025-01-17 15:15:45,021 - INFO - Updated device.role to CLIENT
+2025-01-17 15:15:45,024 - INFO - Updated device.serial_enabled to True
+2025-01-17 15:15:45,126 - INFO - Changes written to config_category: device
+2025-01-17 15:15:45,126 - INFO - Changes Saved
+2025-01-17 16:27:57,400 - INFO - Updated device.role to CLIENT_MUTE
+2025-01-17 16:27:57,505 - INFO - Changes written to config category: device
+2025-01-17 16:27:57,505 - INFO - Changes Saved
+2025-01-17 17:08:16,022 - WARNING - config category 'user settings' not found in config
+2025-01-17 17:08:16,023 - WARNING - config category 'user settings' not found in config
+2025-01-17 17:43:34,226 - INFO - Changes Saved
+2025-01-17 17:43:46,279 - INFO - Changes Saved
+2025-01-17 17:46:34,507 - INFO - Changes Saved
+2025-01-17 17:49:11,070 - WARNING - config category 'sessionkey' not found in config
+2025-01-17 17:49:11,070 - WARNING - config category 'sessionkey' not found in config
+2025-01-17 17:49:11,070 - WARNING - config category 'sessionkey' not found in config
+2025-01-17 17:49:11,070 - WARNING - config category 'sessionkey' not found in config
+2025-01-17 18:04:46,303 - INFO - Telling node to factory reset (config reset)
+2025-01-17 18:04:46,409 - INFO - Factory Reset Requested by menu
+2025-01-17 18:06:11,506 - INFO - Telling node to factory reset (config reset)
+2025-01-17 18:06:11,610 - INFO - Factory Reset Requested by menu
+2025-01-17 18:07:17,567 - INFO - Telling node to shutdown in 10 seconds
+2025-01-17 18:07:17,671 - INFO - Node Shutdown Requested by menu
+2025-01-17 18:09:57,411 - INFO - Updated device.led_heartbeat_disabled to True
+2025-01-17 18:09:57,517 - INFO - Changes written to config category: device
+2025-01-17 18:09:57,517 - INFO - Changes Saved
+2025-01-17 18:13:32,286 - INFO - Updated power.adc_multiplier_override to 1.2
+2025-01-17 18:13:32,392 - INFO - Changes written to config category: power
+2025-01-17 18:13:32,393 - INFO - Changes Saved
+2025-01-17 18:14:24,910 - INFO - Updated network.wifi_ssid to Mr Meeseeks
+2025-01-17 18:14:24,910 - INFO - Updated network.wifi_psk to z8sm3e12
+2025-01-17 18:14:24,910 - INFO - Updated network.wifi_enabled to True
+2025-01-17 18:14:25,016 - INFO - Changes written to config category: network
+2025-01-17 18:14:25,016 - INFO - Changes Saved
+2025-01-17 18:17:08,868 - WARNING - config category 'ipv4_config' not found in config
