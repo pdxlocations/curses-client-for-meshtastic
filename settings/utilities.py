@@ -43,7 +43,7 @@ def generate_menu_from_protobuf(interface):
     current_node_info = interface.getMyNodeInfo() if interface else None
 
     if current_node_info:
-        print("Node Info:", current_node_info)
+
         current_user_config = current_node_info.get("user", None)
         if current_user_config and isinstance(current_user_config, dict):
             # Only include longName and shortName

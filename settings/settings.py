@@ -78,6 +78,8 @@ def nested_menu(stdscr, menu, interface):
             len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
         ) or (
             len(menu_path) == 2 and "User Settings" in menu_path 
+        ) or (
+            len(menu_path) == 3 and "Channels" in menu_path
         )
 
         # Display the menu
@@ -100,12 +102,14 @@ def nested_menu(stdscr, menu, interface):
                 save_changes(interface, menu_path, modified_settings)
                 modified_settings.clear()
                 logging.info("Changes Saved")
+
                 if len(menu_path) > 1:
                     menu_path.pop()
                     current_menu = menu["Main Menu"]
                     for step in menu_path[1:]:
                         current_menu = current_menu.get(step, {})
                     selected_index = 0
+
                 continue
 
             selected_option = options[selected_index]
@@ -181,18 +185,39 @@ def nested_menu(stdscr, menu, interface):
                 else:  # Handle other field types
                     new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
 
+
+
+
+
                 # Update the modified settings and current menu
-                modified_settings[selected_option] = (new_value)
+
+                # Navigate to the correct nested dictionary based on the menu_path
+                current_nested = modified_settings
+                for key in menu_path[3:]:  # Skip "Main Menu"
+                    current_nested = current_nested.setdefault(key, {})
+
+                # Add the new value to the appropriate level
+                current_nested[selected_option] = new_value
+
+                # modified_settings[selected_option] = (new_value)
                 current_menu[selected_option] = (field, new_value)
             else:
                 current_menu = current_menu[selected_option]
                 menu_path.append(selected_option)
                 selected_index = 0
 
+
+
+
+
+
         elif key == curses.KEY_LEFT:
 
             stdscr.clear()
             stdscr.refresh()
+
+            modified_settings.clear()
+
             # Navigate back to the previous menu
             if len(menu_path) > 1:
                 menu_path.pop()

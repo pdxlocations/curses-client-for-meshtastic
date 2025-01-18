@@ -28,7 +28,10 @@ def save_changes(interface, menu_path, modified_settings):
     """
     try:
         node = interface.getNode('^local')
-        config_category = menu_path[-1].lower()
+        if len(menu_path) > 2:
+            config_category = menu_path[2].lower()
+        else:    
+            config_category = menu_path[-1].lower()
 
         for config_item, new_value in modified_settings.items():
             if hasattr(node.localConfig, config_category):
@@ -51,6 +54,14 @@ def save_changes(interface, menu_path, modified_settings):
                 long_name = modified_settings.get("longName", None)
                 short_name = modified_settings.get("shortName", None)
                 node.setOwner(long_name, short_name, is_licensed=False)
+                logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name}")
+                return
+            
+            elif menu_path[1] == 'Channels':
+
+                #TODO
+
+                logging.info(f"Updated {config_category} ")
                 return
 
             else:
