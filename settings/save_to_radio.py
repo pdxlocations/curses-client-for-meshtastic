@@ -27,11 +27,52 @@ def save_changes(interface, menu_path, modified_settings):
     :param modified_settings: Dictionary of modified settings
     """
     try:
+        if not modified_settings:
+            logging.info("No changes to save. modified_settings is empty.")
+            return
+        
         node = interface.getNode('^local')
-        if len(menu_path) > 2:
-            config_category = menu_path[2].lower()
-        else:    
-            config_category = menu_path[-1].lower()
+
+        if menu_path[1] ==  "Radio Settings" or menu_path[1] == "Module Settings":
+            config_category = menu_path[2].lower() # for radio and module configs
+
+        elif menu_path[1] == "User Settings": # for user configs
+            config_category = "User Settings" 
+            long_name = modified_settings.get("longName", None)
+            short_name = modified_settings.get("shortName", None)
+            #TODO add is_licensed
+            node.setOwner(long_name, short_name, is_licensed=False)
+            logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name}")
+            return
+        
+
+
+
+
+        elif menu_path[1] == "Channels":    # for channel configs
+            config_category = "Channels"
+
+            try:
+                channel = menu_path[-1]
+                channel_num = int(channel.split()[-1])
+            except (IndexError, ValueError) as e:
+                channel_num = None
+
+                
+
+            #TODO
+            node.writeChannel(channel_num)
+            logging.info(f"Updated Channel {channel_num} in {config_category}")
+            logging.info(node.channels)
+            return
+        
+
+
+
+
+
+        else:
+            config_category = None
 
         for config_item, new_value in modified_settings.items():
             if hasattr(node.localConfig, config_category):
@@ -50,20 +91,6 @@ def save_changes(interface, menu_path, modified_settings):
                 else:
                     logging.warning(f"config item '{config_item}' not found in config category '{config_category}'")
 
-            elif config_category == 'user settings':
-                long_name = modified_settings.get("longName", None)
-                short_name = modified_settings.get("shortName", None)
-                node.setOwner(long_name, short_name, is_licensed=False)
-                logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name}")
-                return
-            
-            elif menu_path[1] == 'Channels':
-
-                #TODO
-
-                logging.info(f"Updated {config_category} ")
-                return
-
             else:
                 logging.warning(f"config category '{config_category}' not found in config")
 
@@ -74,3 +101,15 @@ def save_changes(interface, menu_path, modified_settings):
 
     except Exception as e:
         logging.error(f"Error saving changes: {e}")
+
+
+
+
+
+        #    def writeChannel(self, channelIndex, adminIndex=0):
+        #         """Write the current (edited) channel to the device"""
+        #         self.ensureSessionKey()
+        #         p = admin_pb2.AdminMessage()
+        #         p.set_channel.CopyFrom(self.channels[channelIndex])
+        #         self._sendAdmin(p, adminIndex=adminIndex)
+        #         logging.debug(f"Wrote channel {channelIndex}")
