@@ -84,7 +84,6 @@ def draw_channel_list():
     channel_win.box()
     channel_win.refresh()
 
-
 def draw_messages_window():
     """Update the messages window based on the selected channel and scroll position."""
     messages_pad.clear()
@@ -93,10 +92,6 @@ def draw_messages_window():
 
     if channel in globals.all_messages:
         messages = globals.all_messages[channel]
-
-        # Adjust for packetlog height if log is visible
-        if globals.display_log:
-            packetlog_height = packetlog_win.getmaxyx()[0]
 
         # Display messages starting from the calculated start index
         row = 0
@@ -113,14 +108,18 @@ def draw_messages_window():
                 messages_pad.addstr(row, 1, line, color)
                 row += 1
 
-    messages_pad.refresh(0, 0, 
+    messages_box.box()
+    messages_box.refresh()
+
+    # Adjust for packetlog height if log is visible
+    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
+    messages_pad.refresh(globals.selected_message, 0, 
                          messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1, 
-                         messages_box.getbegyx()[0] + messages_box.getmaxyx()[0] - 2, messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
+                         messages_box.getbegyx()[0] + messages_box.getmaxyx()[0] - 2 - packetlog_height, messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
 
     draw_packetlog_win()
 
 def draw_node_list():
-
     nodes_win.clear()                 
     win_height = nodes_win.getmaxyx()[0]
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
@@ -151,22 +150,18 @@ def select_channels(direction):
     draw_messages_window()
 
 def select_messages(direction):
-    # messages_length = len(globals.all_messages[globals.channel_list[globals.selected_channel]])
-
     globals.selected_message += direction
+    globals.selected_message = max(globals.selected_message, 0)
 
     # if globals.selected_message < 0:
     #     globals.selected_message = messages_length - 1
     # elif globals.selected_message >= messages_length:
     #     globals.selected_message = 0
 
-    # draw_messages_window()
-
-    # messages_win.refresh(globals.selected_message, 0, 4, channel_width + 1, 3 + height - 8, channel_width + messages_width - 2)
+    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
     messages_pad.refresh(globals.selected_message, 0, 
                          messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1, 
-                         messages_box.getbegyx()[0] + messages_box.getmaxyx()[0] - 2, messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
-
+                         messages_box.getbegyx()[0] + messages_box.getmaxyx()[0] - 2 - packetlog_height, messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
 
 
 def select_nodes(direction):
