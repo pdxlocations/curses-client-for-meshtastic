@@ -2,30 +2,30 @@ from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel
 from save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_set_owner, settings_shutdown
 import logging, traceback
 
+def extract_fields(message_instance, current_config=None):
+    if isinstance(current_config, dict):  # Handle dictionaries
+        return {key: (None, current_config.get(key, "Not Set")) for key in current_config}
+    
+    if not hasattr(message_instance, "DESCRIPTOR"):
+        return {}
+    
+    menu = {}
+    fields = message_instance.DESCRIPTOR.fields
+    for field in fields:
+        if field.name == "sessionkey":
+            continue
+        if field.message_type:  # Nested message
+            nested_instance = getattr(message_instance, field.name)
+            nested_config = getattr(current_config, field.name, None) if current_config else None
+            menu[field.name] = extract_fields(nested_instance, nested_config)
+        else:
+            # Fetch the current value if available
+            current_value = getattr(current_config, field.name, "Not Set") if current_config else "Not Set"
+            menu[field.name] = (field, current_value)
+    return menu
+
 # Function to generate the menu structure from protobuf messages
 def generate_menu_from_protobuf(interface):
-
-    def extract_fields(message_instance, current_config=None):
-        if isinstance(current_config, dict):  # Handle dictionaries
-            return {key: (None, current_config.get(key, "Not Set")) for key in current_config}
-        
-        if not hasattr(message_instance, "DESCRIPTOR"):
-            return {}
-        
-        menu = {}
-        fields = message_instance.DESCRIPTOR.fields
-        for field in fields:
-            if field.name == "sessionkey":
-                continue
-            if field.message_type:  # Nested message
-                nested_instance = getattr(message_instance, field.name)
-                nested_config = getattr(current_config, field.name, None) if current_config else None
-                menu[field.name] = extract_fields(nested_instance, nested_config)
-            else:
-                # Fetch the current value if available
-                current_value = getattr(current_config, field.name, "Not Set") if current_config else "Not Set"
-                menu[field.name] = (field, current_value)
-        return menu
 
     menu_structure = {"Main Menu": {}}
 

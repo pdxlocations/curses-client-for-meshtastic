@@ -1,7 +1,7 @@
 import curses
-from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
 import meshtastic.serial_interface
-from utilities import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_set_owner, settings_shutdown, generate_menu_from_protobuf
+from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
+from utilities import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
 from save_to_radio import save_changes
 

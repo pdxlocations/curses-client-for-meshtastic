@@ -46,9 +46,6 @@ def save_changes(interface, menu_path, modified_settings):
             return
         
 
-
-
-
         elif menu_path[1] == "Channels":    # for channel configs
             config_category = "Channels"
 
@@ -58,18 +55,12 @@ def save_changes(interface, menu_path, modified_settings):
             except (IndexError, ValueError) as e:
                 channel_num = None
 
-                
 
             #TODO
-            node.writeChannel(channel_num)
-            logging.info(f"Updated Channel {channel_num} in {config_category}")
+            # node.writeChannel(channel_num)
+            logging.info(f"WIP we have NOT Updated Channel {channel_num} in {config_category}")
             logging.info(node.channels)
             return
-        
-
-
-
-
 
         else:
             config_category = None
@@ -101,8 +92,6 @@ def save_changes(interface, menu_path, modified_settings):
 
     except Exception as e:
         logging.error(f"Error saving changes: {e}")
-
-
 
 
 
