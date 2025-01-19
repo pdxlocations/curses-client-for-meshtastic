@@ -1,6 +1,4 @@
-
 import curses
-
 
 def get_user_input(stdscr, prompt):
     # Calculate the dynamic height and width for the input window
@@ -130,4 +128,3 @@ def get_enum_input(stdscr, options, current_value):
             return options[selected_index]
         elif key == 27:  # Escape key to cancel
             return current_value
-        

@@ -1,9 +1,10 @@
 import curses
 import meshtastic.serial_interface
-from settings.save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
-from settings.utilities import generate_menu_from_protobuf
-from settings.input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
-from settings.save_to_radio import save_changes
+
+from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
+from ui.menus import generate_menu_from_protobuf
+from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
+from save_to_radio import save_changes
 
 
 import logging
@@ -12,14 +13,12 @@ import traceback
 # Run `tail -f client.log` in another terminal to view live
 logging.basicConfig(
     filename="settings.log",
-    level=logging.INFO
-    ,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
-
-def display_menu(stdscr, current_menu, menu_path, selected_index, show_save_option):
+def display_menu(current_menu, menu_path, selected_index, show_save_option):
     # Calculate the dynamic height based on the number of menu items
     num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
     height = min(curses.LINES - 2, num_items + 5)  # Ensure the menu fits within the terminal height
@@ -64,7 +63,7 @@ def display_menu(stdscr, current_menu, menu_path, selected_index, show_save_opti
 
     menu_win.refresh()
 
-def settings_menu(stdscr, interface):
+def settings_menu(menu_win, interface):
 
     menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
@@ -72,9 +71,7 @@ def settings_menu(stdscr, interface):
     selected_index = 0
     modified_settings = {}
 
-
     while True:
-        # Extract keys of the current menu
         options = list(current_menu.keys())
 
         show_save_option = (
@@ -86,10 +83,10 @@ def settings_menu(stdscr, interface):
         )
 
         # Display the menu
-        display_menu(stdscr, current_menu, menu_path, selected_index, show_save_option)
+        display_menu(current_menu, menu_path, selected_index, show_save_option)
 
         # Capture user input
-        key = stdscr.getch()
+        key = menu_win.getch()
 
         if key == curses.KEY_UP:
             selected_index = max(0, selected_index - 1)
@@ -99,8 +96,8 @@ def settings_menu(stdscr, interface):
             selected_index = min(max_index, selected_index + 1)
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
-            stdscr.clear()
-            stdscr.refresh()
+            menu_win.clear()
+            menu_win.refresh()
             if show_save_option and selected_index == len(options):
                 save_changes(interface, menu_path, modified_settings)
                 modified_settings.clear()
@@ -136,21 +133,18 @@ def settings_menu(stdscr, interface):
                 logging.info(f"Factory Reset Requested by menu")
                 break
     
-
-
             field_info = current_menu.get(selected_option)
-
 
             if isinstance(field_info, tuple):
                 field, current_value = field_info
 
                 if selected_option == 'longName' or selected_option == 'shortName':
-                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
                     modified_settings[selected_option] = (new_value)
                     current_menu[selected_option] = (field, new_value)
 
                 elif field.type == 8:  # Handle boolean type
-                    new_value = get_bool_selection(stdscr, str(current_value))
+                    new_value = get_bool_selection(menu_win, str(current_value))
                     try:
                         # Validate and convert input to a valid boolean
                         if isinstance(new_value, str):
@@ -171,28 +165,22 @@ def settings_menu(stdscr, interface):
 
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
-                    new_value = get_repeated_input(stdscr, current_value)
+                    new_value = get_repeated_input(menu_win, current_value)
 
                 elif field.enum_type:  # Enum field
                     enum_options = [v.name for v in field.enum_type.values]
-                    new_value = get_enum_input(stdscr, enum_options, current_value)
+                    new_value = get_enum_input(menu_win, enum_options, current_value)
 
                 elif field.type == 13: # Field type 13 corresponds to UINT32
-                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
                     new_value = int(new_value)
 
                 elif field.type == 2: # Field type 13 corresponds to INT64
-                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
                     new_value = float(new_value)
 
                 else:  # Handle other field types
-                    new_value = get_user_input(stdscr, f"Current value for {selected_option}: {current_value}")
-
-
-
-
-
-                # Update the modified settings and current menu
+                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
 
                 # Navigate to the correct nested dictionary based on the menu_path
                 current_nested = modified_settings
@@ -209,15 +197,10 @@ def settings_menu(stdscr, interface):
                 menu_path.append(selected_option)
                 selected_index = 0
 
-
-
-
-
-
         elif key == curses.KEY_LEFT:
 
-            stdscr.clear()
-            stdscr.refresh()
+            menu_win.clear()
+            menu_win.refresh()
 
             modified_settings.clear()
 
@@ -236,11 +219,8 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.keypad(True)
 
-    # Initialize Meshtastic interface
     interface = meshtastic.serial_interface.SerialInterface()
 
-    # Generate menu structure from protobuf
-    menu_structure = generate_menu_from_protobuf(interface)
     stdscr.clear()
     stdscr.refresh()
     settings_menu(stdscr, interface)

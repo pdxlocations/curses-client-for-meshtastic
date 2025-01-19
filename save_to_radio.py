@@ -1,4 +1,6 @@
+from meshtastic.protobuf import channel_pb2
 import logging
+import base64
 
 def settings_reboot(interface):
     interface.localNode.reboot()
@@ -55,10 +57,23 @@ def save_changes(interface, menu_path, modified_settings):
             except (IndexError, ValueError) as e:
                 channel_num = None
 
+            channel = node.channels[channel_num]
+            for key, value in modified_settings.items():
+                if key == 'psk':  # Special case: decode Base64 for psk
+                    channel.settings.psk = base64.b64decode(value)
+                elif key == 'position_precision':  # Special case: module_settings
+                    channel.settings.module_settings.position_precision = value
+                else:
+                    setattr(channel.settings, key, value)  # Use setattr for other fields
 
-            #TODO
-            # node.writeChannel(channel_num)
-            logging.info(f"WIP we have NOT Updated Channel {channel_num} in {config_category}")
+            if channel_num == 0:
+                channel.role = channel_pb2.Channel.Role.PRIMARY
+            else:
+                channel.role = channel_pb2.Channel.Role.SECONDARY
+
+            node.writeChannel(channel_num)
+
+            logging.info(f"Updated Channel {channel_num} in {config_category}")
             logging.info(node.channels)
             return
 
@@ -92,13 +107,3 @@ def save_changes(interface, menu_path, modified_settings):
 
     except Exception as e:
         logging.error(f"Error saving changes: {e}")
-
-
-
-        #    def writeChannel(self, channelIndex, adminIndex=0):
-        #         """Write the current (edited) channel to the device"""
-        #         self.ensureSessionKey()
-        #         p = admin_pb2.AdminMessage()
-        #         p.set_channel.CopyFrom(self.channels[channelIndex])
-        #         self._sendAdmin(p, adminIndex=adminIndex)
-        #         logging.debug(f"Wrote channel {channelIndex}")

@@ -1,5 +1,5 @@
-from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
-from settings.save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_set_owner, settings_shutdown
+from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2
+from save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_shutdown
 import logging, traceback
 
 def extract_fields(message_instance, current_config=None):
