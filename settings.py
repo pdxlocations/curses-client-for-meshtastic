@@ -6,16 +6,7 @@ from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
 from save_to_radio import save_changes
 
-
 import logging
-import traceback
-# Configure logging
-# Run `tail -f client.log` in another terminal to view live
-logging.basicConfig(
-    filename="settings.log",
-    level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
 
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
@@ -70,6 +61,7 @@ def settings_menu(menu_win, interface):
     menu_path = ["Main Menu"]
     selected_index = 0
     modified_settings = {}
+    
 
     while True:
         options = list(current_menu.keys())
@@ -139,12 +131,12 @@ def settings_menu(menu_win, interface):
                 field, current_value = field_info
 
                 if selected_option == 'longName' or selected_option == 'shortName':
-                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     modified_settings[selected_option] = (new_value)
                     current_menu[selected_option] = (field, new_value)
 
                 elif field.type == 8:  # Handle boolean type
-                    new_value = get_bool_selection(menu_win, str(current_value))
+                    new_value = get_bool_selection(str(current_value))
                     try:
                         # Validate and convert input to a valid boolean
                         if isinstance(new_value, str):
@@ -165,22 +157,22 @@ def settings_menu(menu_win, interface):
 
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
-                    new_value = get_repeated_input(menu_win, current_value)
+                    new_value = get_repeated_input(current_value)
 
                 elif field.enum_type:  # Enum field
                     enum_options = [v.name for v in field.enum_type.values]
-                    new_value = get_enum_input(menu_win, enum_options, current_value)
+                    new_value = get_enum_input(enum_options, current_value)
 
                 elif field.type == 13: # Field type 13 corresponds to UINT32
-                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = int(new_value)
 
                 elif field.type == 2: # Field type 13 corresponds to INT64
-                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = float(new_value)
 
                 else:  # Handle other field types
-                    new_value = get_user_input(menu_win, f"Current value for {selected_option}: {current_value}")
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
 
                 # Navigate to the correct nested dictionary based on the menu_path
                 current_nested = modified_settings
@@ -216,6 +208,12 @@ def settings_menu(menu_win, interface):
             break
 
 def main(stdscr):
+    logging.basicConfig( # Run `tail -f client.log` in another terminal to view live
+        filename="settings.log",
+        level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
     curses.curs_set(0)
     stdscr.keypad(True)
 

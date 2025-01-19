@@ -1,6 +1,6 @@
 import curses
 
-def get_user_input(stdscr, prompt):
+def get_user_input(prompt):
     # Calculate the dynamic height and width for the input window
     height = 7  # Fixed height for input prompt
     width = 60
@@ -30,7 +30,7 @@ def get_user_input(stdscr, prompt):
 
     return user_input
 
-def get_bool_selection(stdscr, current_value):
+def get_bool_selection(current_value):
     options = ["True", "False"]
     selected_index = 0 if current_value == "True" else 1
 
@@ -68,7 +68,7 @@ def get_bool_selection(stdscr, current_value):
         elif key == 27:  # Escape key to cancel
             return current_value
 
-def get_repeated_input(stdscr, current_value):
+def get_repeated_input(current_value):
     height = 10
     width = 60
     start_y = (curses.LINES - height) // 2
@@ -92,7 +92,7 @@ def get_repeated_input(stdscr, current_value):
 
     return user_input.split(",")
 
-def get_enum_input(stdscr, options, current_value):
+def get_enum_input(options, current_value):
     selected_index = options.index(current_value) if current_value in options else 0
 
     # Set dimensions and position to match other windows
