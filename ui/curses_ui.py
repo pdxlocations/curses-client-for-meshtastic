@@ -2,7 +2,7 @@ import curses
 import textwrap
 import globals
 from utilities.utils import get_name_from_number, get_channels
-from settings.settings import settings
+from settings.settings_main import settings_menu
 from message_handlers.tx_handler import send_message
 
 
@@ -361,7 +361,7 @@ def main_ui(stdscr):
             
         elif char == 96:
             curses.curs_set(0)  # Hide cursor
-            settings(stdscr)
+            settings_menu(stdscr, globals.interface)
             curses.curs_set(1)  # Show cursor again
         
         elif char == 47:

@@ -1,9 +1,9 @@
 import curses
 import meshtastic.serial_interface
-from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
-from utilities import generate_menu_from_protobuf
-from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
-from save_to_radio import save_changes
+from settings.save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
+from settings.utilities import generate_menu_from_protobuf
+from settings.input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
+from settings.save_to_radio import save_changes
 
 
 import logging
@@ -64,11 +64,14 @@ def display_menu(stdscr, current_menu, menu_path, selected_index, show_save_opti
 
     menu_win.refresh()
 
-def nested_menu(stdscr, menu, interface):
+def settings_menu(stdscr, interface):
+
+    menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
     menu_path = ["Main Menu"]
     selected_index = 0
     modified_settings = {}
+
 
     while True:
         # Extract keys of the current menu
@@ -240,7 +243,7 @@ def main(stdscr):
     menu_structure = generate_menu_from_protobuf(interface)
     stdscr.clear()
     stdscr.refresh()
-    nested_menu(stdscr, menu_structure, interface)
+    settings_menu(stdscr, interface)
 
 if __name__ == "__main__":
     curses.wrapper(main)
