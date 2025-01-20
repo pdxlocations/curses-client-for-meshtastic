@@ -12,16 +12,28 @@ def extract_fields(message_instance, current_config=None):
     menu = {}
     fields = message_instance.DESCRIPTOR.fields
     for field in fields:
-        if field.name in {"sessionkey", "channel_num", "id"}:
+        if field.name in {"sessionkey", "channel_num", "id"}:  # Skip certain fields
             continue
+        
         if field.message_type:  # Nested message
             nested_instance = getattr(message_instance, field.name)
             nested_config = getattr(current_config, field.name, None) if current_config else None
             menu[field.name] = extract_fields(nested_instance, nested_config)
-        else:
-            # Fetch the current value if available
+        elif field.enum_type:  # Handle enum fields
+            current_value = getattr(current_config, field.name, "Not Set") if current_config else "Not Set"
+            if isinstance(current_value, int):  # If the value is a number, map it to its name
+                enum_value = field.enum_type.values_by_number.get(current_value)
+                if enum_value:  # Check if the enum value exists
+                    current_value_name = f"{enum_value.name}"
+                else:
+                    current_value_name = f"Unknown ({current_value})"
+                menu[field.name] = (field, current_value_name)
+            else:
+                menu[field.name] = (field, current_value)  # Non-integer values
+        else:  # Handle other field types
             current_value = getattr(current_config, field.name, "Not Set") if current_config else "Not Set"
             menu[field.name] = (field, current_value)
+    
     return menu
 
 
