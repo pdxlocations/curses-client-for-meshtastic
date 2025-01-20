@@ -3,7 +3,7 @@ import meshtastic.serial_interface
 
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
 from ui.menus import generate_menu_from_protobuf
-from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input
+from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
 from save_to_radio import save_changes
 
 import logging
@@ -174,6 +174,9 @@ def settings_menu(sdscr, interface):
                     enum_options = [v.name for v in field.enum_type.values]
                     new_value = get_enum_input(enum_options, current_value)
 
+                elif field.type == 7: # Field type 7 corresponds to FIXED32
+                    new_value = get_fixed32_input(current_value)
+
                 elif field.type == 13: # Field type 13 corresponds to UINT32
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else int(new_value)
@@ -181,6 +184,7 @@ def settings_menu(sdscr, interface):
                 elif field.type == 2: # Field type 13 corresponds to INT64
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else float(new_value)
+
 
                 else:  # Handle other field types
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
