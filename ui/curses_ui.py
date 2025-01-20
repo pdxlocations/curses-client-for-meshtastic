@@ -93,11 +93,14 @@ def draw_messages_window():
     if channel in globals.all_messages:
         messages = globals.all_messages[channel]
 
+        msg_lines = 0
+
         # Display messages starting from the calculated start index
         row = 0
         for (prefix, message) in messages:
             full_message = f"{prefix}{message}"
             wrapped_lines = textwrap.wrap(full_message, messages_box.getmaxyx()[1] - 2)
+            msg_lines += len(wrapped_lines)
 
             for line in wrapped_lines:
                 # Highlight the row if it's the selected message
@@ -133,7 +136,6 @@ def draw_node_list():
 
     nodes_win.box()
     nodes_win.refresh()
-
 
 def select_channels(direction):
     channel_list_length = len(globals.channel_list)
