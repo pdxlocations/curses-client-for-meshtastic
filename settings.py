@@ -111,22 +111,30 @@ def settings_menu(sdscr, interface):
             if selected_option == "Exit":
                 break
             elif selected_option == "Reboot":
-                settings_reboot(interface)
-                logging.info(f"Node Reboot Requested by menu")
-                break
+                confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
+                if confirmation == "True":
+                    settings_reboot(interface)
+                    logging.info(f"Node Reboot Requested by menu")
+                continue
+
             elif selected_option == "Reset Node DB":
-                settings_reset_nodedb(interface)
-                logging.info(f"Node DB Reset Requested by menu")
-                break
+                confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
+                if confirmation == "True":
+                    settings_reset_nodedb(interface)
+                    logging.info(f"Node DB Reset Requested by menu")
+                continue
             elif selected_option == "Shutdown":
-                settings_shutdown(interface)
-                logging.info(f"Node Shutdown Requested by menu")
-                break
+                confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
+                if confirmation == "True":
+                    settings_shutdown(interface)
+                    logging.info(f"Node Shutdown Requested by menu")
+                continue
             elif selected_option == "Factory Reset":
-                settings_factory_reset(interface)
-                logging.info(f"Factory Reset Requested by menu")
-                break
-    
+                confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
+                if confirmation == "True":
+                    settings_factory_reset(interface)
+                    logging.info(f"Factory Reset Requested by menu")
+                continue
             field_info = current_menu.get(selected_option)
 
             if isinstance(field_info, tuple):
@@ -139,7 +147,7 @@ def settings_menu(sdscr, interface):
                     current_menu[selected_option] = (field, new_value)
 
                 elif field.type == 8:  # Handle boolean type
-                    new_value = get_bool_selection(str(current_value))
+                    new_value = get_bool_selection(selected_option, str(current_value))
                     try:
                         # Validate and convert input to a valid boolean
                         if isinstance(new_value, str):

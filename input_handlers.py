@@ -46,7 +46,8 @@ def get_user_input(prompt):
     input_win.refresh()
     return user_input
 
-def get_bool_selection(current_value):
+def get_bool_selection(message, current_value):
+    message = "Select True or False:" if None else message
     cvalue = current_value
     options = ["True", "False"]
     selected_index = 0 if current_value == "True" else 1
@@ -62,7 +63,7 @@ def get_bool_selection(current_value):
     while True:
         bool_win.clear()
         bool_win.border()
-        bool_win.addstr(1, 2, "Select True or False:", curses.A_BOLD)
+        bool_win.addstr(1, 2, message, curses.A_BOLD)
 
         for idx, option in enumerate(options):
             if idx == selected_index:
