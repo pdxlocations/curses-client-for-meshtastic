@@ -10,6 +10,7 @@ import logging
 
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
+    global menu_win
     # Calculate the dynamic height based on the number of menu items
     num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
     height = min(curses.LINES - 2, num_items + 5)  # Ensure the menu fits within the terminal height
@@ -21,9 +22,10 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     menu_win = curses.newwin(height, width, start_y, start_x)
     menu_win.clear()
     menu_win.border()
+    menu_win.keypad(True)
 
     # Display the current menu path as a header
-    header = " > ".join(menu_path)
+    header = " > ".join(word.title() for word in menu_path)
     if len(header) > width - 4:
         header = header[:width - 7] + "..."
     menu_win.addstr(1, 2, header, curses.A_BOLD)
@@ -54,7 +56,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
     menu_win.refresh()
 
-def settings_menu(menu_win, interface):
+def settings_menu(sdscr, interface):
 
     menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
@@ -132,6 +134,7 @@ def settings_menu(menu_win, interface):
 
                 if selected_option == 'longName' or selected_option == 'shortName':
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    
                     modified_settings[selected_option] = (new_value)
                     current_menu[selected_option] = (field, new_value)
 
@@ -165,15 +168,16 @@ def settings_menu(menu_win, interface):
 
                 elif field.type == 13: # Field type 13 corresponds to UINT32
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
-                    new_value = int(new_value)
+                    new_value = current_value if new_value is None else int(new_value)
 
                 elif field.type == 2: # Field type 13 corresponds to INT64
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
-                    new_value = float(new_value)
+                    new_value = current_value if new_value is None else float(new_value)
 
                 else:  # Handle other field types
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
-
+                    new_value = current_value if new_value is None else new_value
+                    
                 # Navigate to the correct nested dictionary based on the menu_path
                 current_nested = modified_settings
                 for key in menu_path[3:]:  # Skip "Main Menu"

@@ -359,10 +359,10 @@ def main_ui(stdscr):
                 entry_win.move(y, x - 1)
             entry_win.refresh()
             
-        elif char == 96:
-            curses.curs_set(0)  # Hide cursor
+        elif char == 96: # ` Launch the settings interface
+            curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
-            curses.curs_set(1)  # Show cursor again
+            curses.curs_set(1)
         
         elif char == 47:
             # Display packet log

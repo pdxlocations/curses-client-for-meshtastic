@@ -12,7 +12,7 @@ def extract_fields(message_instance, current_config=None):
     menu = {}
     fields = message_instance.DESCRIPTOR.fields
     for field in fields:
-        if field.name == "sessionkey":
+        if field.name in {"sessionkey", "channel_num", "id"}:
             continue
         if field.message_type:  # Nested message
             nested_instance = getattr(message_instance, field.name)
@@ -24,9 +24,9 @@ def extract_fields(message_instance, current_config=None):
             menu[field.name] = (field, current_value)
     return menu
 
-# Function to generate the menu structure from protobuf messages
-def generate_menu_from_protobuf(interface):
 
+def generate_menu_from_protobuf(interface):
+# Function to generate the menu structure from protobuf messages
     menu_structure = {"Main Menu": {}}
 
     # Add Radio Settings
@@ -46,11 +46,12 @@ def generate_menu_from_protobuf(interface):
 
         current_user_config = current_node_info.get("user", None)
         if current_user_config and isinstance(current_user_config, dict):
-            # Only include longName and shortName
+
             menu_structure["Main Menu"]["User Settings"] = {
                 "longName": (None, current_user_config.get("longName", "Not Set")),
                 "shortName": (None, current_user_config.get("shortName", "Not Set"))
             }
+
         else:
             logging.info("User settings not found in Node Info")
             menu_structure["Main Menu"]["User Settings"] = "No user settings available"
