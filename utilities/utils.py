@@ -37,7 +37,7 @@ def get_node_list():
     if globals.interface.nodes:
         sorted_nodes = sorted(
             globals.interface.nodes.values(),
-            key = lambda node: (node['lastHeard'] if 'lastHeard' in node else 0),
+            key = lambda node: (node['lastHeard'] if ('lastHeard' in node and isinstance(node['lastHeard'], int)) else 0),
             reverse = True)
         return [node['num'] for node in sorted_nodes]
     return []
