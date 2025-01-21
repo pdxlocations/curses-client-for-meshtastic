@@ -1,7 +1,9 @@
 from meshtastic import BROADCAST_NUM
 from db_handler import save_message_to_db, update_ack_nak
-from utilities.utils import get_nodeNum
+from meshtastic.protobuf import mesh_pb2, portnums_pb2
+from utilities.utils import get_name_from_number
 import globals
+import google.protobuf.json_format
 
 ack_naks = {}
 
@@ -33,7 +35,82 @@ def onAckNak(packet):
 
     update_ack_nak(acknak['channel'], acknak['timestamp'], message, ack_type)
 
-    draw_messages_window()
+    channel_number = globals.channel_list.index(acknak['channel'])
+    if globals.channel_list[channel_number] == globals.channel_list[globals.selected_channel]:
+        draw_messages_window()
+
+def on_response_traceroute(packet):
+    """on response for trace route"""
+    from ui.curses_ui import draw_channel_list, draw_messages_window, add_notification
+
+    refresh_channels = False
+    refresh_messages = False
+
+    UNK_SNR = -128 # Value representing unknown SNR
+
+    route_discovery = mesh_pb2.RouteDiscovery()
+    route_discovery.ParseFromString(packet["decoded"]["payload"])
+    msg_dict = google.protobuf.json_format.MessageToDict(route_discovery)
+
+    msg_str = "Traceroute to:\n"
+
+    route_str = get_name_from_number(packet["to"], 'short') or f"{packet['to']:08x}" # Start with destination of response
+
+    # SNR list should have one more entry than the route, as the final destination adds its SNR also
+    lenTowards = 0 if "route" not in msg_dict else len(msg_dict["route"])
+    snrTowardsValid = "snrTowards" in msg_dict and len(msg_dict["snrTowards"]) == lenTowards + 1
+    if lenTowards > 0: # Loop through hops in route and add SNR if available
+        for idx, node_num in enumerate(msg_dict["route"]):
+            route_str += " --> " + (get_name_from_number(node_num, 'short') or f"{node_num:08x}") \
+                     + " (" + (str(msg_dict["snrTowards"][idx] / 4) if snrTowardsValid and msg_dict["snrTowards"][idx] != UNK_SNR else "?") + "dB)"
+
+    # End with origin of response
+    route_str += " --> " + (get_name_from_number(packet["from"], 'short') or f"{packet['from']:08x}") \
+             + " (" + (str(msg_dict["snrTowards"][-1] / 4) if snrTowardsValid and msg_dict["snrTowards"][-1] != UNK_SNR else "?") + "dB)"
+
+    msg_str += route_str + "\n" # Print the route towards destination
+
+    # Only if hopStart is set and there is an SNR entry (for the origin) it's valid, even though route might be empty (direct connection)
+    lenBack = 0 if "routeBack" not in msg_dict else len(msg_dict["routeBack"])
+    backValid = "hopStart" in packet and "snrBack" in msg_dict and len(msg_dict["snrBack"]) == lenBack + 1
+    if backValid:
+        msg_str += "Back:\n"
+        route_str = get_name_from_number(packet["from"], 'short') or f"{packet['from']:08x}" # Start with origin of response
+
+        if lenBack > 0: # Loop through hops in routeBack and add SNR if available
+            for idx, node_num in enumerate(msg_dict["routeBack"]):
+                route_str += " --> " + (get_name_from_number(node_num, 'short') or f"{node_num:08x}") \
+                         + " (" + (str(msg_dict["snrBack"][idx] / 4) if msg_dict["snrBack"][idx] != UNK_SNR else "?") + "dB)"
+
+        # End with destination of response (us)
+        route_str += " --> " + (get_name_from_number(packet["to"], 'short') or f"{packet['to']:08x}") \
+                 + " (" + (str(msg_dict["snrBack"][-1] / 4) if msg_dict["snrBack"][-1] != UNK_SNR else "?") + "dB)"
+
+        msg_str += route_str + "\n" # Print the route back to us
+
+    if(packet['from'] not in globals.channel_list):
+        globals.channel_list.append(packet['from'])
+        refresh_channels = True
+
+    channel_number = globals.channel_list.index(packet['from'])
+
+    if globals.channel_list[channel_number] == globals.channel_list[globals.selected_channel]:
+        refresh_messages = True
+    else:
+        add_notification(channel_number)
+        refresh_channels = True
+
+    message_from_string = get_name_from_number(packet['from'], type='short') + ":\n"
+
+    if globals.channel_list[channel_number] not in globals.all_messages:
+        globals.all_messages[globals.channel_list[channel_number]] = []
+    globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string}", msg_str))
+
+    if(refresh_channels):
+        draw_channel_list()
+    if(refresh_messages):
+        draw_messages_window()
+    save_message_to_db(globals.channel_list[channel_number], packet['from'], msg_str)
 
 def send_message(message, destination=BROADCAST_NUM, channel=0):
 
@@ -65,3 +142,14 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
 
     ack_naks[sent_message_data.id] = {'channel' : channel_id, 'messageIndex' : len(globals.all_messages[channel_id]) - 1, 'timestamp' : timestamp }
 
+def send_traceroute():
+    r = mesh_pb2.RouteDiscovery()
+    globals.interface.sendData(
+        r,
+        destinationId=globals.node_list[globals.selected_node],
+        portNum=portnums_pb2.PortNum.TRACEROUTE_APP,
+        wantResponse=True,
+        onResponse=on_response_traceroute,
+        channelIndex=0,
+        hopLimit=3,
+    )

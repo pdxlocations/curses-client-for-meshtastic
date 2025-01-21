@@ -3,7 +3,8 @@ import textwrap
 import globals
 from utilities.utils import get_name_from_number, get_channels
 from settings import settings_menu
-from message_handlers.tx_handler import send_message
+from message_handlers.tx_handler import send_message, send_traceroute
+import ui.dialog
 
 
 def add_notification(channel_number):
@@ -309,22 +310,30 @@ def main_ui(stdscr):
             elif globals.current_window == 2:
                 select_nodes(1)
 
-        elif char == curses.KEY_LEFT:
-            globals.current_window = (globals.current_window - 1) % 3
-            draw_channel_list()
-            draw_node_list()
-            draw_messages_window()
+        elif char == curses.KEY_LEFT or char == curses.KEY_RIGHT:
+            delta = -1 if char == curses.KEY_LEFT else 1
 
-        elif char == curses.KEY_RIGHT:
-            globals.current_window = (globals.current_window + 1) % 3
-            draw_channel_list()
-            draw_node_list()
-            draw_messages_window()
+            old_window = globals.current_window
+            globals.current_window = (globals.current_window + delta) % 3
+
+            if old_window == 0 or globals.current_window == 0:
+                draw_channel_list()
+            if old_window == 1 or globals.current_window == 1:
+                draw_messages_window()
+            if old_window == 2 or globals.current_window == 2:
+                draw_node_list()
 
         # Check for Esc
         elif char == 27:
             break
-            
+
+        # Check for Ctrl + t
+        elif char == 20:
+            send_traceroute()
+            curses.curs_set(0)  # Hide cursor
+            ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
+            curses.curs_set(1)  # Show cursor again
+
         elif char == curses.KEY_ENTER or char == 10 or char == 13:
             if globals.current_window == 2:
                 node_list = globals.node_list

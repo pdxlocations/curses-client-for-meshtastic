@@ -1,7 +1,7 @@
 import sqlite3
 import globals
 import time
-from utilities.utils import get_nodeNum, get_name_from_number
+from utilities.utils import get_name_from_number
 
 def get_table_name(channel):
     # Construct the table name
@@ -53,12 +53,13 @@ def update_ack_nak(channel, timestamp, message, ack):
             db_cursor = db_connection.cursor()
             update_query = f"""
                 UPDATE {get_table_name(channel)}
-                SET ack_type = '{ack}'
-                WHERE user_id = {str(globals.myNodeNum)} AND
-                      timestamp = {timestamp} AND
-                      message_text = '{message}'
+                SET ack_type = ?
+                WHERE user_id = ? AND
+                      timestamp = ? AND
+                      message_text = ?
             """
-            db_cursor.execute(update_query)
+
+            db_cursor.execute(update_query, (ack, str(globals.myNodeNum), timestamp, message))
             db_connection.commit()
 
     except sqlite3.Error as e:
