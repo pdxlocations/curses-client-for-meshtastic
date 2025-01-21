@@ -5,7 +5,7 @@ from utilities.utils import get_name_from_number, get_channels
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 import ui.dialog
-
+from ui.colors import setup_colors
 
 def add_notification(channel_number):
     handle_notification(channel_number, add=True)
@@ -36,8 +36,7 @@ def draw_debug(value):
     function_win.refresh()
 
 def draw_splash(stdscr):
-    curses.start_color()
-    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Green text on black background
+    setup_colors()
     curses.curs_set(0)
 
     stdscr.clear()
@@ -50,9 +49,9 @@ def draw_splash(stdscr):
     start_x = width // 2 - len(message_1) // 2
     start_x2 = width // 2 - len(message_4) // 2
     start_y = height // 2 - 1
-    stdscr.addstr(start_y, start_x, message_1, curses.color_pair(1) | curses.A_BOLD)
-    stdscr.addstr(start_y+1, start_x-1, message_2, curses.color_pair(1) | curses.A_BOLD)
-    stdscr.addstr(start_y+2, start_x-2, message_3, curses.color_pair(1) | curses.A_BOLD)
+    stdscr.addstr(start_y, start_x, message_1, curses.color_pair(2) | curses.A_BOLD)
+    stdscr.addstr(start_y+1, start_x-1, message_2, curses.color_pair(2) | curses.A_BOLD)
+    stdscr.addstr(start_y+2, start_x-2, message_3, curses.color_pair(2) | curses.A_BOLD)
     stdscr.addstr(start_y+4, start_x2, message_4)
     stdscr.box()
     stdscr.refresh()
@@ -78,10 +77,10 @@ def draw_channel_list():
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
         if i < win_height - 2   :  # Check if there is enough space in the window
             if start_index + i == globals.selected_channel and globals.current_window == 0:
-                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(3))
+                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1) | curses.A_REVERSE)
                 remove_notification(globals.selected_channel)
             else:
-                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(4))
+                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1))
     channel_win.box()
     channel_win.refresh()
 
@@ -133,9 +132,9 @@ def draw_messages_window():
             for line in wrapped_lines:
                 # Highlight the row if it's the selected message
                 if index == globals.selected_message and globals.current_window == 1:
-                    color = curses.color_pair(3)  # Highlighted row color
+                    color = curses.A_REVERSE  # Highlighted row color
                 else:
-                    color = curses.color_pair(1) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2)
+                    color = curses.color_pair(4) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(3)
                 messages_win.addstr(row, 1, line, color)
                 row += 1
 
@@ -153,9 +152,9 @@ def draw_node_list():
     for i, node in enumerate(globals.node_list[start_index:], start=1):
         if i < win_height - 1   :  # Check if there is enough space in the window
             if globals.selected_node + 1 == start_index + i and globals.current_window == 2:
-                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(3))
+                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1) | curses.A_REVERSE)
             else:
-                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(4))
+                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1))
 
     nodes_win.box()
     nodes_win.refresh()
@@ -245,14 +244,6 @@ def main_ui(stdscr):
     global messages_win, nodes_win, channel_win, function_win, packetlog_win
     stdscr.keypad(True)
     get_channels()
-
-    # Initialize colors
-    curses.start_color()
-    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
-    curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)
 
     # Calculate window max dimensions
     height, width = stdscr.getmaxyx()

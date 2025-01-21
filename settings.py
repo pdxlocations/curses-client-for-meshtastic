@@ -5,12 +5,14 @@ from save_to_radio import settings_factory_reset, settings_reboot, settings_rese
 from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
 from save_to_radio import save_changes
+from ui.colors import setup_colors
 
 import logging
 
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
     global menu_win
+
     # Calculate the dynamic height based on the number of menu items
     num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
     height = min(curses.LINES - 2, num_items + 5)  # Ensure the menu fits within the terminal height
@@ -34,14 +36,17 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     for idx, option in enumerate(current_menu):
         field_info = current_menu[option]
         current_value = field_info[1] if isinstance(field_info, tuple) else ""
-        display_option = f"{option}"[:width // 2 - 2]  # Truncate option name if too long
+        display_option = f"{option}"[:width // 2 - 2]  # Truncate option name if too long``
         display_value = f"{current_value}"[:width // 2 - 4]  # Truncate value if too long
 
         try:
+            # Use red color for "Reboot" or "Shutdown"
+            color = curses.color_pair(5) if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else curses.color_pair(1)
+
             if idx == selected_index:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE)
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE | color)
             else:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}")
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", color)
         except curses.error:
             pass
 
@@ -50,9 +55,9 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
         save_option = "Save Changes"
         save_position = height - 2
         if selected_index == len(current_menu):
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.A_REVERSE)
+            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2) | curses.A_REVERSE)
         else:
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option)
+            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2))
 
     menu_win.refresh()
 
@@ -64,7 +69,6 @@ def settings_menu(sdscr, interface):
     selected_index = 0
     modified_settings = {}
     
-
     while True:
         options = list(current_menu.keys())
 
@@ -229,7 +233,7 @@ def main(stdscr):
         level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
         format="%(asctime)s - %(levelname)s - %(message)s"
     )
-
+    setup_colors()
     curses.curs_set(0)
     stdscr.keypad(True)
 
