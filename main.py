@@ -3,7 +3,7 @@
 '''
 Contact - A Console UI for Meshtastic by http://github.com/pdxlocations
 Powered by Meshtastic.org
-V 1.0.1
+V 1.0.3
 '''
 
 import curses

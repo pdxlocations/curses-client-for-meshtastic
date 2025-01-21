@@ -103,8 +103,12 @@ def draw_messages_window():
             if max_messages < 1:
                 max_messages = 1
 
-        # Calculate the scroll position based on the current selection
+        # Set the initial scroll position to the bottom of the list
         max_scroll_position = max(0, num_messages - max_messages)
+
+        # if globals.selected_message is None or globals.selected_message == 0 or globals.selected_message >= num_messages:
+        #     globals.selected_message = num_messages - 1  # Default to the last message
+
         start_index = max(0, min(globals.selected_message, max_scroll_position))
 
         # Dynamically calculate max_messages based on visible messages and wraps
@@ -142,7 +146,6 @@ def draw_messages_window():
     messages_win.refresh()
     draw_packetlog_win()
 
-
 def draw_node_list():
 
     nodes_win.clear()                 
@@ -168,6 +171,8 @@ def select_channels(direction):
         globals.selected_channel = channel_list_length - 1
     elif globals.selected_channel >= channel_list_length:
         globals.selected_channel = 0
+
+    globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
 
     draw_channel_list()
     draw_messages_window()
