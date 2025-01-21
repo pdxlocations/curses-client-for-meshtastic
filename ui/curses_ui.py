@@ -88,43 +88,36 @@ def draw_channel_list():
 
 def draw_messages_window():
     """Update the messages window based on the selected channel and scroll position."""
-    messages_win.clear()
+    messages_pad.clear()
 
     channel = globals.channel_list[globals.selected_channel]
 
     if channel in globals.all_messages:
         messages = globals.all_messages[channel]
-        num_messages = len(messages)
-        max_messages = messages_win.getmaxyx()[0] - 2  # Max messages that fit in the window
 
         # Adjust for packetlog height if log is visible
         if globals.display_log:
             packetlog_height = packetlog_win.getmaxyx()[0]
-            max_messages -= packetlog_height - 1
-            if max_messages < 1:
-                max_messages = 1
-
-        # Calculate the scroll position based on the current selection
-        max_scroll_position = max(0, num_messages - max_messages)
-        start_index = max(0, min(globals.selected_message, max_scroll_position))
 
         # Display messages starting from the calculated start index
-        row = 1
-        for index, (prefix, message) in enumerate(messages[start_index:start_index + max_messages], start=start_index):
+        row = 0
+        for (prefix, message) in messages:
             full_message = f"{prefix}{message}"
-            wrapped_lines = textwrap.wrap(full_message, messages_win.getmaxyx()[1] - 2)
+            wrapped_lines = textwrap.wrap(full_message, messages_box.getmaxyx()[1] - 2)
 
             for line in wrapped_lines:
                 # Highlight the row if it's the selected message
-                if index == globals.selected_message and globals.current_window == 1:
-                    color = curses.color_pair(3)  # Highlighted row color
-                else:
-                    color = curses.color_pair(1) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2)
-                messages_win.addstr(row, 1, line, color)
+                # if index == globals.selected_message and globals.current_window == 1:
+                    # color = curses.color_pair(3)  # Highlighted row color
+                # else:
+                color = curses.color_pair(1) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2)
+                messages_pad.addstr(row, 1, line, color)
                 row += 1
 
-    messages_win.box()
-    messages_win.refresh()
+    messages_pad.refresh(0, 0, 
+                         messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1, 
+                         messages_box.getbegyx()[0] + messages_box.getmaxyx()[0] - 2, messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
+
     draw_packetlog_win()
 
 
@@ -158,16 +151,23 @@ def select_channels(direction):
     draw_messages_window()
 
 def select_messages(direction):
-    messages_length = len(globals.all_messages[globals.channel_list[globals.selected_channel]])
+    # messages_length = len(globals.all_messages[globals.channel_list[globals.selected_channel]])
 
     globals.selected_message += direction
 
-    if globals.selected_message < 0:
-        globals.selected_message = messages_length - 1
-    elif globals.selected_message >= messages_length:
-        globals.selected_message = 0
+    # if globals.selected_message < 0:
+    #     globals.selected_message = messages_length - 1
+    # elif globals.selected_message >= messages_length:
+    #     globals.selected_message = 0
 
-    draw_messages_window()
+    # draw_messages_window()
+
+    # messages_win.refresh(globals.selected_message, 0, 4, channel_width + 1, 3 + height - 8, channel_width + messages_width - 2)
+    messages_pad.refresh(globals.selected_message, 0, 
+                         messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1, 
+                         messages_box.getbegyx()[0] + messages_box.getmaxyx()[0] - 2, messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
+
+
 
 def select_nodes(direction):
     node_list_length = len(globals.node_list)
@@ -226,7 +226,7 @@ def draw_packetlog_win():
 
 
 def main_ui(stdscr):
-    global messages_win, nodes_win, channel_win, function_win, packetlog_win
+    global messages_pad, messages_box, nodes_win, channel_win, function_win, packetlog_win
     stdscr.keypad(True)
     get_channels()
 
@@ -248,17 +248,14 @@ def main_ui(stdscr):
     messages_width = width - channel_width - nodes_width
 
     channel_win = curses.newwin(height - 6, channel_width, 3, 0)
-    messages_win = curses.newwin(height - 6, messages_width, 3, channel_width)
+    messages_box = curses.newwin(height - 6, messages_width, 3, channel_width)
+
+    messages_pad = curses.newpad(1000, 1000)
     packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
     nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
     function_win = curses.newwin(3, width, height - 3, 0)
 
     draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    / = Toggle Log    ESC = Quit")
-
-    # Enable scrolling for messages and nodes windows
-    messages_win.scrollok(True)
-    nodes_win.scrollok(True)
-    channel_win.scrollok(True)
 
     draw_channel_list()
     draw_node_list()
@@ -267,17 +264,17 @@ def main_ui(stdscr):
     # Draw boxes around windows
     channel_win.box()
     entry_win.box()
-    messages_win.box()
     nodes_win.box()
+    messages_box.box()
     function_win.box() 
 
     # Refresh all windows
     entry_win.refresh()
-    messages_win.refresh()
+
     nodes_win.refresh()
     channel_win.refresh()
     function_win.refresh()
-
+    messages_box.refresh()
     input_text = ""
 
     entry_win.keypad(True)
@@ -295,7 +292,7 @@ def main_ui(stdscr):
         if char == curses.KEY_UP:
             if globals.current_window == 0:
                 select_channels(-1)
-                globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
+                # globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
             elif globals.current_window == 1:
                 select_messages(-1)
             elif globals.current_window == 2:
@@ -304,7 +301,7 @@ def main_ui(stdscr):
         elif char == curses.KEY_DOWN:
             if globals.current_window == 0:
                 select_channels(1)
-                globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
+                # globals.selected_message = len(globals.all_messages[globals.channel_list[globals.selected_channel]]) - 1
             elif globals.current_window == 1:
                 select_messages(1)
             elif globals.current_window == 2:
