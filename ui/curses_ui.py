@@ -2,9 +2,10 @@ import curses
 import textwrap
 import globals
 from utilities.utils import get_name_from_number, get_channels
-from settings import settings
+from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 import ui.dialog
+
 
 def add_notification(channel_number):
     handle_notification(channel_number, add=True)
@@ -367,10 +368,10 @@ def main_ui(stdscr):
                 entry_win.move(y, x - 1)
             entry_win.refresh()
             
-        elif char == 96:
-            curses.curs_set(0)  # Hide cursor
-            settings(stdscr)
-            curses.curs_set(1)  # Show cursor again
+        elif char == 96: # ` Launch the settings interface
+            curses.curs_set(0)
+            settings_menu(stdscr, globals.interface)
+            curses.curs_set(1)
         
         elif char == 47:
             # Display packet log

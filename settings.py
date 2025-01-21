@@ -1,801 +1,243 @@
 import curses
-import ipaddress
+import meshtastic.serial_interface
 
-import meshtastic.serial_interface, meshtastic.tcp_interface
-from meshtastic.protobuf import config_pb2, module_config_pb2, mesh_pb2, channel_pb2
-import globals
+from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
+from ui.menus import generate_menu_from_protobuf
+from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
+from save_to_radio import save_changes
 
-def display_enum_menu(stdscr, enum_values, menu_item):
-    menu_height = len(enum_values) + 2
-    menu_width = max(len(option) for option in enum_values) + 4
-    y_start = (curses.LINES - menu_height) // 2
-    x_start = (curses.COLS - menu_width) // 2
+import logging
 
-    # Maximum number of rows to display
-    max_rows = 10
 
-    # Calculate popup window dimensions and position
-    popup_height = min(len(enum_values), max_rows) + 2
-    popup_width = max(len(option) for option in enum_values) + 6
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
+def display_menu(current_menu, menu_path, selected_index, show_save_option):
+    global menu_win
+    # Calculate the dynamic height based on the number of menu items
+    num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
+    height = min(curses.LINES - 2, num_items + 5)  # Ensure the menu fits within the terminal height
+    width = 60
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
 
-    # Create the popup window
-    try:
-        popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
+    # Create a new curses window with dynamic dimensions
+    menu_win = curses.newwin(height, width, start_y, start_x)
+    menu_win.clear()
+    menu_win.border()
+    menu_win.keypad(True)
 
-    # Enable keypad mode
-    popup_win.keypad(True)
+    # Display the current menu path as a header
+    header = " > ".join(word.title() for word in menu_path)
+    if len(header) > width - 4:
+        header = header[:width - 7] + "..."
+    menu_win.addstr(1, 2, header, curses.A_BOLD)
 
-    # Display enum values in the popup window
-    start_index = 0  # Starting index of displayed items
-    while True:
-        popup_win.clear()
-        popup_win.border()
+    # Display the menu options
+    for idx, option in enumerate(current_menu):
+        field_info = current_menu[option]
+        current_value = field_info[1] if isinstance(field_info, tuple) else ""
+        display_option = f"{option}"[:width // 2 - 2]  # Truncate option name if too long
+        display_value = f"{current_value}"[:width // 2 - 4]  # Truncate value if too long
 
-        # Calculate the starting index based on the menu item and window size
-        if menu_item >= start_index + max_rows:
-            start_index += 1
-        elif menu_item < start_index:
-            start_index -= 1
-
-        # Display enum values within the window height
-        for i in range(min(len(enum_values) - start_index, max_rows)):
-            option_index = start_index + i
-            if option_index == menu_item:
-                popup_win.addstr(i + 1, 2, enum_values[option_index], curses.A_REVERSE)
+        try:
+            if idx == selected_index:
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE)
             else:
-                popup_win.addstr(i + 1, 2, enum_values[option_index])
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}")
+        except curses.error:
+            pass
 
-        popup_win.refresh()
-
-        char = popup_win.getch()
-        if char == curses.KEY_DOWN:
-            if menu_item < len(enum_values) - 1:
-                menu_item += 1
-        elif char == curses.KEY_UP:
-            if menu_item > 0:
-                menu_item -= 1
-        elif char == ord('\n'):
-            selected_option = enum_values[menu_item]
-            popup_win.clear()
-            popup_win.refresh()
-            return selected_option, True
-        elif char == 27 or char == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)
-            popup_win.refresh()
-            return None, False
-
-def get_string_input(stdscr, setting_string):
-    popup_height = 5
-    popup_width = 40
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
-
-    try:
-        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    input_win.border()
-    input_win.keypad(True)
-    input_win.refresh()
-
-    input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
-    input_win.refresh()
-    # Get user input
-    curses.curs_set(1)
-    input_text = ""
-
-    while True:
-        # Display the current input text
-        input_win.addstr(1, 1, input_text)
-        input_win.border()
-        input_win.refresh()
-
-        # Get a character from the user
-        key = stdscr.getch()
-
-        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)
-            input_win.clear()
-            input_win.refresh()
-            return input_text, True
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
-            # Delete the last character from input_text
-            input_text = input_text[:-1]
-        elif 32 <= key <= 126:  # Printable ASCII characters
-            # Append the character to input_text
-            input_text += chr(key)
-        elif key == 27:  # Check if escape key is pressed
-            curses.curs_set(0)
-            input_win.refresh()
-            return None, False
-            
-        input_win.clear()
-        input_win.refresh()
-
-
-def get_uint_input(stdscr, setting_string):
-    popup_height = 5
-    popup_width = 40
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
-
-    try:
-        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    input_win.border()
-    input_win.keypad(True)
-    input_win.refresh()
-
-    input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
-    input_win.refresh()
-    curses.curs_set(1)
-    input_text = ""
-
-    while True:
-        # Display the current input text
-        input_win.addstr(1, 1, input_text)
-        input_win.border()
-        input_win.refresh()
-
-        # Get a character from the user
-        key = stdscr.getch()
-
-        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)
-            input_win.clear()
-            input_win.refresh()
-            return int(input_text), True
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
-            # Delete the last character from input_text
-            input_text = input_text[:-1]
-        elif 48 <= key <= 57:  # Numbers(ASCII range)
-            # Append the character to input_text
-            input_text += chr(key)
-        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)
-            input_win.refresh()
-            return None, False
-            
-        input_win.clear()
-        input_win.refresh()
-
-
-def get_uint32_list_input(stdscr, setting_string):
-    setting_string = [str(num) for num in setting_string]
-
-    popup_height = 8  # Increased height to accommodate three lines
-    popup_width = 40
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
-
-    try:
-        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    input_win.border()
-    input_win.keypad(True)
-    input_win.refresh()
-
-    input_text = setting_string[:]  # Copy the input strings
-    curses.curs_set(0)
-
-    while True:
-        # Display the current input text for each line
-        for i, line in enumerate(input_text):
-            input_win.addstr(1 + i, 1, line)
-
-        input_win.border()
-        input_win.refresh()
-
-        # Get a character from the user
-        key = stdscr.getch()
-
-        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            input_win.clear()
-            input_win.refresh()
-            return None, False  # TODO allow setting this
-        #     return input_text, True
-        # elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
-        #     # Delete the last character from the current line's input_text
-        #     current_y, current_x = input_win.getyx()
-        #     input_text[current_y - 1] = input_text[current_y - 1][:-1]
-        # elif (48 <= key <= 57) or key == 44:  # Numbers and comma (ASCII range)
-        #     # Append the character to the current line's input_text
-        #     current_y, current_x = input_win.getyx()
-        #     input_text[current_y - 1] += chr(key)
-        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)
-            input_win.refresh()
-            return None, False
-            
-        input_win.clear()
-        input_win.refresh()
-
-def get_float_input(stdscr, setting_string):
-    popup_height = 5
-    popup_width = 40
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
-
-    try:
-        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    input_win.border()
-    input_win.keypad(True)
-    input_win.refresh()
-
-    input_win.addstr(1, 1, str(setting_string))  # Prepopulate input field with the setting value
-    input_win.refresh()
-    curses.curs_set(1)
-    input_text = ""
-
-    while True:
-        # Display the current input text
-        input_win.addstr(1, 1, input_text)
-        input_win.border()
-        input_win.refresh()
-
-        # Get a character from the user
-        key = stdscr.getch()
-
-        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)
-            input_win.clear()
-            input_win.refresh()
-            return float(input_text), True
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
-            # Delete the last character from input_text
-            input_text = input_text[:-1]
-        elif (48 <= key <= 57) or key == 46:  # Numbers and decimal point (ASCII range)
-            # Append the character to input_text
-            input_text += chr(key)
-        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)
-            input_win.refresh()
-            return None, False
-            
-        input_win.clear()
-        input_win.refresh()
-
-
-def ip_to_fixed32(ip):
-    # Parse the IP address
-    ip_obj = ipaddress.ip_address(ip)
-    # Convert IP address to 32-bit integer
-    return int(ip_obj)
-
-def fixed32_to_ip(fixed32):
-    # Convert 32-bit integer to IPv4Address object
-    ip_obj = ipaddress.IPv4Address(fixed32)
-    # Convert IPv4Address object to string representation
-    return str(ip_obj)
-
-def get_fixed32_input(stdscr, setting_string):
-    popup_height = 5
-    popup_width = 40
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
-
-    try:
-        input_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    input_win.border()
-    input_win.keypad(True)
-    input_win.refresh()
-
-    input_win.addstr(1, 1, fixed32_to_ip(setting_string))  # Prepopulate input field with the setting value
-    input_win.refresh()
-    curses.curs_set(1)
-    input_text = ""
-
-    while True:
-        # Display the current input text
-        input_win.addstr(1, 1, input_text)
-        input_win.border()
-        input_win.refresh()
-
-        # Get a character from the user
-        key = stdscr.getch()
-
-        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter key
-            curses.curs_set(0)
-            input_win.clear()
-            input_win.refresh()
-            return ip_to_fixed32(input_text), True
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace key
-            # Delete the last character from input_text
-            input_text = input_text[:-1]
-        elif 48 <= key <= 57 or key == 46:  # Numbers + period (ASCII range)
-            # Append the character to input_text
-            input_text += chr(key)
-        elif key == 27 or key == curses.KEY_LEFT:  # Check if escape key is pressed
-            curses.curs_set(0)
-            input_win.refresh()
-            return None, False
-            
-        input_win.clear()
-        input_win.refresh()   
-
-
-def display_bool_menu(stdscr, setting_value):
-    bool_options = ["False", "True"]
-    return display_enum_menu(stdscr, bool_options, setting_value)
-
-
-def generate_menu_from_protobuf(message_instance):
-    if not hasattr(message_instance, "DESCRIPTOR"):
-        return  # This is not a protobuf message instance, exit
-    menu = {}
-
-    field_names = message_instance.DESCRIPTOR.fields_by_name.keys()
-    for field_name in field_names:
-        field_descriptor = message_instance.DESCRIPTOR.fields_by_name[field_name]
-        if field_descriptor is not None:
-            nested_message_instance = getattr(message_instance, field_name)
-            menu[field_name] = generate_menu_from_protobuf(nested_message_instance)
-    return menu
-
-
-def change_setting(stdscr, menu_path):
-    node = globals.interface.localNode
-    field_descriptor = None
-    setting_value = 0
-    
-    stdscr.clear()
-    stdscr.border()
-    stdscr.refresh()
-    menu_header(stdscr, f"{menu_path[-1]}")
-        
-    # Determine the level of nesting based on the length of menu_path
-
-    if menu_path[1] == "User Settings":
-        n = globals.interface.getMyNodeInfo()
-
-        setting_string = n['user'].get(snake_to_camel(menu_path[2]), 0)
-
-        if menu_path[2] == "is_licensed":
-            setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
+    # Show save option if applicable
+    if show_save_option:
+        save_option = "Save Changes"
+        save_position = height - 2
+        if selected_index == len(current_menu):
+            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.A_REVERSE)
         else:
-            setting_value, do_change_setting = get_string_input(stdscr, setting_string)
+            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option)
 
-        if not do_change_setting:
-            stdscr.clear()
-            stdscr.border()
-            menu_path.pop()
-            return
+    menu_win.refresh()
 
-        if menu_path[2] in ["long_name", "short_name"]:
-            if menu_path[2] == "short_name" and len(setting_value) > 4:
-                setting_value = setting_value[:4]
-            settings_set_owner(long_name=setting_value if menu_path[2] == "long_name" else None,
-                            short_name=setting_value if menu_path[2] == "short_name" else None)
-        elif menu_path[2] == "is_licensed":
-            ln = n['user']['longName']
-            settings_set_owner(long_name=ln, is_licensed=setting_value)
+def settings_menu(sdscr, interface):
 
-        stdscr.clear()
-        stdscr.border()
-        menu_path.pop()
-        return
-
-    if menu_path[1] == "Channels":
-        return
-    #         n = interface.getChannelByChannelIndex()
-    #         setting_string = getattr(getattr(n.channelSettings, str(menu_path[2])), menu_path[3])
-    #         field_descriptor = getattr(n.channelSettings, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
-
-
-
-    if len(menu_path) == 4:
-        if menu_path[1] == "Radio Settings":
-            setting_string = getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3])
-            field_descriptor = getattr(node.localConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
-
-        elif menu_path[1] == "Module Settings":
-            setting_string = getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3])
-            field_descriptor = getattr(node.moduleConfig, menu_path[2]).DESCRIPTOR.fields_by_name[menu_path[3]]
-
-
-    elif len(menu_path) == 5:
-        if menu_path[1] == "Radio Settings":
-            setting_string = getattr(getattr(getattr(node.localConfig, str(menu_path[2])), menu_path[3]), menu_path[4])
-            field_descriptor = getattr(getattr(node.localConfig, menu_path[2]), menu_path[3]).DESCRIPTOR.fields_by_name[menu_path[4]]
-
-        elif menu_path[1] == "Module Settings":
-            setting_string = getattr(getattr(getattr(node.moduleConfig, str(menu_path[2])), menu_path[3]), menu_path[4])
-            field_descriptor = getattr(getattr(node.moduleConfig, menu_path[2]), menu_path[3]).DESCRIPTOR.fields_by_name[menu_path[4]]
-
-
-    if field_descriptor.enum_type is not None:
-        enum_values = [enum_value.name for enum_value in field_descriptor.enum_type.values]
-        enum_option, do_change_setting = display_enum_menu(stdscr, enum_values, setting_string)
-        setting_value = enum_option
-
-    elif field_descriptor.type == 8:  # Field type 8 corresponds to BOOL
-        setting_value, do_change_setting = display_bool_menu(stdscr, setting_string)
-
-    elif field_descriptor.type == 9:  # Field type 9 corresponds to STRING
-        setting_value, do_change_setting = get_string_input(stdscr, setting_string)
-
-    elif field_descriptor.type == 2:  # Field type 2 corresponds to FLOAT
-        setting_value, do_change_setting = get_float_input(stdscr, setting_string)
-
-    elif field_descriptor.type == 13:  # Field type 13 corresponds to UINT32
-        if field_descriptor.label == field_descriptor.LABEL_REPEATED:
-            setting_value, do_change_setting = get_uint32_list_input(stdscr, setting_string)
-        else:
-            setting_value, do_change_setting = get_uint_input(stdscr, setting_string)
-
-    elif field_descriptor.type == 7:  # Field type 7 corresponds to FIXED32
-        setting_value, do_change_setting = get_fixed32_input(stdscr, setting_string)
-
-    else:
-        menu_path.pop()
-        return
-    
-    if not do_change_setting:
-        stdscr.clear()
-        stdscr.border()
-        menu_path.pop()
-        return
-        
-    # formatted_text = f"{menu_path[2]}.{menu_path[3]} = {setting_value}"
-    # menu_header(stdscr,formatted_text,2)
-
-    ourNode = globals.interface.localNode
-    
-    # Convert "true" to 1, "false" to 0, leave other values as they are
-    if setting_value == "True" or setting_value == "1":
-        setting_value_int = 1
-    elif setting_value == "False" or setting_value == "0":
-        setting_value_int = 0
-    else:
-        # If setting_value is not "true" or "false", keep it as it is
-        setting_value_int = setting_value
-
-    # if isinstance(setting_value_int, list):
-    #     value_string = ', '.join(str(item) for item in setting_value_int)
-    #     setting_value_int = value_string
-
-    try:
-        if len(menu_path) == 4:
-            if menu_path[1] == "Radio Settings":
-                setattr(getattr(ourNode.localConfig, menu_path[2]), menu_path[3], setting_value_int)
-            elif menu_path[1] == "Module Settings":
-                setattr(getattr(ourNode.moduleConfig, menu_path[2]), menu_path[3], setting_value_int)
-
-        elif len(menu_path) == 5:
-            if menu_path[1] == "Radio Settings":
-                setattr(getattr(getattr(ourNode.localConfig, menu_path[2]), menu_path[3]), menu_path[4], setting_value_int)
-            elif menu_path[1] == "Module Settings":
-                setattr(getattr(getattr(ourNode.moduleConfig, menu_path[2]), menu_path[3]), menu_path[4], setting_value_int)
-
-    except AttributeError as e:
-        print("Error setting attribute:", e)
-
-
-    ourNode.writeConfig(menu_path[2])
-    menu_path.pop()
-
-def snake_to_camel(snake_str):
-    components = snake_str.split('_')
-    return components[0] + ''.join(x.title() for x in components[1:])
-
-
-def display_values(stdscr, key_list, menu_path):
-    node = globals.interface.localNode
-    user_settings = ["long_name", "short_name", "is_licensed"]
-    for i, key in enumerate(key_list):
-
-        if len(menu_path) == 2:
-            if menu_path[1] == 'User Settings':
-                n = globals.interface.getMyNodeInfo()
-                try:
-                    setting = n['user'][snake_to_camel(key_list[i])]
-                except:
-                    setting = None
-                if key_list[i] in user_settings:
-                    stdscr.addstr(i+3, 40, str(setting))
-
-        if len(menu_path) == 3:
-            if menu_path[1] == "Radio Settings":
-                setting = getattr(getattr(node.localConfig, menu_path[2]), key_list[i])  
-            if menu_path[1] == "Module Settings":
-                setting = getattr(getattr(node.moduleConfig, menu_path[2]), key_list[i])
-            stdscr.addstr(i+3, 40, str(setting)[:14])
-
-        if len(menu_path) == 4:
-            if menu_path[1] == "Radio Settings":
-                setting = getattr(getattr(getattr(node.localConfig, menu_path[2]), menu_path[3]), key_list[i])  
-            if menu_path[1] == "Module Settings":
-                setting = getattr(getattr(getattr(node.moduleConfig, menu_path[2]), menu_path[3]), key_list[i])
-            stdscr.addstr(i+3, 40, str(setting)[:14])
-        
-    stdscr.refresh()
-
-def menu_header(window, text, start_y=1):
-    window.clear()
-    window.box()
-    window.refresh()
-    _, window_width = window.getmaxyx()
-    start_x = (window_width - len(text)) // 2
-    formatted_text = text.replace('_', ' ').title()
-    window.addstr(start_y, start_x, formatted_text)
-    window.refresh()
-
-def nested_menu(stdscr, menu):
-    menu_item = 0
-    current_menu = menu
-    prev_menu = []
-    menu_index = 0
-    next_key = None
-
-    key_list = []
+    menu = generate_menu_from_protobuf(interface)
+    current_menu = menu["Main Menu"]
     menu_path = ["Main Menu"]
-
-    last_menu_level = False
+    selected_index = 0
+    modified_settings = {}
+    
 
     while True:
-        
-        if current_menu is not None:
-            menu_header(stdscr, f"{menu_path[menu_index]}")
+        options = list(current_menu.keys())
 
-            # Display current menu
-            for i, key in enumerate(current_menu.keys(), start=0):
-                if i == menu_item:
-                    if key in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
-                        stdscr.addstr(i+3, 1, key, curses.color_pair(5))
-                    else:
-                        stdscr.addstr(i+3, 1, key, curses.A_REVERSE)
-                else:
-                    stdscr.addstr(i+3, 1, key)
+        show_save_option = (
+            len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
+        ) or (
+            len(menu_path) == 2 and "User Settings" in menu_path 
+        ) or (
+            len(menu_path) == 3 and "Channels" in menu_path
+        )
 
-            # Display current values
-            display_values(stdscr, key_list, menu_path)
+        # Display the menu
+        display_menu(current_menu, menu_path, selected_index, show_save_option)
 
-            char = stdscr.getch()
+        # Capture user input
+        key = menu_win.getch()
 
-            selected_key = list(current_menu.keys())[menu_item]
-            selected_value = current_menu[selected_key]
+        if key == curses.KEY_UP:
+            selected_index = max(0, selected_index - 1)
+            
+        elif key == curses.KEY_DOWN:
+            max_index = len(options) + (1 if show_save_option else 0) - 1
+            selected_index = min(max_index, selected_index + 1)
 
-            if char == curses.KEY_DOWN:
-                if last_menu_level == True:
-                    last_menu_level = False
-                menu_item = min(len(current_menu) - 1, menu_item + 1)
+        elif key == curses.KEY_RIGHT or key == ord('\n'):
+            menu_win.clear()
+            menu_win.refresh()
+            if show_save_option and selected_index == len(options):
+                save_changes(interface, menu_path, modified_settings)
+                modified_settings.clear()
+                logging.info("Changes Saved")
 
-            elif char == curses.KEY_UP:
-                if last_menu_level == True:
-                    last_menu_level = False
-                menu_item = max(0, menu_item - 1)
-
-            elif char == curses.KEY_RIGHT:
-                # if selected_key == "Region":
-                #     settings_region()
-                #     break
-                if selected_key == "Channels":
-                    channels_editor(stdscr)
-                elif selected_key not in ["Reboot", "Reset NodeDB", "Shutdown", "Factory Reset"]:
-                    menu_path.append(selected_key)
-
-                    if isinstance(selected_value, dict):
-                        # If the selected item is a submenu, navigate to it
-                        prev_menu.append(current_menu)
-                        menu_index += 1
-                        current_menu = selected_value
-                        menu_item = 0
-                        last_menu_level = False
-                    else:
-                        last_menu_level = True
-                        
-                
-            elif char == curses.KEY_LEFT:
-                if last_menu_level == True:
-                    last_menu_level = False
                 if len(menu_path) > 1:
                     menu_path.pop()
-                    current_menu = prev_menu[menu_index-1]
-                    del prev_menu[menu_index-1]
-                    menu_index -= 1
-                    menu_item = 0
+                    current_menu = menu["Main Menu"]
+                    for step in menu_path[1:]:
+                        current_menu = current_menu.get(step, {})
+                    selected_index = 0
 
-            elif char == ord('\n'):
-                if selected_key == "Channels":
-                    channels_editor(stdscr)
-                if selected_key == "Reboot":
-                    settings_reboot()
-                elif selected_key == "Reset NodeDB":
-                    settings_reset_nodedb()
-                elif selected_key == "Shutdown":
-                    settings_shutdown()
-                elif selected_key == "Factory Reset":
-                    settings_factory_reset()
+                continue
 
-                elif selected_value is not None:
-                    stdscr.refresh()
-                    stdscr.getch()
-                 
-            elif char == 27:  # escape to exit menu 
+            selected_option = options[selected_index]
+
+            if selected_option == "Exit":
                 break
+            elif selected_option == "Reboot":
+                confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
+                if confirmation == "True":
+                    settings_reboot(interface)
+                    logging.info(f"Node Reboot Requested by menu")
+                continue
 
-            if char:
-                stdscr.clear()
-                stdscr.border()
+            elif selected_option == "Reset Node DB":
+                confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
+                if confirmation == "True":
+                    settings_reset_nodedb(interface)
+                    logging.info(f"Node DB Reset Requested by menu")
+                continue
+            elif selected_option == "Shutdown":
+                confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
+                if confirmation == "True":
+                    settings_shutdown(interface)
+                    logging.info(f"Node Shutdown Requested by menu")
+                continue
+            elif selected_option == "Factory Reset":
+                confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
+                if confirmation == "True":
+                    settings_factory_reset(interface)
+                    logging.info(f"Factory Reset Requested by menu")
+                continue
+            field_info = current_menu.get(selected_option)
 
-            next_key = list(current_menu.keys())[menu_item]
-            key_list = list(current_menu.keys())
+            if isinstance(field_info, tuple):
+                field, current_value = field_info
 
-        else:
-            break  # Exit loop if current_menu is None
+                if selected_option == 'longName' or selected_option == 'shortName':
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    
+                    modified_settings[selected_option] = (new_value)
+                    current_menu[selected_option] = (field, new_value)
 
-        if last_menu_level == True:
-            if not isinstance(current_menu.get(next_key), dict):
-                change_setting(stdscr, menu_path)
-
-
-def settings(stdscr):
-    popup_height = 22
-    popup_width = 60
-    popup_win = None
-    y_start = (curses.LINES - popup_height) // 2
-    x_start = (curses.COLS - popup_width) // 2
-
-    curses.curs_set(0)
-    try:
-        popup_win = curses.newwin(popup_height, popup_width, y_start, x_start)
-    except curses.error as e:
-        print("Error occurred while initializing curses window:", e)
-
-    popup_win.border()
-    popup_win.keypad(True)
-    
-    # Generate menu from protobuf for both radio and module settings
-
-
-    user = mesh_pb2.User()
-    user_settings = ["long_name", "short_name", "is_licensed"]
-    user_config = generate_menu_from_protobuf(user)
-    user_config = {key: value for key, value in user_config.items() if key in user_settings}
-
-    channel = channel_pb2.ChannelSettings()
-    channel_config = generate_menu_from_protobuf(channel)
-    channel_config = [channel_config.copy() for i in range(8)]
-
-
-    radio = config_pb2.Config()
-    radio_config = generate_menu_from_protobuf(radio)
-
-    module = module_config_pb2.ModuleConfig()
-    module_config = generate_menu_from_protobuf(module)
-
-    # Add top-level menu items
-    top_level_menu = {
-        "User Settings": user_config,
-        "Channels": None,
-        "Radio Settings": radio_config,
-        "Module Settings": module_config,
-        "Reboot": None,
-        "Reset NodeDB": None,
-        "Shutdown": None,
-        "Factory Reset": None
-    }
-
-    # Call nested_menu function to display and handle the nested menu
-    nested_menu(popup_win, top_level_menu)
-
-    # Close the popup window
-    popup_win.clear()
-    popup_win.refresh()
-
-# def settings_region():
-#     selected_option, do_set = set_region()
-#     if do_set:
-#         ourNode = interface.localNode
-#         setattr(ourNode.localConfig.lora, "region", selected_option)
-#         ourNode.writeConfig("lora")
-
-def settings_reboot():
-    globals.interface.localNode.reboot()
-
-def settings_reset_nodedb():
-    globals.interface.localNode.resetNodeDb()
-
-def settings_shutdown():
-    globals.interface.localNode.shutdown()
-
-def settings_factory_reset():
-    globals.interface.localNode.factoryReset()
-
-def settings_set_owner(long_name=None, short_name=None, is_licensed=False):
-    if is_licensed == 'True':
-        is_licensed = True
-    elif is_licensed == 'False':
-        is_licensed = False
-    globals.interface.localNode.setOwner(long_name, short_name, is_licensed)
+                elif field.type == 8:  # Handle boolean type
+                    new_value = get_bool_selection(selected_option, str(current_value))
+                    try:
+                        # Validate and convert input to a valid boolean
+                        if isinstance(new_value, str):
+                            # Handle string representations of booleans
+                            new_value_lower = new_value.lower()
+                            if new_value_lower in ("true", "yes", "1", "on"):
+                                new_value = True
+                            elif new_value_lower in ("false", "no", "0", "off"):
+                                new_value = False
+                            else:
+                                raise ValueError("Invalid string for boolean")
+                        else:
+                            # Convert other types directly to bool
+                            new_value = bool(new_value)
+                        
+                    except ValueError as e:
+                        logging.info(f"Invalid input for boolean: {e}")
 
 
+                elif field.label == field.LABEL_REPEATED:  # Handle repeated field
+                    new_value = get_repeated_input(current_value)
 
-def channels_editor(stdscr):
-    # Define the list of channels
-    channels = [f"{i}" for i in range(8)]
+                elif field.enum_type:  # Enum field
+                    enum_options = [v.name for v in field.enum_type.values]
+                    new_value = get_enum_input(enum_options, current_value)
 
-    # Initialize menu item index and selected channel
-    menu_item = 0
-    selected_channel = channels[menu_item]
+                elif field.type == 7: # Field type 7 corresponds to FIXED32
+                    new_value = get_fixed32_input(current_value)
 
-    while True:
-        # Display the list of channels in the curses window
-        menu_header(stdscr, "Channels")
+                elif field.type == 13: # Field type 13 corresponds to UINT32
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = current_value if new_value is None else int(new_value)
 
-        # Fetch and print roles for each channel
-        for index, channel_index in enumerate(channels):
-            channel = globals.interface.localNode.getChannelByChannelIndex(index)
-            role = "DISABLED" if channel.role == 0 else "PRIMARY" if channel.role == 1 else "SECONDARY"
-            channel_settings = channel.settings
-            channel_name = channel_settings.name
-            if not channel_name and role != "DISABLED":
-                config = globals.interface.localNode.localConfig
-                channel_name_int = config.lora.modem_preset
-                channel_name = config_pb2.Config.LoRaConfig.ModemPreset.Name(channel_name_int)
+                elif field.type == 2: # Field type 13 corresponds to INT64
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = current_value if new_value is None else float(new_value)
 
-            channel_name_formatted = f"{channel_name:<13}"  # Adjust channel name to be 13 characters wide
-            role_formatted = f"{role:<9}"  # Adjust role to be 9 characters wide (SECONDARY =  9 chars)
 
-            if index == menu_item:
-                stdscr.addstr(index + 3, 1, f"{channel_index} ", curses.A_REVERSE)
-                stdscr.addstr(index + 3, 3, f"{channel_name_formatted}", curses.A_REVERSE)
-                stdscr.addstr(index + 3, 15, f"{role_formatted}", curses.A_REVERSE)
+                else:  # Handle other field types
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = current_value if new_value is None else new_value
+                    
+                # Navigate to the correct nested dictionary based on the menu_path
+                current_nested = modified_settings
+                for key in menu_path[3:]:  # Skip "Main Menu"
+                    current_nested = current_nested.setdefault(key, {})
+
+                # Add the new value to the appropriate level
+                current_nested[selected_option] = new_value
+
+                # modified_settings[selected_option] = (new_value)
+                current_menu[selected_option] = (field, new_value)
             else:
-                stdscr.addstr(index + 3, 1, f"{channel_index}")
-                stdscr.addstr(index + 3, 3, f"{channel_name_formatted}")
-                stdscr.addstr(index + 3, 15, f"{role_formatted}")
+                current_menu = current_menu[selected_option]
+                menu_path.append(selected_option)
+                selected_index = 0
 
-        stdscr.refresh()
+        elif key == curses.KEY_LEFT:
 
-        key = stdscr.getch()
+            menu_win.clear()
+            menu_win.refresh()
 
-        if key == curses.KEY_DOWN:
-            menu_item = min(len(channels) - 1, menu_item + 1)
-        elif key == curses.KEY_UP:
-            menu_item = max(0, menu_item - 1)
-        elif key == ord('\n'):
-            # Handle selection action
-            selected_channel = channels[menu_item]
-            # Perform action here, if needed
-        elif key == 27 or key == curses.KEY_LEFT: # escape to exit menu
+            modified_settings.clear()
+
+            # Navigate back to the previous menu
+            if len(menu_path) > 1:
+                menu_path.pop()
+                current_menu = menu["Main Menu"]
+                for step in menu_path[1:]:
+                    current_menu = current_menu.get(step, {})
+                selected_index = 0
+
+        elif key == 27:  # Escape key
             break
 
-        selected_channel = channels[menu_item]
+def main(stdscr):
+    logging.basicConfig( # Run `tail -f client.log` in another terminal to view live
+        filename="settings.log",
+        level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
 
-    return selected_channel
+    curses.curs_set(0)
+    stdscr.keypad(True)
 
+    interface = meshtastic.serial_interface.SerialInterface()
 
-
-
+    stdscr.clear()
+    stdscr.refresh()
+    settings_menu(stdscr, interface)
 
 if __name__ == "__main__":
-
-    globals.interface = meshtastic.serial_interface.SerialInterface()
-
-    # radio = config_pb2.Config()
-    # module = module_config_pb2.ModuleConfig()
-    # print(generate_menu_from_protobuf(radio, interface))
-    # print(generate_menu_from_protobuf(module, interface))
-
-    def main(stdscr):
-        stdscr.keypad(True)
-        while True:
-            settings(stdscr)
-        
     curses.wrapper(main)
