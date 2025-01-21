@@ -102,7 +102,7 @@ def get_repeated_input(current_value):
         repeated_win.clear()
         repeated_win.border()
         repeated_win.addstr(1, 2, "Enter comma-separated values:", curses.A_BOLD)
-        repeated_win.addstr(3, 2, f"Current: {', '.join(current_value)}")
+        repeated_win.addstr(3, 2, f"Current: {', '.join(map(str, current_value))}")
         repeated_win.addstr(5, 2, f"New value: {user_input}")
         repeated_win.refresh()
 
