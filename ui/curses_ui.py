@@ -336,7 +336,6 @@ def main_ui(stdscr):
                 draw_node_list()
 
         # Check for Esc
-        # elif isinstance(char, str) and ord(char) == 27:
         elif char == chr(27):
             break
 
