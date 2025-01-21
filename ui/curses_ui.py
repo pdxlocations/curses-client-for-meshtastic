@@ -108,7 +108,23 @@ def draw_messages_window():
         max_scroll_position = max(0, num_messages - max_messages)
         start_index = max(0, min(globals.selected_message, max_scroll_position))
 
-        # Display messages starting from the calculated start index
+        # Dynamically calculate max_messages based on visible messages and wraps
+        row = 1
+        visible_message_count = 0
+        for index, (prefix, message) in enumerate(messages[start_index:], start=start_index):
+            full_message = f"{prefix}{message}"
+            wrapped_lines = textwrap.wrap(full_message, messages_win.getmaxyx()[1] - 2)
+            
+            if row + len(wrapped_lines) - 1 > messages_win.getmaxyx()[0] - 2:  # Check if it fits in the window
+                break
+
+            visible_message_count += 1
+            row += len(wrapped_lines)
+
+        # Adjust max_messages to match visible messages
+        max_messages = visible_message_count
+
+        # Re-render the visible messages
         row = 1
         for index, (prefix, message) in enumerate(messages[start_index:start_index + max_messages], start=start_index):
             full_message = f"{prefix}{message}"
