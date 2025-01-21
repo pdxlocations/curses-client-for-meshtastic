@@ -300,7 +300,7 @@ def main_ui(stdscr):
 
         # Get user input from entry window
         entry_win.move(1, len(input_text) + 8)
-        char = entry_win.getch()
+        char = entry_win.get_wch()
 
         # draw_debug(f"Keypress: {char}")
 
@@ -336,17 +336,17 @@ def main_ui(stdscr):
                 draw_node_list()
 
         # Check for Esc
-        elif char == 27:
+        elif char == chr(27):
             break
 
         # Check for Ctrl + t
-        elif char == 20:
+        elif char == chr(20):
             send_traceroute()
             curses.curs_set(0)  # Hide cursor
             ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
             curses.curs_set(1)  # Show cursor again
 
-        elif char == curses.KEY_ENTER or char == 10 or char == 13:
+        elif char in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             if globals.current_window == 2:
                 node_list = globals.node_list
                 if node_list[globals.selected_node] not in globals.channel_list:
@@ -371,7 +371,7 @@ def main_ui(stdscr):
                 entry_win.clear()       
                 # entry_win.refresh()
 
-        elif char == curses.KEY_BACKSPACE or char == 127:
+        elif char in (curses.KEY_BACKSPACE, chr(127)):
             if input_text:
                 input_text = input_text[:-1]
                 y, x = entry_win.getyx()
@@ -380,12 +380,12 @@ def main_ui(stdscr):
                 entry_win.move(y, x - 1)
             entry_win.refresh()
             
-        elif char == 96: # ` Launch the settings interface
+        elif char == "`": # ` Launch the settings interface
             curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
             curses.curs_set(1)
         
-        elif char == 47:
+        elif char == "/":
             # Display packet log
             if globals.display_log is False:
                 globals.display_log = True
@@ -396,4 +396,7 @@ def main_ui(stdscr):
                 draw_messages_window()
         else:
             # Append typed character to input text
-            input_text += chr(char)
+            if(isinstance(char, str)):
+                input_text += char
+            else:
+                input_text += chr(char)
