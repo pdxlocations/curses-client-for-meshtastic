@@ -173,6 +173,7 @@ def settings_menu(sdscr, interface):
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
                     new_value = get_repeated_input(current_value)
+                    new_value = current_value if new_value is None else [int(item) for item in new_value]
 
                 elif field.enum_type:  # Enum field
                     enum_options = [v.name for v in field.enum_type.values]
