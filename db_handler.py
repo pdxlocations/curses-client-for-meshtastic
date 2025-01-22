@@ -124,8 +124,7 @@ def load_messages_from_db():
                         else:    
                             formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
                             
-                        if formatted_message not in globals.all_messages[channel]:
-                            globals.all_messages[channel].append(formatted_message)
+                        globals.all_messages[channel].append(formatted_message)
 
                 except sqlite3.Error as e:
                     print(f"SQLite error while loading messages from table '{table_name}': {e}")
