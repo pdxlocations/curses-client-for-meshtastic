@@ -296,10 +296,9 @@ def main_ui(stdscr):
     curses.curs_set(1)
 
     while True:
-        draw_text_field(entry_win, f"Input: {input_text}")
+        draw_text_field(entry_win, f"Input: {input_text[-(width - 10):]}")
 
         # Get user input from entry window
-        entry_win.move(1, len(input_text) + 8)
         char = entry_win.get_wch()
 
         # draw_debug(f"Keypress: {char}")
