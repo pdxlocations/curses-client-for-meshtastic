@@ -244,10 +244,6 @@ def main_ui(stdscr):
 
     draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit")
 
-    draw_channel_list()
-    draw_node_list()
-    draw_messages_window(True)
-
     # Draw boxes around windows
     channel_win.box()
     entry_win.box()
@@ -266,6 +262,10 @@ def main_ui(stdscr):
 
     entry_win.keypad(True)
     curses.curs_set(1)
+
+    draw_channel_list()
+    draw_node_list()
+    draw_messages_window(True)
 
     while True:
         draw_text_field(entry_win, f"Input: {input_text}")
