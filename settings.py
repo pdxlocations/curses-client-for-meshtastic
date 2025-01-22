@@ -1,13 +1,11 @@
 import curses
+import logging
 import meshtastic.serial_interface
 
-from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown
+from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
 from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
-from save_to_radio import save_changes
 from ui.colors import setup_colors
-
-import logging
 
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
@@ -153,9 +151,7 @@ def settings_menu(sdscr, interface):
                 elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(selected_option, str(current_value))
                     try:
-                        # Validate and convert input to a valid boolean
                         if isinstance(new_value, str):
-                            # Handle string representations of booleans
                             new_value_lower = new_value.lower()
                             if new_value_lower in ("true", "yes", "1", "on"):
                                 new_value = True
@@ -164,7 +160,6 @@ def settings_menu(sdscr, interface):
                             else:
                                 raise ValueError("Invalid string for boolean")
                         else:
-                            # Convert other types directly to bool
                             new_value = bool(new_value)
                         
                     except ValueError as e:
@@ -190,20 +185,10 @@ def settings_menu(sdscr, interface):
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else float(new_value)
 
-
                 else:  # Handle other field types
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else new_value
                     
-                # Navigate to the correct nested dictionary based on the menu_path
-                current_nested = modified_settings
-                for key in menu_path[3:]:  # Skip "Main Menu"
-                    current_nested = current_nested.setdefault(key, {})
-
-                # Add the new value to the appropriate level
-                current_nested[selected_option] = new_value
-
-                # modified_settings[selected_option] = (new_value)
                 current_menu[selected_option] = (field, new_value)
             else:
                 current_menu = current_menu[selected_option]
@@ -227,6 +212,7 @@ def settings_menu(sdscr, interface):
 
         elif key == 27:  # Escape key
             break
+
 
 def main(stdscr):
     logging.basicConfig( # Run `tail -f client.log` in another terminal to view live
