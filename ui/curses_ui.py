@@ -8,17 +8,11 @@ import ui.dialog
 from ui.colors import setup_colors
 
 def add_notification(channel_number):
-    handle_notification(channel_number, add=True)
+    globals.notifications.add(channel_number) 
 
 def remove_notification(channel_number):
-    handle_notification(channel_number, add=False)
+    globals.notifications.discard(channel_number) 
     channel_win.box()
-
-def handle_notification(channel_number, add=True):
-    if add:
-        globals.notifications.add(channel_number)  # Add the channel to the notification tracker
-    else:
-        globals.notifications.discard(channel_number)  # Remove the channel from the notification tracker
 
 def draw_text_field(win, text):
     win.border()
