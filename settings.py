@@ -59,7 +59,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
     menu_win.refresh()
 
-def settings_menu(sdscr, interface):
+def settings_menu(stdscr, interface):
 
     menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
@@ -111,35 +111,35 @@ def settings_menu(sdscr, interface):
             selected_option = options[selected_index]
 
             if selected_option == "Exit":
-                sdscr.clear()
+                stdscr.clear()
                 break
             elif selected_option == "Reboot":
                 confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
                 if confirmation == "True":
                     settings_reboot(interface)
                     logging.info(f"Node Reboot Requested by menu")
-                    sdscr.clear()
+                    stdscr.clear()
                     break
             elif selected_option == "Reset Node DB":
                 confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
                 if confirmation == "True":
                     settings_reset_nodedb(interface)
                     logging.info(f"Node DB Reset Requested by menu")
-                    sdscr.clear()
+                    stdscr.clear()
                     break
             elif selected_option == "Shutdown":
                 confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
                 if confirmation == "True":
                     settings_shutdown(interface)
                     logging.info(f"Node Shutdown Requested by menu")
-                    sdscr.clear()
+                    stdscr.clear()
                     break
             elif selected_option == "Factory Reset":
                 confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
                 if confirmation == "True":
                     settings_factory_reset(interface)
                     logging.info(f"Factory Reset Requested by menu")
-                    sdscr.clear()
+                    stdscr.clear()
                     break
 
             field_info = current_menu.get(selected_option)
@@ -231,8 +231,6 @@ def main(stdscr):
 
     interface = meshtastic.serial_interface.SerialInterface()
 
-    stdscr.clear()
-    stdscr.refresh()
     settings_menu(stdscr, interface)
 
 if __name__ == "__main__":
