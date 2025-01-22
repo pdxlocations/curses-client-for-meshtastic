@@ -59,7 +59,6 @@ def draw_splash(stdscr):
 
 
 def draw_channel_list():
-
     channel_win.clear() 
     win_height, win_width = channel_win.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))  # Leave room for borders
@@ -76,9 +75,12 @@ def draw_channel_list():
         # Truncate the channel name if it's too long to fit in the window
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
         if i < win_height - 2   :  # Check if there is enough space in the window
-            if start_index + i == globals.selected_channel and globals.current_window == 0:
-                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1) | curses.A_REVERSE)
-                remove_notification(globals.selected_channel)
+            if start_index + i == globals.selected_channel:
+                if globals.current_window == 0:
+                    channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1) | curses.A_REVERSE)
+                    remove_notification(globals.selected_channel)
+                else:
+                    channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(2))
             else:
                 channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1))
     channel_win.box()
