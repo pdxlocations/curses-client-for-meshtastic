@@ -79,9 +79,7 @@ def draw_channel_list():
     channel_box.box()
     channel_box.refresh()
 
-    channel_pad.refresh(start_index, 0,
-                        channel_box.getbegyx()[0] + 1, channel_box.getbegyx()[1] + 1,
-                        channel_box.getbegyx()[0] + channel_box.getmaxyx()[0] - 2, channel_box.getbegyx()[1] + channel_box.getmaxyx()[1] - 2)
+    refresh_pad(0)
 
 def draw_messages_window(scroll_to_bottom = False):
     """Update the messages window based on the selected channel and scroll position."""
@@ -137,9 +135,7 @@ def draw_node_list():
     nodes_box.box()
     nodes_box.refresh()
 
-    nodes_pad.refresh(start_index, 0,
-                      nodes_box.getbegyx()[0] + 1, nodes_box.getbegyx()[1] + 1,
-                      nodes_box.getbegyx()[0] + nodes_box.getmaxyx()[0] - 2, nodes_box.getbegyx()[1] + nodes_box.getmaxyx()[1] - 2)
+    refresh_pad(2)
 
 def select_channels(direction):
     channel_list_length = len(globals.channel_list)
@@ -158,25 +154,10 @@ def select_channels(direction):
         draw_channel_list()
         return
 
-    win_height, win_width = channel_box.getmaxyx()
-    start_index = max(0, globals.selected_channel - (win_height - 3))
+    highlight_line(False, 0, old_selected_channel)
+    highlight_line(True, 0, globals.selected_channel)
 
-    old_channel = list(globals.all_messages.keys())[old_selected_channel]
-    channel = list(globals.all_messages.keys())[globals.selected_channel]
-    if(isinstance(channel, int)):
-        channel = get_name_from_number(channel, type='long')
-
-    if(isinstance(old_channel, int)):
-        old_channel = get_name_from_number(old_channel, type='long')
-
-    channel_len = min(len(channel), win_width - 5)
-    old_channel_len = min(len(old_channel), win_width - 5)
-
-    channel_pad.chgat(globals.selected_channel, 1, channel_len, curses.color_pair(1) | curses.A_REVERSE)
-    channel_pad.chgat(old_selected_channel, 1, old_channel_len, curses.color_pair(1))
-    channel_pad.refresh(start_index, 0,
-                        channel_box.getbegyx()[0] + 1, channel_box.getbegyx()[1] + 1,
-                        channel_box.getbegyx()[0] + channel_box.getmaxyx()[0] - 2, channel_box.getbegyx()[1] + channel_box.getmaxyx()[1] - 2)
+    refresh_pad(0)
 
 def refresh_messages():
     messages_pad.refresh(globals.selected_message, 0,
@@ -193,9 +174,7 @@ def select_messages(direction):
 
 def select_nodes(direction):
     node_list_length = len(globals.node_list)
-
     old_selected_node = globals.selected_node
-
     globals.selected_node += direction
 
     if globals.selected_node < 0:
@@ -203,17 +182,10 @@ def select_nodes(direction):
     elif globals.selected_node >= node_list_length:
         globals.selected_node = 0
 
-    win_height = nodes_box.getmaxyx()[0]
-    start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
+    highlight_line(False, 2, old_selected_node)
+    highlight_line(True, 2, globals.selected_node)
 
-    nodes_pad.chgat(globals.selected_node, 1, len(get_name_from_number(globals.node_list[globals.selected_node], "long")), curses.color_pair(1) | curses.A_REVERSE)
-    nodes_pad.chgat(old_selected_node, 1,  len(get_name_from_number(globals.node_list[old_selected_node], "long")), curses.color_pair(1))
-
-    nodes_pad.refresh(start_index, 0,
-                      nodes_box.getbegyx()[0] + 1, nodes_box.getbegyx()[1] + 1,
-                      nodes_box.getbegyx()[0] + nodes_box.getmaxyx()[0] - 2, nodes_box.getbegyx()[1] + nodes_box.getmaxyx()[1] - 2)
-
-
+    refresh_pad(2)
 
 def draw_packetlog_win():
 
@@ -362,12 +334,15 @@ def main_ui(stdscr):
             old_window = globals.current_window
             globals.current_window = (globals.current_window + delta) % 3
 
-            if old_window == 0 or globals.current_window == 0:
-                draw_channel_list()
-            if old_window == 1 or globals.current_window == 1:
-                draw_messages_window()
-            if old_window == 2 or globals.current_window == 2:
-                draw_node_list()
+            if old_window == 0:
+                highlight_line(False, 0, globals.selected_channel)
+            elif old_window == 2:
+                highlight_line(False, 2, globals.selected_node)
+
+            if globals.current_window == 0:
+                highlight_line(True, 0, globals.selected_channel)
+            elif globals.current_window == 2:
+                highlight_line(True, 2, globals.selected_node)
 
         # Check for Esc
         elif char == chr(27):
@@ -438,3 +413,44 @@ def main_ui(stdscr):
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
     return messages_box.getmaxyx()[0] - 2 - packetlog_height
+
+def refresh_pad(window):
+    win_height = channel_box.getmaxyx()[0]
+
+    selected_item = globals.selected_channel
+    pad = channel_pad
+    box = channel_box
+    if(window == 2):
+        pad = nodes_pad
+        box = nodes_box
+        selected_item = globals.selected_node
+
+    start_index = max(0, selected_item - (win_height - 3))  # Leave room for borders
+
+    pad.refresh(start_index, 0,
+                        box.getbegyx()[0] + 1, box.getbegyx()[1] + 1,
+                        box.getbegyx()[0] + box.getmaxyx()[0] - 2, box.getbegyx()[1] + box.getmaxyx()[1] - 2)
+
+def highlight_line(highlight, window, line):
+    pad = channel_pad
+    select_len = 0
+    color = curses.color_pair(1)
+
+    if(window == 2):
+        pad = nodes_pad
+        select_len = len(get_name_from_number(globals.node_list[line], "long"))
+
+    if(window == 0):
+        channel = list(globals.all_messages.keys())[line]
+        win_width = channel_box.getmaxyx()[1]
+
+        if(isinstance(channel, int)):
+            channel = get_name_from_number(channel, type="long")
+        select_len = min(len(channel), win_width - 4)
+
+        if line == globals.selected_channel and highlight == False:
+            color = curses.color_pair(2)
+
+    pad.chgat(line, 1, select_len, color | curses.A_REVERSE if highlight else color)
+
+    refresh_pad(window)
