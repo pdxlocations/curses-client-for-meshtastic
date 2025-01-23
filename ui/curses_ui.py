@@ -151,6 +151,7 @@ def select_channels(direction):
         globals.selected_channel = channel_list_length - 1
     elif globals.selected_channel >= channel_list_length:
         globals.selected_channel = 0
+    draw_messages_window(True)
 
     win_height, win_width = channel_box.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))
