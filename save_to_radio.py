@@ -40,11 +40,11 @@ def save_changes(interface, menu_path, modified_settings):
 
         elif menu_path[1] == "User Settings": # for user configs
             config_category = "User Settings" 
-            long_name = modified_settings.get("longName", None)
-            short_name = modified_settings.get("shortName", None)
-            #TODO add is_licensed
-            node.setOwner(long_name, short_name, is_licensed=False)
-            logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name}")
+            long_name = modified_settings.get("longName")
+            short_name = modified_settings.get("shortName")
+            is_licensed = modified_settings.get("isLicensed")
+            node.setOwner(long_name, short_name, is_licensed)
+            logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name} and Licensed Mode {is_licensed}")
             return
         
 

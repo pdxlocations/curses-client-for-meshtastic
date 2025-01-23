@@ -10,7 +10,6 @@ def get_user_input(prompt):
 
     # Create a new window for user input
     input_win = curses.newwin(height, width, start_y, start_x)
-    input_win.clear()
     input_win.border()
 
     # Display the prompt
@@ -18,15 +17,12 @@ def get_user_input(prompt):
     input_win.addstr(3, 2, "Enter value: ")
     input_win.refresh()
 
-    # Enable user input
-    curses.echo()
     curses.curs_set(1)
 
     user_input = ""
     while True:
         key = input_win.getch(3, 15 + len(user_input))  # Adjust cursor position dynamically
         if key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
-            curses.noecho()
             curses.curs_set(0)
             return None  # Exit without returning a value
         elif key == ord('\n'):  # Enter key
@@ -40,7 +36,6 @@ def get_user_input(prompt):
             input_win.addstr(3, 15, user_input)
 
     curses.curs_set(0)
-    curses.noecho()
 
     # Clear the input window
     input_win.clear()
