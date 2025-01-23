@@ -137,7 +137,7 @@ def load_messages_from_db():
 
                     # Flatten the hourly messages into globals.all_messages[channel]
                     for hour, messages in sorted(hourly_messages.items()):
-                        globals.all_messages[channel].append((f"--- {hour} ---", ""))
+                        globals.all_messages[channel].append((f"-- {hour} --", ""))
                         globals.all_messages[channel].extend(messages)
 
                 except sqlite3.Error as e:
