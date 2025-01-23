@@ -12,7 +12,6 @@ def add_notification(channel_number):
 
 def remove_notification(channel_number):
     globals.notifications.discard(channel_number) 
-    channel_win.box()
 
 def draw_text_field(win, text):
     win.border()
@@ -53,32 +52,36 @@ def draw_splash(stdscr):
 
 
 def draw_channel_list():
-    channel_win.clear() 
-    win_height, win_width = channel_win.getmaxyx()
+    channel_pad.clear()
+    win_height, win_width = channel_box.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))  # Leave room for borders
 
-    for i, channel in enumerate(list(globals.all_messages.keys())[start_index:], start=0):
+    channel_pad.resize(len(globals.all_messages), channel_box.getmaxyx()[1])
 
+    for i, channel in enumerate(list(globals.all_messages.keys())):
         # Convert node number to long name if it's an integer
         if isinstance(channel, int):
             channel = get_name_from_number(channel, type='long')
 
         # Determine whether to add the notification
-        notification = " " + globals.notification_symbol if start_index + i in globals.notifications else ""
+        notification = " " + globals.notification_symbol if i in globals.notifications else ""
 
         # Truncate the channel name if it's too long to fit in the window
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
-        if i < win_height - 2   :  # Check if there is enough space in the window
-            if start_index + i == globals.selected_channel:
-                if globals.current_window == 0:
-                    channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1) | curses.A_REVERSE)
-                    remove_notification(globals.selected_channel)
-                else:
-                    channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(2))
+        if i == globals.selected_channel:
+            if globals.current_window == 0:
+                channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(1) | curses.A_REVERSE)
+                remove_notification(globals.selected_channel)
             else:
-                channel_win.addstr(i + 1, 1, truncated_channel + notification, curses.color_pair(1))
-    channel_win.box()
-    channel_win.refresh()
+                channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(2))
+        else:
+            channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(1))
+    channel_box.box()
+    channel_box.refresh()
+
+    channel_pad.refresh(start_index, 0,
+                        channel_box.getbegyx()[0] + 1, channel_box.getbegyx()[1] + 1,
+                        channel_box.getbegyx()[0] + channel_box.getmaxyx()[0] - 2, channel_box.getbegyx()[1] + channel_box.getmaxyx()[1] - 2)
 
 def draw_messages_window(scroll_to_bottom = False):
     """Update the messages window based on the selected channel and scroll position."""
@@ -140,15 +143,40 @@ def draw_node_list():
 
 def select_channels(direction):
     channel_list_length = len(globals.channel_list)
+    old_selected_channel = globals.selected_channel
     globals.selected_channel += direction
 
     if globals.selected_channel < 0:
         globals.selected_channel = channel_list_length - 1
     elif globals.selected_channel >= channel_list_length:
         globals.selected_channel = 0
-
-    draw_channel_list()
     draw_messages_window(True)
+
+    # For now just re-draw channel list when clearing notifications, we can probably make this more efficient
+    if globals.selected_channel in globals.notifications:
+        remove_notification(globals.selected_channel)
+        draw_channel_list()
+        return
+
+    win_height, win_width = channel_box.getmaxyx()
+    start_index = max(0, globals.selected_channel - (win_height - 3))
+
+    old_channel = list(globals.all_messages.keys())[old_selected_channel]
+    channel = list(globals.all_messages.keys())[globals.selected_channel]
+    if(isinstance(channel, int)):
+        channel = get_name_from_number(channel, type='long')
+
+    if(isinstance(old_channel, int)):
+        old_channel = get_name_from_number(old_channel, type='long')
+
+    channel_len = min(len(channel), win_width - 5)
+    old_channel_len = min(len(old_channel), win_width - 5)
+
+    channel_pad.chgat(globals.selected_channel, 1, channel_len, curses.color_pair(1) | curses.A_REVERSE)
+    channel_pad.chgat(old_selected_channel, 1, old_channel_len, curses.color_pair(1))
+    channel_pad.refresh(start_index, 0,
+                        channel_box.getbegyx()[0] + 1, channel_box.getbegyx()[1] + 1,
+                        channel_box.getbegyx()[0] + channel_box.getmaxyx()[0] - 2, channel_box.getbegyx()[1] + channel_box.getmaxyx()[1] - 2)
 
 def refresh_messages():
     messages_pad.refresh(globals.selected_message, 0,
@@ -232,7 +260,7 @@ def draw_packetlog_win():
 
 
 def main_ui(stdscr):
-    global messages_pad, messages_box, nodes_pad, nodes_box, channel_win, function_win, packetlog_win
+    global messages_pad, messages_box, nodes_pad, nodes_box, channel_pad, channel_box, function_win, packetlog_win
     stdscr.keypad(True)
     get_channels()
 
@@ -245,22 +273,22 @@ def main_ui(stdscr):
     nodes_width = 5 * (width // 16)
     messages_width = width - channel_width - nodes_width
 
-    channel_win = curses.newwin(height - 6, channel_width, 3, 0)
+    channel_box = curses.newwin(height - 6, channel_width, 3, 0)
     messages_box = curses.newwin(height - 6, messages_width, 3, channel_width)
     nodes_box = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
 
     # Will be resized to what we need when drawn
     messages_pad = curses.newpad(1, 1)
-    packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
-
-    # Will be resized to what we need when drawn
     nodes_pad = curses.newpad(1,1)
+    channel_pad = curses.newpad(1,1)
+
     function_win = curses.newwin(3, width, height - 3, 0)
+    packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
 
     draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit")
 
     # Draw boxes around windows
-    channel_win.box()
+    channel_box.box()
     entry_win.box()
     nodes_box.box()
     messages_box.box()
@@ -269,7 +297,7 @@ def main_ui(stdscr):
     # Refresh all windows
     entry_win.refresh()
 
-    channel_win.refresh()
+    channel_box.refresh()
     function_win.refresh()
     nodes_box.refresh()
     messages_box.refresh()
