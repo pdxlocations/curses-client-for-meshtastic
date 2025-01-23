@@ -113,9 +113,8 @@ def draw_messages_window(scroll_to_bottom = False):
 
     # Adjust for packetlog height if log is visible
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
-    messages_pad.refresh(globals.selected_message, 0,
-                         messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1,
-                         messages_box.getbegyx()[0] + get_msg_window_lines(), messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
+
+    refresh_messages()
 
     draw_packetlog_win()
 
@@ -146,15 +145,18 @@ def select_channels(direction):
     draw_channel_list()
     draw_messages_window(True)
 
+def refresh_messages():
+    messages_pad.refresh(globals.selected_message, 0,
+                         messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1,
+                         messages_box.getbegyx()[0] + get_msg_window_lines(), messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
+
 def select_messages(direction):
     globals.selected_message += direction
 
     msg_line_count = messages_pad.getmaxyx()[0]
     globals.selected_message = max(0, min(globals.selected_message, msg_line_count - get_msg_window_lines()))
 
-    messages_pad.refresh(globals.selected_message, 0,
-                         messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1,
-                         messages_box.getbegyx()[0] + get_msg_window_lines(), messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
+    refresh_messages()
 
 def select_nodes(direction):
     node_list_length = len(globals.node_list)
@@ -283,6 +285,28 @@ def main_ui(stdscr):
                 select_messages(1)
             elif globals.current_window == 2:
                 select_nodes(1)
+
+        elif char == curses.KEY_HOME:
+            if globals.current_window == 1:
+                globals.selected_message = 0
+                refresh_messages()
+
+        elif char == curses.KEY_END:
+            if globals.current_window == 1:
+                msg_line_count = messages_pad.getmaxyx()[0]
+                globals.selected_message = max(msg_line_count - get_msg_window_lines(), 0)
+                refresh_messages()
+
+        elif char == curses.KEY_PPAGE:
+            if globals.current_window == 1:
+                globals.selected_message = max(globals.selected_message - get_msg_window_lines(), 0)
+                refresh_messages()
+
+        elif char == curses.KEY_NPAGE:
+            if globals.current_window == 1:
+                msg_line_count = messages_pad.getmaxyx()[0]
+                globals.selected_message = min(globals.selected_message + get_msg_window_lines(), msg_line_count - get_msg_window_lines())
+                refresh_messages()
 
         elif char == curses.KEY_LEFT or char == curses.KEY_RIGHT:
             delta = -1 if char == curses.KEY_LEFT else 1
