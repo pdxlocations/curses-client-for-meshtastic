@@ -7,6 +7,62 @@ from message_handlers.tx_handler import send_message, send_traceroute
 import ui.dialog
 from ui.colors import setup_colors
 
+def get_msg_window_lines():
+    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
+    return messages_box.getmaxyx()[0] - 2 - packetlog_height
+
+def refresh_pad(window):
+    win_height = channel_box.getmaxyx()[0]
+
+    selected_item = globals.selected_channel
+    pad = channel_pad
+    box = channel_box
+    lines = box.getmaxyx()[0] - 2
+    start_index = max(0, selected_item - (win_height - 3))  # Leave room for borders
+
+    if(window == 1):
+        pad = messages_pad
+        box = messages_box
+        lines = get_msg_window_lines()
+        selected_item = globals.selected_message
+        start_index = globals.selected_message
+
+    if(window == 2):
+        pad = nodes_pad
+        box = nodes_box
+        lines = box.getmaxyx()[0] - 2
+        selected_item = globals.selected_node
+        start_index = max(0, selected_item - (win_height - 3))  # Leave room for borders
+
+
+    pad.refresh(start_index, 0,
+                        box.getbegyx()[0] + 1, box.getbegyx()[1] + 1,
+                        box.getbegyx()[0] + lines, box.getbegyx()[1] + box.getmaxyx()[1] - 2)
+
+def highlight_line(highlight, window, line):
+    pad = channel_pad
+    select_len = 0
+    color = curses.color_pair(1)
+
+    if(window == 2):
+        pad = nodes_pad
+        select_len = len(get_name_from_number(globals.node_list[line], "long"))
+
+    if(window == 0):
+        channel = list(globals.all_messages.keys())[line]
+        win_width = channel_box.getmaxyx()[1]
+
+        if(isinstance(channel, int)):
+            channel = get_name_from_number(channel, type="long")
+        select_len = min(len(channel), win_width - 4)
+
+        if line == globals.selected_channel and highlight == False:
+            color = curses.color_pair(2)
+
+    pad.chgat(line, 1, select_len, color | curses.A_REVERSE if highlight else color)
+
+    refresh_pad(window)
+
 def add_notification(channel_number):
     globals.notifications.add(channel_number) 
 
@@ -76,7 +132,10 @@ def draw_channel_list():
                 channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(2))
         else:
             channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(1))
+
+    channel_box.attrset(curses.color_pair(2) if globals.current_window == 0 else curses.color_pair(0))
     channel_box.box()
+    channel_box.attrset(curses.color_pair(0))
     channel_box.refresh()
 
     refresh_pad(0)
@@ -104,7 +163,9 @@ def draw_messages_window(scroll_to_bottom = False):
                 messages_pad.addstr(row, 1, line, color)
                 row += 1
 
+    messages_box.attrset(curses.color_pair(2) if globals.current_window == 1 else curses.color_pair(0))
     messages_box.box()
+    messages_box.attrset(curses.color_pair(0))
     messages_box.refresh()
 
     if(scroll_to_bottom):
@@ -112,10 +173,7 @@ def draw_messages_window(scroll_to_bottom = False):
     else:
         globals.selected_message = max(min(globals.selected_message, msg_line_count - get_msg_window_lines()), 0)
 
-    # Adjust for packetlog height if log is visible
-    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
-
-    refresh_messages()
+    refresh_pad(1)
 
     draw_packetlog_win()
 
@@ -132,7 +190,9 @@ def draw_node_list():
         else:
             nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1))
 
+    nodes_box.attrset(curses.color_pair(2) if globals.current_window == 2 else curses.color_pair(0))
     nodes_box.box()
+    nodes_box.attrset(curses.color_pair(0))
     nodes_box.refresh()
 
     refresh_pad(2)
@@ -159,18 +219,13 @@ def select_channels(direction):
 
     refresh_pad(0)
 
-def refresh_messages():
-    messages_pad.refresh(globals.selected_message, 0,
-                         messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1,
-                         messages_box.getbegyx()[0] + get_msg_window_lines(), messages_box.getbegyx()[1] + messages_box.getmaxyx()[1] - 2)
-
 def select_messages(direction):
     globals.selected_message += direction
 
     msg_line_count = messages_pad.getmaxyx()[0]
     globals.selected_message = max(0, min(globals.selected_message, msg_line_count - get_msg_window_lines()))
 
-    refresh_messages()
+    refresh_pad(1)
 
 def select_nodes(direction):
     node_list_length = len(globals.node_list)
@@ -260,7 +315,9 @@ def main_ui(stdscr):
     draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit")
 
     # Draw boxes around windows
+    channel_box.attrset(curses.color_pair(2))
     channel_box.box()
+    channel_box.attrset(curses.color_pair(0))
     entry_win.box()
     nodes_box.box()
     messages_box.box()
@@ -309,24 +366,24 @@ def main_ui(stdscr):
         elif char == curses.KEY_HOME:
             if globals.current_window == 1:
                 globals.selected_message = 0
-                refresh_messages()
+                refresh_pad(1)
 
         elif char == curses.KEY_END:
             if globals.current_window == 1:
                 msg_line_count = messages_pad.getmaxyx()[0]
                 globals.selected_message = max(msg_line_count - get_msg_window_lines(), 0)
-                refresh_messages()
+                refresh_pad(1)
 
         elif char == curses.KEY_PPAGE:
             if globals.current_window == 1:
                 globals.selected_message = max(globals.selected_message - get_msg_window_lines(), 0)
-                refresh_messages()
+                refresh_pad(1)
 
         elif char == curses.KEY_NPAGE:
             if globals.current_window == 1:
                 msg_line_count = messages_pad.getmaxyx()[0]
                 globals.selected_message = min(globals.selected_message + get_msg_window_lines(), msg_line_count - get_msg_window_lines())
-                refresh_messages()
+                refresh_pad(1)
 
         elif char == curses.KEY_LEFT or char == curses.KEY_RIGHT:
             delta = -1 if char == curses.KEY_LEFT else 1
@@ -335,13 +392,38 @@ def main_ui(stdscr):
             globals.current_window = (globals.current_window + delta) % 3
 
             if old_window == 0:
+                channel_box.attrset(curses.color_pair(0))
+                channel_box.box()
+                channel_box.refresh()
                 highlight_line(False, 0, globals.selected_channel)
+            if old_window == 1:
+                messages_box.attrset(curses.color_pair(0))
+                messages_box.box()
+                messages_box.refresh()
+                refresh_pad(1)
             elif old_window == 2:
+                nodes_box.attrset(curses.color_pair(0))
+                nodes_box.box()
+                nodes_box.refresh()
                 highlight_line(False, 2, globals.selected_node)
 
             if globals.current_window == 0:
+                channel_box.attrset(curses.color_pair(2))
+                channel_box.box()
+                channel_box.attrset(curses.color_pair(0))
+                channel_box.refresh()
                 highlight_line(True, 0, globals.selected_channel)
+            elif globals.current_window == 1:
+                messages_box.attrset(curses.color_pair(2))
+                messages_box.box()
+                messages_box.attrset(curses.color_pair(0))
+                messages_box.refresh()
+                refresh_pad(1)
             elif globals.current_window == 2:
+                nodes_box.attrset(curses.color_pair(2))
+                nodes_box.box()
+                nodes_box.attrset(curses.color_pair(0))
+                nodes_box.refresh()
                 highlight_line(True, 2, globals.selected_node)
 
         # Check for Esc
@@ -410,47 +492,4 @@ def main_ui(stdscr):
             else:
                 input_text += chr(char)
 
-def get_msg_window_lines():
-    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
-    return messages_box.getmaxyx()[0] - 2 - packetlog_height
 
-def refresh_pad(window):
-    win_height = channel_box.getmaxyx()[0]
-
-    selected_item = globals.selected_channel
-    pad = channel_pad
-    box = channel_box
-    if(window == 2):
-        pad = nodes_pad
-        box = nodes_box
-        selected_item = globals.selected_node
-
-    start_index = max(0, selected_item - (win_height - 3))  # Leave room for borders
-
-    pad.refresh(start_index, 0,
-                        box.getbegyx()[0] + 1, box.getbegyx()[1] + 1,
-                        box.getbegyx()[0] + box.getmaxyx()[0] - 2, box.getbegyx()[1] + box.getmaxyx()[1] - 2)
-
-def highlight_line(highlight, window, line):
-    pad = channel_pad
-    select_len = 0
-    color = curses.color_pair(1)
-
-    if(window == 2):
-        pad = nodes_pad
-        select_len = len(get_name_from_number(globals.node_list[line], "long"))
-
-    if(window == 0):
-        channel = list(globals.all_messages.keys())[line]
-        win_width = channel_box.getmaxyx()[1]
-
-        if(isinstance(channel, int)):
-            channel = get_name_from_number(channel, type="long")
-        select_len = min(len(channel), win_width - 4)
-
-        if line == globals.selected_channel and highlight == False:
-            color = curses.color_pair(2)
-
-    pad.chgat(line, 1, select_len, color | curses.A_REVERSE if highlight else color)
-
-    refresh_pad(window)
