@@ -181,14 +181,12 @@ def settings_menu(stdscr, interface):
                 else:  # Handle other field types
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else new_value
-                                 # Navigate to the correct nested dictionary based on the menu_path
-
-                current_nested = modified_settings
+                
                 for key in menu_path[3:]:  # Skip "Main Menu"
-                    current_nested = current_nested.setdefault(key, {})
+                    modified_settings = modified_settings.setdefault(key, {})
 
                 # Add the new value to the appropriate level
-                current_nested[selected_option] = new_value   
+                modified_settings[selected_option] = new_value
 
                 current_menu[selected_option] = (field, new_value)
             else:
