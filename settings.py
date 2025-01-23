@@ -210,6 +210,8 @@ def settings_menu(stdscr, interface):
                 selected_index = 0
 
         elif key == 27:  # Escape key
+            menu_win.clear()
+            menu_win.refresh()
             break
 
 
