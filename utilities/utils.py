@@ -57,17 +57,15 @@ def convert_to_camel_case(string):
 
 def get_name_from_number(number, type='long'):
     name = ""
-    for node in globals.interface.nodes.values():
+    nodes_snapshot = list(globals.interface.nodes.values())
+    
+    for node in nodes_snapshot:
         if number == node['num']:
             if type == 'long':
-                name = node['user']['longName']
-                return name
+                return node['user']['longName']
             elif type == 'short':
-                name = node['user']['shortName']
-                return name
+                return node['user']['shortName']
             else:
                 pass
-        else:
-            name = str(decimal_to_hex(number))  # If long name not found, use the ID as string
-    return name
-
+    # If no match is found, use the ID as a string
+    return str(decimal_to_hex(number))
