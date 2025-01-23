@@ -61,8 +61,6 @@ def highlight_line(highlight, window, line):
 
     pad.chgat(line, 1, select_len, color | curses.A_REVERSE if highlight else color)
 
-    refresh_pad(window)
-
 def add_notification(channel_number):
     globals.notifications.add(channel_number) 
 
@@ -197,15 +195,9 @@ def draw_node_list():
 
     refresh_pad(2)
 
-def select_channels(direction):
-    channel_list_length = len(globals.channel_list)
+def select_channel(idx):
     old_selected_channel = globals.selected_channel
-    globals.selected_channel += direction
-
-    if globals.selected_channel < 0:
-        globals.selected_channel = channel_list_length - 1
-    elif globals.selected_channel >= channel_list_length:
-        globals.selected_channel = 0
+    globals.selected_channel = max(0, min(idx, len(globals.channel_list) - 1))
     draw_messages_window(True)
 
     # For now just re-draw channel list when clearing notifications, we can probably make this more efficient
@@ -213,13 +205,21 @@ def select_channels(direction):
         remove_notification(globals.selected_channel)
         draw_channel_list()
         return
-
     highlight_line(False, 0, old_selected_channel)
     highlight_line(True, 0, globals.selected_channel)
-
     refresh_pad(0)
 
-def select_messages(direction):
+def scroll_channels(direction):
+    new_selected_channel = globals.selected_channel + direction
+
+    if new_selected_channel < 0:
+        new_selected_channel = len(globals.channel_list) - 1
+    elif new_selected_channel >= len(globals.channel_list):
+        new_selected_channel = 0
+
+    select_channel(new_selected_channel)
+
+def scroll_messages(direction):
     globals.selected_message += direction
 
     msg_line_count = messages_pad.getmaxyx()[0]
@@ -227,20 +227,23 @@ def select_messages(direction):
 
     refresh_pad(1)
 
-def select_nodes(direction):
-    node_list_length = len(globals.node_list)
+def select_node(idx):
     old_selected_node = globals.selected_node
-    globals.selected_node += direction
-
-    if globals.selected_node < 0:
-        globals.selected_node = node_list_length - 1
-    elif globals.selected_node >= node_list_length:
-        globals.selected_node = 0
+    globals.selected_node = max(0, min(idx, len(globals.node_list) - 1))
 
     highlight_line(False, 2, old_selected_node)
     highlight_line(True, 2, globals.selected_node)
-
     refresh_pad(2)
+
+def scroll_nodes(direction):
+    new_selected_node = globals.selected_node + direction
+
+    if new_selected_node < 0:
+        new_selected_node = len(globals.node_list) - 1
+    elif new_selected_node >= len(globals.node_list):
+        new_selected_node = 0
+
+    select_node(new_selected_node)
 
 def draw_packetlog_win():
 
@@ -349,41 +352,57 @@ def main_ui(stdscr):
 
         if char == curses.KEY_UP:
             if globals.current_window == 0:
-                select_channels(-1)
+                scroll_channels(-1)
             elif globals.current_window == 1:
-                select_messages(-1)
+                scroll_messages(-1)
             elif globals.current_window == 2:
-                select_nodes(-1)
+                scroll_nodes(-1)
 
         elif char == curses.KEY_DOWN:
             if globals.current_window == 0:
-                select_channels(1)
+                scroll_channels(1)
             elif globals.current_window == 1:
-                select_messages(1)
+                scroll_messages(1)
             elif globals.current_window == 2:
-                select_nodes(1)
+                scroll_nodes(1)
 
         elif char == curses.KEY_HOME:
-            if globals.current_window == 1:
+            if globals.current_window == 0:
+                select_channel(0)
+            elif globals.current_window == 1:
                 globals.selected_message = 0
                 refresh_pad(1)
+            elif globals.current_window == 2:
+                select_node(0)
 
         elif char == curses.KEY_END:
-            if globals.current_window == 1:
+            if globals.current_window == 0:
+                select_channel(len(globals.channel_list) - 1)
+            elif globals.current_window == 1:
                 msg_line_count = messages_pad.getmaxyx()[0]
                 globals.selected_message = max(msg_line_count - get_msg_window_lines(), 0)
                 refresh_pad(1)
+            elif globals.current_window == 2:
+                select_node(len(globals.node_list) - 1)
 
         elif char == curses.KEY_PPAGE:
-            if globals.current_window == 1:
+            if globals.current_window == 0:
+                select_channel(globals.selected_channel - (channel_box.getmaxyx()[0] - 2)) # select_channel will bounds check for us
+            elif globals.current_window == 1:
                 globals.selected_message = max(globals.selected_message - get_msg_window_lines(), 0)
                 refresh_pad(1)
+            elif globals.current_window == 2:
+                select_node(globals.selected_node - (nodes_box.getmaxyx()[0] - 2)) # select_node will bounds check for us
 
         elif char == curses.KEY_NPAGE:
-            if globals.current_window == 1:
+            if globals.current_window == 0:
+                select_channel(globals.selected_channel + (channel_box.getmaxyx()[0] - 2)) # select_channel will bounds check for us
+            elif globals.current_window == 1:
                 msg_line_count = messages_pad.getmaxyx()[0]
                 globals.selected_message = min(globals.selected_message + get_msg_window_lines(), msg_line_count - get_msg_window_lines())
                 refresh_pad(1)
+            elif globals.current_window == 2:
+                select_node(globals.selected_node + (nodes_box.getmaxyx()[0] - 2)) # select_node will bounds check for us
 
         elif char == curses.KEY_LEFT or char == curses.KEY_RIGHT:
             delta = -1 if char == curses.KEY_LEFT else 1
@@ -396,6 +415,7 @@ def main_ui(stdscr):
                 channel_box.box()
                 channel_box.refresh()
                 highlight_line(False, 0, globals.selected_channel)
+                refresh_pad(0)
             if old_window == 1:
                 messages_box.attrset(curses.color_pair(0))
                 messages_box.box()
@@ -406,6 +426,7 @@ def main_ui(stdscr):
                 nodes_box.box()
                 nodes_box.refresh()
                 highlight_line(False, 2, globals.selected_node)
+                refresh_pad(2)
 
             if globals.current_window == 0:
                 channel_box.attrset(curses.color_pair(2))
@@ -413,6 +434,7 @@ def main_ui(stdscr):
                 channel_box.attrset(curses.color_pair(0))
                 channel_box.refresh()
                 highlight_line(True, 0, globals.selected_channel)
+                refresh_pad(0)
             elif globals.current_window == 1:
                 messages_box.attrset(curses.color_pair(2))
                 messages_box.box()
@@ -425,6 +447,7 @@ def main_ui(stdscr):
                 nodes_box.attrset(curses.color_pair(0))
                 nodes_box.refresh()
                 highlight_line(True, 2, globals.selected_node)
+                refresh_pad(2)
 
         # Check for Esc
         elif char == chr(27):
