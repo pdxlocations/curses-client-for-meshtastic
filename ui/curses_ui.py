@@ -120,19 +120,24 @@ def draw_messages_window(scroll_to_bottom = False):
     draw_packetlog_win()
 
 def draw_node_list():
-    nodes_win.clear()                 
-    win_height = nodes_win.getmaxyx()[0]
+    nodes_pad.clear()
+    win_height = nodes_box.getmaxyx()[0]
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
 
-    for i, node in enumerate(globals.node_list[start_index:], start=1):
-        if i < win_height - 1   :  # Check if there is enough space in the window
-            if globals.selected_node + 1 == start_index + i and globals.current_window == 2:
-                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1) | curses.A_REVERSE)
-            else:
-                nodes_win.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1))
+    nodes_pad.resize(len(globals.node_list), nodes_box.getmaxyx()[1])
 
-    nodes_win.box()
-    nodes_win.refresh()
+    for i, node in enumerate(globals.node_list):
+        if globals.selected_node == i and globals.current_window == 2:
+            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1) | curses.A_REVERSE)
+        else:
+            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1))
+
+    nodes_box.box()
+    nodes_box.refresh()
+
+    nodes_pad.refresh(start_index, 0,
+                      nodes_box.getbegyx()[0] + 1, nodes_box.getbegyx()[1] + 1,
+                      nodes_box.getbegyx()[0] + nodes_box.getmaxyx()[0] - 2, nodes_box.getbegyx()[1] + nodes_box.getmaxyx()[1] - 2)
 
 def select_channels(direction):
     channel_list_length = len(globals.channel_list)
@@ -158,6 +163,9 @@ def select_messages(direction):
 
 def select_nodes(direction):
     node_list_length = len(globals.node_list)
+
+    old_selected_node = globals.selected_node
+
     globals.selected_node += direction
 
     if globals.selected_node < 0:
@@ -165,7 +173,16 @@ def select_nodes(direction):
     elif globals.selected_node >= node_list_length:
         globals.selected_node = 0
 
-    draw_node_list()
+    win_height = nodes_box.getmaxyx()[0]
+    start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
+
+    nodes_pad.chgat(globals.selected_node, 1, len(get_name_from_number(globals.node_list[globals.selected_node], "long")), curses.color_pair(1) | curses.A_REVERSE)
+    nodes_pad.chgat(old_selected_node, 1,  len(get_name_from_number(globals.node_list[old_selected_node], "long")), curses.color_pair(1))
+
+    nodes_pad.refresh(start_index, 0,
+                      nodes_box.getbegyx()[0] + 1, nodes_box.getbegyx()[1] + 1,
+                      nodes_box.getbegyx()[0] + nodes_box.getmaxyx()[0] - 2, nodes_box.getbegyx()[1] + nodes_box.getmaxyx()[1] - 2)
+
 
 
 def draw_packetlog_win():
@@ -213,7 +230,7 @@ def draw_packetlog_win():
 
 
 def main_ui(stdscr):
-    global messages_pad, messages_box, nodes_win, channel_win, function_win, packetlog_win
+    global messages_pad, messages_box, nodes_pad, nodes_box, channel_win, function_win, packetlog_win
     stdscr.keypad(True)
     get_channels()
 
@@ -228,11 +245,14 @@ def main_ui(stdscr):
 
     channel_win = curses.newwin(height - 6, channel_width, 3, 0)
     messages_box = curses.newwin(height - 6, messages_width, 3, channel_width)
+    nodes_box = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
 
     # Will be resized to what we need when drawn
     messages_pad = curses.newpad(1, 1)
     packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
-    nodes_win = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
+
+    # Will be resized to what we need when drawn
+    nodes_pad = curses.newpad(1,1)
     function_win = curses.newwin(3, width, height - 3, 0)
 
     draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit")
@@ -240,16 +260,16 @@ def main_ui(stdscr):
     # Draw boxes around windows
     channel_win.box()
     entry_win.box()
-    nodes_win.box()
+    nodes_box.box()
     messages_box.box()
     function_win.box() 
 
     # Refresh all windows
     entry_win.refresh()
 
-    nodes_win.refresh()
     channel_win.refresh()
     function_win.refresh()
+    nodes_box.refresh()
     messages_box.refresh()
     input_text = ""
 
