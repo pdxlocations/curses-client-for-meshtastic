@@ -1,11 +1,13 @@
 import curses
 import logging
-import meshtastic.serial_interface
 
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
 from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
 from ui.colors import setup_colors
+from utilities.arg_parser import setup_parser
+from utilities.interfaces import initialize_interface
+import globals
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
     global menu_win
@@ -221,9 +223,11 @@ def main(stdscr):
     curses.curs_set(0)
     stdscr.keypad(True)
 
-    interface = meshtastic.serial_interface.SerialInterface()
+    parser = setup_parser()
+    args = parser.parse_args()
+    globals.interface = initialize_interface(args)
 
-    settings_menu(stdscr, interface)
+    settings_menu(stdscr, globals.interface)
 
 if __name__ == "__main__":
     curses.wrapper(main)
