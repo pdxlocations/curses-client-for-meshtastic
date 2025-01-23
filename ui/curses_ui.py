@@ -12,7 +12,6 @@ def add_notification(channel_number):
 
 def remove_notification(channel_number):
     globals.notifications.discard(channel_number) 
-    channel_box.box()
 
 def draw_text_field(win, text):
     win.border()
@@ -152,6 +151,12 @@ def select_channels(direction):
     elif globals.selected_channel >= channel_list_length:
         globals.selected_channel = 0
     draw_messages_window(True)
+
+    # For now just re-draw channel list when clearing notifications, we can probably make this more efficient
+    if globals.selected_channel in globals.notifications:
+        remove_notification(globals.selected_channel)
+        draw_channel_list()
+        return
 
     win_height, win_width = channel_box.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))
