@@ -154,10 +154,7 @@ def select_messages(direction):
     globals.selected_message += direction
 
     msg_line_count = messages_pad.getmaxyx()[0]
-    if globals.selected_message < 0:
-        globals.selected_message = max(msg_line_count - get_msg_window_lines(), 0)
-    elif globals.selected_message > (msg_line_count - get_msg_window_lines()):
-        globals.selected_message = 0
+    globals.selected_message = max(0, min(globals.selected_message, msg_line_count - get_msg_window_lines()))
 
     messages_pad.refresh(globals.selected_message, 0,
                          messages_box.getbegyx()[0] + 1, messages_box.getbegyx()[1] + 1,
