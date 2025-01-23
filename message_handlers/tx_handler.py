@@ -109,7 +109,7 @@ def on_response_traceroute(packet):
     if(refresh_channels):
         draw_channel_list()
     if(refresh_messages):
-        draw_messages_window()
+        draw_messages_window(True)
     save_message_to_db(globals.channel_list[channel_number], packet['from'], msg_str)
 
 def send_message(message, destination=BROADCAST_NUM, channel=0):
