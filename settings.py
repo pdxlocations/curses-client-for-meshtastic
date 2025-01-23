@@ -111,47 +111,63 @@ def settings_menu(stdscr, interface):
             selected_option = options[selected_index]
 
             if selected_option == "Exit":
-                stdscr.clear()
                 break
             elif selected_option == "Reboot":
                 confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
                 if confirmation == "True":
                     settings_reboot(interface)
                     logging.info(f"Node Reboot Requested by menu")
-                    stdscr.clear()
                     break
             elif selected_option == "Reset Node DB":
                 confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
                 if confirmation == "True":
                     settings_reset_nodedb(interface)
                     logging.info(f"Node DB Reset Requested by menu")
-                    stdscr.clear()
                     break
             elif selected_option == "Shutdown":
                 confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
                 if confirmation == "True":
                     settings_shutdown(interface)
                     logging.info(f"Node Shutdown Requested by menu")
-                    stdscr.clear()
                     break
             elif selected_option == "Factory Reset":
                 confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
                 if confirmation == "True":
                     settings_factory_reset(interface)
                     logging.info(f"Factory Reset Requested by menu")
-                    stdscr.clear()
                     break
 
             field_info = current_menu.get(selected_option)
-
             if isinstance(field_info, tuple):
                 field, current_value = field_info
 
-                if selected_option == 'longName' or selected_option == 'shortName':
-                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
-                    
-                    modified_settings[selected_option] = (new_value)
-                    current_menu[selected_option] = (field, new_value)
+                if selected_option in ['longName', 'shortName', 'isLicensed']:
+                    if selected_option in ['longName', 'shortName']:
+                        new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                        current_menu[selected_option] = (field, new_value)
+
+                    elif selected_option == 'isLicensed':
+                        new_value = get_bool_selection(f"Current value for {selected_option}: {current_value}", str(current_value))
+                        try:
+                            if isinstance(new_value, str):
+                                new_value_lower = new_value.lower()
+                                if new_value_lower in ("true", "yes", "1", "on"):
+                                    new_value = True
+                                elif new_value_lower in ("false", "no", "0", "off"):
+                                    new_value = False
+                                else:
+                                    raise ValueError("Invalid string for boolean")
+                            else:
+                                new_value = bool(new_value)
+                        except ValueError as e:
+                            logging.error(f"Invalid input for boolean: {e}")
+                            new_value = current_value  # Keep the current value if the input is invalid
+
+                        current_menu[selected_option] = (field, new_value)
+
+                    for option, (field, value) in current_menu.items():
+                        modified_settings[option] = value
+
 
                 elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(selected_option, str(current_value))
