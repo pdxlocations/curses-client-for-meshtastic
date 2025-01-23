@@ -1,3 +1,4 @@
+from datetime import datetime
 from meshtastic import BROADCAST_NUM
 from db_handler import save_message_to_db, update_ack_nak
 from meshtastic.protobuf import mesh_pb2, portnums_pb2
@@ -106,14 +107,14 @@ def on_response_traceroute(packet):
         globals.all_messages[globals.channel_list[channel_number]] = []
     globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string}", msg_str))
 
-    if(refresh_channels):
+    if refresh_channels:
         draw_channel_list()
-    if(refresh_messages):
+    if refresh_messages:
         draw_messages_window(True)
     save_message_to_db(globals.channel_list[channel_number], packet['from'], msg_str)
 
-def send_message(message, destination=BROADCAST_NUM, channel=0):
 
+def send_message(message, destination=BROADCAST_NUM, channel=0):
     myid = globals.myNodeNum
     send_on_channel = 0
     channel_id = globals.channel_list[channel]
@@ -136,11 +137,32 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
     if channel_id not in globals.all_messages:
         globals.all_messages[channel_id] = []
 
+    # Handle timestamp logic
+    current_timestamp = int(datetime.now().timestamp())  # Get current timestamp
+    current_hour = datetime.fromtimestamp(current_timestamp).strftime('%Y-%m-%d %H:00')
+
+    # Retrieve the last timestamp if available
+    channel_messages = globals.all_messages[channel_id]
+    if channel_messages:
+        # Check the last entry for a timestamp
+        for entry in reversed(channel_messages):
+            if entry[0].startswith("--"):
+                last_hour = entry[0].strip("- ").strip()
+                break
+        else:
+            last_hour = None
+    else:
+        last_hour = None
+
+    # Add a new timestamp if it's a new hour
+    if last_hour != current_hour:
+        globals.all_messages[channel_id].append((f"-- {current_hour} --", ""))
+
     globals.all_messages[channel_id].append((globals.sent_message_prefix + globals.ack_unknown_str + ": ", message))
 
     timestamp = save_message_to_db(channel_id, myid, message)
 
-    ack_naks[sent_message_data.id] = {'channel' : channel_id, 'messageIndex' : len(globals.all_messages[channel_id]) - 1, 'timestamp' : timestamp }
+    ack_naks[sent_message_data.id] = {'channel': channel_id, 'messageIndex': len(globals.all_messages[channel_id]) - 1, 'timestamp': timestamp}
 
 def send_traceroute():
     r = mesh_pb2.RouteDiscovery()

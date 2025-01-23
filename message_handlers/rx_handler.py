@@ -5,13 +5,15 @@ from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_windo
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
 
 
+from datetime import datetime
+
 def on_receive(packet, interface):
     global nodes_win
 
-    # update packet log
+    # Update packet log
     globals.packet_buffer.append(packet)
     if len(globals.packet_buffer) > 20:
-        # trim buffer to 20 packets
+        # Trim buffer to 20 packets
         globals.packet_buffer = globals.packet_buffer[-20:]
         
     if globals.display_log:
@@ -20,10 +22,9 @@ def on_receive(packet, interface):
         if 'decoded' not in packet:
             return
 
-        # Assume any incoming packet could update the last seen time for a node, so we
-        # may need to reorder the list. This could probably be limited to specific packets.
+        # Assume any incoming packet could update the last seen time for a node
         new_node_list = get_node_list()
-        if(new_node_list != globals.node_list):
+        if new_node_list != globals.node_list:
             globals.node_list = new_node_list
             draw_node_list()
 
@@ -42,6 +43,7 @@ def on_receive(packet, interface):
                 channel_number = packet['channel']
             else:
                 channel_number = 0
+
             if packet['to'] == globals.myNodeNum:
                 if packet['from'] in globals.channel_list:
                     pass
@@ -65,15 +67,35 @@ def on_receive(packet, interface):
             if globals.channel_list[channel_number] not in globals.all_messages:
                 globals.all_messages[globals.channel_list[channel_number]] = []
 
+            # Timestamp handling
+            current_timestamp = int(packet['rxTime'])  # Use the packet's rxTime for timestamp
+            current_hour = datetime.fromtimestamp(current_timestamp).strftime('%Y-%m-%d %H:00')
+
+            # Retrieve the last timestamp if available
+            channel_messages = globals.all_messages[globals.channel_list[channel_number]]
+            if channel_messages:
+                # Check the last entry for a timestamp
+                for entry in reversed(channel_messages):
+                    if entry[0].startswith("--"):
+                        last_hour = entry[0].strip("- ").strip()
+                        break
+                else:
+                    last_hour = None
+            else:
+                last_hour = None
+
+            # Add a new timestamp if it's a new hour
+            if last_hour != current_hour:
+                globals.all_messages[globals.channel_list[channel_number]].append((f"-- {current_hour} --", ""))
+
             globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string} ", message_string))
 
-            if(refresh_channels):
+            if refresh_channels:
                 draw_channel_list()
-            if(refresh_messages):
+            if refresh_messages:
                 draw_messages_window(True)
 
             save_message_to_db(globals.channel_list[channel_number], message_from_id, message_string)
 
     except KeyError as e:
         print(f"Error processing packet: {e}")
-
