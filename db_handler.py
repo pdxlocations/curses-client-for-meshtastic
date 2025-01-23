@@ -116,7 +116,7 @@ def load_messages_from_db():
                     # Add messages to globals.all_messages grouped by hourly timestamp
                     hourly_messages = {}
                     for user_id, message, timestamp, ack_type in db_messages:
-                        hour = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:00:00')
+                        hour = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:00')
                         if hour not in hourly_messages:
                             hourly_messages[hour] = []
                         

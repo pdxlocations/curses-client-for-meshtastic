@@ -100,7 +100,7 @@ def draw_messages_window(scroll_to_bottom = False):
             messages_pad.resize(msg_line_count, messages_box.getmaxyx()[1])
 
             for line in wrapped_lines:
-                color = curses.color_pair(4) if prefix.startswith("--") else (curses.color_pair(3) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2))
+                color = curses.color_pair(1) if prefix.startswith("--") else (curses.color_pair(3) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2))
                 messages_pad.addstr(row, 1, line, color)
                 row += 1
 
