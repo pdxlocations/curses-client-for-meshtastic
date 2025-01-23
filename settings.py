@@ -7,7 +7,6 @@ from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
 from ui.colors import setup_colors
 
-
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
     global menu_win
 
@@ -148,44 +147,15 @@ def settings_menu(stdscr, interface):
 
                     elif selected_option == 'isLicensed':
                         new_value = get_bool_selection(f"Current value for {selected_option}: {current_value}", str(current_value))
-                        try:
-                            if isinstance(new_value, str):
-                                new_value_lower = new_value.lower()
-                                if new_value_lower in ("true", "yes", "1", "on"):
-                                    new_value = True
-                                elif new_value_lower in ("false", "no", "0", "off"):
-                                    new_value = False
-                                else:
-                                    raise ValueError("Invalid string for boolean")
-                            else:
-                                new_value = bool(new_value)
-                        except ValueError as e:
-                            logging.error(f"Invalid input for boolean: {e}")
-                            new_value = current_value  # Keep the current value if the input is invalid
-
+                        new_value = new_value == "True"
                         current_menu[selected_option] = (field, new_value)
 
                     for option, (field, value) in current_menu.items():
                         modified_settings[option] = value
 
-
                 elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(selected_option, str(current_value))
-                    try:
-                        if isinstance(new_value, str):
-                            new_value_lower = new_value.lower()
-                            if new_value_lower in ("true", "yes", "1", "on"):
-                                new_value = True
-                            elif new_value_lower in ("false", "no", "0", "off"):
-                                new_value = False
-                            else:
-                                raise ValueError("Invalid string for boolean")
-                        else:
-                            new_value = bool(new_value)
-                        
-                    except ValueError as e:
-                        logging.info(f"Invalid input for boolean: {e}")
-
+                    new_value = new_value == "True"
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
                     new_value = get_repeated_input(current_value)
@@ -209,7 +179,13 @@ def settings_menu(stdscr, interface):
                 else:  # Handle other field types
                     new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else new_value
-                    
+                
+                for key in menu_path[3:]:  # Skip "Main Menu"
+                    modified_settings = modified_settings.setdefault(key, {})
+
+                # Add the new value to the appropriate level
+                modified_settings[selected_option] = new_value
+
                 current_menu[selected_option] = (field, new_value)
             else:
                 current_menu = current_menu[selected_option]

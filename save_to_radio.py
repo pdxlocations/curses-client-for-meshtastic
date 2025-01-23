@@ -47,7 +47,6 @@ def save_changes(interface, menu_path, modified_settings):
             logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name} and Licensed Mode {is_licensed}")
             return
         
-
         elif menu_path[1] == "Channels":    # for channel configs
             config_category = "Channels"
 
@@ -79,8 +78,6 @@ def save_changes(interface, menu_path, modified_settings):
 
         else:
             config_category = None
-
-
 
         for config_item, new_value in modified_settings.items():
             # Check if the category exists in localConfig
