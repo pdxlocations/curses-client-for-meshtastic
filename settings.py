@@ -7,7 +7,6 @@ from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
 from ui.colors import setup_colors
 
-
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
     global menu_win
 
@@ -153,7 +152,6 @@ def settings_menu(stdscr, interface):
 
                     for option, (field, value) in current_menu.items():
                         modified_settings[option] = value
-
 
                 elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(selected_option, str(current_value))
