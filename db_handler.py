@@ -1,6 +1,8 @@
 import sqlite3
 import globals
 import time
+from datetime import datetime
+
 from utilities.utils import get_name_from_number
 
 def get_table_name(channel):
@@ -69,6 +71,8 @@ def update_ack_nak(channel, timestamp, message, ack):
         print(f"Unexpected error in update_ack_nak: {e}")
 
 
+from datetime import datetime
+
 def load_messages_from_db():
     """Load messages from the database for all channels and update globals.all_messages and globals.channel_list."""
     try:
@@ -82,18 +86,18 @@ def load_messages_from_db():
 
             # Iterate through each table and fetch its messages
             for table_name in tables:
-                quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics and contain spaces
+                quoted_table_name = f'"{table_name}"'  # Quote the table name because we begin with numerics and contain spaces
                 table_columns = [i[1] for i in db_cursor.execute(f'PRAGMA table_info({quoted_table_name})')]
-                if("ack_type" not in table_columns):
+                if "ack_type" not in table_columns:
                     update_table_query = f"ALTER TABLE {quoted_table_name} ADD COLUMN ack_type TEXT"
                     db_cursor.execute(update_table_query)
 
-                query = f'SELECT user_id, message_text, ack_type FROM {quoted_table_name}'
+                query = f'SELECT user_id, message_text, timestamp, ack_type FROM {quoted_table_name}'
 
                 try:
                     # Fetch all messages from the table
                     db_cursor.execute(query)
-                    db_messages = [(row[0], row[1], row[2]) for row in db_cursor.fetchall()]  # Save as tuples
+                    db_messages = [(row[0], row[1], row[2], row[3]) for row in db_cursor.fetchall()]  # Save as tuples
                     
                     # Extract the channel name from the table name
                     channel = table_name.split("_")[1]
@@ -109,22 +113,32 @@ def load_messages_from_db():
                     if channel not in globals.all_messages:
                         globals.all_messages[channel] = []
 
-                    # Add messages to globals.all_messages in tuple format
-                    for user_id, message, ack_type in db_messages:
-                        if user_id == str(globals.myNodeNum):
-                            ack_str = globals.ack_unknown_str
-                            if(ack_type == "Implicit"):
-                                ack_str = globals.ack_implicit_str
-                            elif(ack_type == "Ack"):
-                                ack_str = globals.ack_str
-                            elif(ack_type == "Nak"):
-                                ack_str = globals.nak_str
+                    # Add messages to globals.all_messages grouped by hourly timestamp
+                    hourly_messages = {}
+                    for user_id, message, timestamp, ack_type in db_messages:
+                        hour = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:00:00')
+                        if hour not in hourly_messages:
+                            hourly_messages[hour] = []
+                        
+                        ack_str = globals.ack_unknown_str
+                        if ack_type == "Implicit":
+                            ack_str = globals.ack_implicit_str
+                        elif ack_type == "Ack":
+                            ack_str = globals.ack_str
+                        elif ack_type == "Nak":
+                            ack_str = globals.nak_str
 
+                        if user_id == str(globals.myNodeNum):
                             formatted_message = (f"{globals.sent_message_prefix}{ack_str}: ", message)
-                        else:    
+                        else:
                             formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
-                            
-                        globals.all_messages[channel].append(formatted_message)
+                        
+                        hourly_messages[hour].append(formatted_message)
+
+                    # Flatten the hourly messages into globals.all_messages[channel]
+                    for hour, messages in sorted(hourly_messages.items()):
+                        globals.all_messages[channel].append((f"--- {hour} ---", ""))
+                        globals.all_messages[channel].extend(messages)
 
                 except sqlite3.Error as e:
                     print(f"SQLite error while loading messages from table '{table_name}': {e}")
