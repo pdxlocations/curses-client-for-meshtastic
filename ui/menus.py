@@ -62,7 +62,7 @@ def generate_menu_from_protobuf(interface):
             menu_structure["Main Menu"]["User Settings"] = {
                 "longName": (None, current_user_config.get("longName", "Not Set")),
                 "shortName": (None, current_user_config.get("shortName", "Not Set")),
-                "isLicensed": (None, current_user_config.get("isLicened", "False"))
+                "isLicensed": (None, current_user_config.get("isLicensed", "False"))
             }
 
         else:
