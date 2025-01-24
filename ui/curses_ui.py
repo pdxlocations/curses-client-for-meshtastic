@@ -103,6 +103,7 @@ def draw_splash(stdscr):
     stdscr.addstr(start_y+1, start_x-1, message_2, get_color("splash_logo", bold=True))
     stdscr.addstr(start_y+2, start_x-2, message_3, get_color("splash_logo", bold=True))
     stdscr.addstr(start_y+4, start_x2, message_4, get_color("splash_text"))
+    stdscr.attrset(get_color("window_frame"))
     stdscr.box()
     stdscr.refresh()
     curses.napms(500)
@@ -197,7 +198,7 @@ def draw_node_list():
         else:
             nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), get_color("node_list"))
 
-    nodes_box.attrset(get_color("window_frame_selected") if globals.current_window == 1 else get_color("window_frame"))
+    nodes_box.attrset(get_color("window_frame_selected") if globals.current_window == 2 else get_color("window_frame"))
     nodes_box.box()
     nodes_box.attrset(get_color("window_frame"))
     nodes_box.refresh()

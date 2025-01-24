@@ -40,7 +40,7 @@ COLOR_CONFIG = {
     "timestamps": ("white", "black"),
     "commands": ("white", "black"),
     "window_frame": ("white", "black"),
-    "window_frame_selected": ("yellow", "black"),
+    "window_frame_selected": ("green", "black"),
     "log_header": ("blue", "black"),
     "log": ("green", "black")
 }
