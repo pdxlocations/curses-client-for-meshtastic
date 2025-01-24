@@ -40,11 +40,8 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
         try:
             # Use red color for "Reboot" or "Shutdown"
-            color = get_color("settings_sensitive") if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else get_color("default")
-            if idx == selected_index:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE | color)
-            else:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", color)
+            color = get_color("settings_sensitive" if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else "default", reverse = (idx == selected_index))
+            menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", color)
         except curses.error:
             pass
 
@@ -52,10 +49,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     if show_save_option:
         save_option = "Save Changes"
         save_position = height - 2
-        if selected_index == len(current_menu):
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2) | curses.A_REVERSE)
-        else:
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2))
+        menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, get_color("settings_okay", reverse = (selected_index == len(current_menu))))
 
     menu_win.refresh()
 
