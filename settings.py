@@ -43,9 +43,9 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
             color = curses.color_pair(5) if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else curses.color_pair(1)
 
             if idx == selected_index:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE | color)
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), curses.A_REVERSE | color)
             else:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", color)
+                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
         except curses.error:
             pass
 
@@ -60,6 +60,24 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
     menu_win.refresh()
 
+def move_highlight(old_idx, new_idx, max_idx, show_save, menu_win):
+    if(old_idx == new_idx): # no-op
+        return
+
+    width = 60
+    save_option = "Save Changes"
+    if show_save and old_idx == max_idx: # special case un-highlight "Save" option
+        menu_win.chgat(max_idx + 4, (width - len(save_option)) // 2, len(save_option), curses.color_pair(2))
+    else:
+        menu_win.chgat(old_idx + 3, 4, width - 8, curses.color_pair(1))
+
+    if show_save and new_idx == max_idx: # special case highlight "Save" option
+        menu_win.chgat(max_idx + 4, (width - len(save_option)) // 2, len(save_option), curses.color_pair(2) | curses.A_REVERSE)
+    else:
+       menu_win.chgat(new_idx + 3, 4, width - 8, curses.color_pair(1) | curses.A_REVERSE )
+
+    menu_win.refresh()
+
 def settings_menu(stdscr, interface):
 
     menu = generate_menu_from_protobuf(interface)
@@ -68,31 +86,43 @@ def settings_menu(stdscr, interface):
     selected_index = 0
     modified_settings = {}
     
+    need_redraw = True
+    show_save_option = False
+
     while True:
-        options = list(current_menu.keys())
+        if(need_redraw):
+            options = list(current_menu.keys())
 
-        show_save_option = (
-            len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
-        ) or (
-            len(menu_path) == 2 and "User Settings" in menu_path 
-        ) or (
-            len(menu_path) == 3 and "Channels" in menu_path
-        )
+            show_save_option = (
+                len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
+            ) or (
+                len(menu_path) == 2 and "User Settings" in menu_path 
+            ) or (
+                len(menu_path) == 3 and "Channels" in menu_path
+            )
 
-        # Display the menu
-        display_menu(current_menu, menu_path, selected_index, show_save_option)
+            # Display the menu
+            display_menu(current_menu, menu_path, selected_index, show_save_option)
+
+            need_redraw = False
 
         # Capture user input
         key = menu_win.getch()
 
         if key == curses.KEY_UP:
+            old_selected_index = selected_index
+            max_index = len(options) + (1 if show_save_option else 0) - 1
             selected_index = max(0, selected_index - 1)
+            move_highlight(old_selected_index, selected_index, max_index, show_save_option, menu_win)
             
         elif key == curses.KEY_DOWN:
+            old_selected_index = selected_index
             max_index = len(options) + (1 if show_save_option else 0) - 1
             selected_index = min(max_index, selected_index + 1)
+            move_highlight(old_selected_index, selected_index, max_index, show_save_option, menu_win)
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
+            need_redraw = True
             menu_win.clear()
             menu_win.refresh()
             if show_save_option and selected_index == len(options):
@@ -195,6 +225,7 @@ def settings_menu(stdscr, interface):
                 selected_index = 0
 
         elif key == curses.KEY_LEFT:
+            need_redraw = True
 
             menu_win.clear()
             menu_win.refresh()
