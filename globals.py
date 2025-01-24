@@ -42,5 +42,6 @@ COLOR_CONFIG = {
     "window_frame": ("white", "black"),
     "window_frame_selected": ("green", "black"),
     "log_header": ("blue", "black"),
-    "log": ("green", "black")
+    "log": ("green", "black"),
+    "settings_sensitive": ("red", "black")
 }

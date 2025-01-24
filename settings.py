@@ -4,7 +4,7 @@ import logging
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
 from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
-from ui.colors import setup_colors
+from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
 import globals
@@ -40,8 +40,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
         try:
             # Use red color for "Reboot" or "Shutdown"
-            color = curses.color_pair(5) if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else curses.color_pair(1)
-
+            color = get_color("settings_sensitive") if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else get_color("default")
             if idx == selected_index:
                 menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE | color)
             else:
