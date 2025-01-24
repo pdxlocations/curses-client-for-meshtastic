@@ -26,9 +26,21 @@ ack_str = "[✓]"
 nak_str = "[x]"
 ack_unknown_str = "[…]"
 
-COLOR_CONFIG = { # white, black, red, green, yellow, blue, magenta, cyan
-    "default_text": {"foreground": "white", "background": "black"},
-    "rx_messages": {"foreground": "green", "background": "black"},
-    "tx_messages": {"foreground": "cyan", "background": "black"},
-    "timestamps": {"foreground": "yellow", "background": "black"}
+# (forground, background) white, black, red, green, yellow, blue, magenta, cyan
+COLOR_CONFIG = {
+    "default": ("white", "black"),
+    "splash_logo": ("green", "black"),
+    "splash_text": ("white", "black"),
+    "input": ("white", "black"),
+    "node_list": ("white", "black"),
+    "channel_list": ("white", "black"),
+    "channel_selected": ("green", "black"),
+    "rx_messages": ("cyan", "black"),
+    "tx_messages": ("green", "black"),
+    "timestamps": ("white", "black"),
+    "commands": ("white", "black"),
+    "window_frame": ("white", "black"),
+    "window_frame_selected": ("yellow", "black"),
+    "log_header": ("blue", "black"),
+    "log": ("green", "black")
 }
