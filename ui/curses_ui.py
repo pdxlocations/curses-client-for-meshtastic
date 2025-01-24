@@ -5,7 +5,7 @@ from utilities.utils import get_name_from_number, get_channels
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 import ui.dialog
-from ui.colors import setup_colors
+from ui.colors import setup_colors, get_color
 
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
@@ -42,11 +42,14 @@ def refresh_pad(window):
 def highlight_line(highlight, window, line):
     pad = channel_pad
     select_len = 0
-    color = curses.color_pair(1)
+    ch_color = get_color("channel_list")
+    nd_color = get_color("node_list")
 
     if(window == 2):
         pad = nodes_pad
         select_len = len(get_name_from_number(globals.node_list[line], "long"))
+
+        pad.chgat(line, 1, select_len, nd_color | curses.A_REVERSE if highlight else nd_color)
 
     if(window == 0):
         channel = list(globals.all_messages.keys())[line]
@@ -57,9 +60,9 @@ def highlight_line(highlight, window, line):
         select_len = min(len(channel), win_width - 4)
 
         if line == globals.selected_channel and highlight == False:
-            color = curses.color_pair(2)
+            ch_color = get_color("channel_selected")
 
-    pad.chgat(line, 1, select_len, color | curses.A_REVERSE if highlight else color)
+        pad.chgat(line, 1, select_len, ch_color | curses.A_REVERSE if highlight else ch_color)
 
 def add_notification(channel_number):
     globals.notifications.add(channel_number) 
@@ -67,15 +70,15 @@ def add_notification(channel_number):
 def remove_notification(channel_number):
     globals.notifications.discard(channel_number) 
 
-def draw_text_field(win, text):
+def draw_text_field(win, text, color):
     win.border()
-    win.addstr(1, 1, text)
+    win.addstr(1, 1, text, color)
 
-def draw_centered_text_field(win, text, y_offset = 0):
+def draw_centered_text_field(win, text, y_offset, color):
     height, width = win.getmaxyx()
     x = (width - len(text)) // 2
     y = (height // 2) + y_offset
-    win.addstr(y, x, text)
+    win.addstr(y, x, text, color)
     win.refresh()
 
 def draw_debug(value):
@@ -96,10 +99,11 @@ def draw_splash(stdscr):
     start_x = width // 2 - len(message_1) // 2
     start_x2 = width // 2 - len(message_4) // 2
     start_y = height // 2 - 1
-    stdscr.addstr(start_y, start_x, message_1, curses.color_pair(2) | curses.A_BOLD)
-    stdscr.addstr(start_y+1, start_x-1, message_2, curses.color_pair(2) | curses.A_BOLD)
-    stdscr.addstr(start_y+2, start_x-2, message_3, curses.color_pair(2) | curses.A_BOLD)
-    stdscr.addstr(start_y+4, start_x2, message_4)
+    stdscr.addstr(start_y, start_x, message_1, get_color("splash_logo", bold=True))
+    stdscr.addstr(start_y+1, start_x-1, message_2, get_color("splash_logo", bold=True))
+    stdscr.addstr(start_y+2, start_x-2, message_3, get_color("splash_logo", bold=True))
+    stdscr.addstr(start_y+4, start_x2, message_4, get_color("splash_text"))
+    stdscr.attrset(get_color("window_frame"))
     stdscr.box()
     stdscr.refresh()
     curses.napms(500)
@@ -124,16 +128,16 @@ def draw_channel_list():
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
         if i == globals.selected_channel:
             if globals.current_window == 0:
-                channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(1) | curses.A_REVERSE)
+                channel_pad.addstr(i, 1, truncated_channel + notification, get_color("channel_list", reverse=True))
                 remove_notification(globals.selected_channel)
             else:
-                channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(2))
+                channel_pad.addstr(i, 1, truncated_channel + notification, get_color("channel_selected"))
         else:
-            channel_pad.addstr(i, 1, truncated_channel + notification, curses.color_pair(1))
+            channel_pad.addstr(i, 1, truncated_channel + notification, get_color("channel_list"))
 
-    channel_box.attrset(curses.color_pair(2) if globals.current_window == 0 else curses.color_pair(0))
+    channel_box.attrset(get_color("window_frame_selected") if globals.current_window == 0 else get_color("window_frame"))
     channel_box.box()
-    channel_box.attrset(curses.color_pair(0))
+    channel_box.attrset((get_color("window_frame")))
     channel_box.refresh()
 
     refresh_pad(0)
@@ -157,13 +161,19 @@ def draw_messages_window(scroll_to_bottom = False):
             messages_pad.resize(msg_line_count, messages_box.getmaxyx()[1])
 
             for line in wrapped_lines:
-                color = curses.color_pair(1) if prefix.startswith("--") else (curses.color_pair(3) if prefix.startswith(globals.sent_message_prefix) else curses.color_pair(2))
+                if prefix.startswith("--"):
+                    color = get_color("timestamps")
+                elif prefix.startswith(globals.sent_message_prefix):
+                    color = get_color("tx_messages") 
+                else:
+                    color = get_color("rx_messages") 
+                    
                 messages_pad.addstr(row, 1, line, color)
                 row += 1
 
-    messages_box.attrset(curses.color_pair(2) if globals.current_window == 1 else curses.color_pair(0))
+    messages_box.attrset(get_color("window_frame_selected") if globals.current_window == 1 else get_color("window_frame"))
     messages_box.box()
-    messages_box.attrset(curses.color_pair(0))
+    messages_box.attrset(get_color("window_frame"))
     messages_box.refresh()
 
     if(scroll_to_bottom):
@@ -184,13 +194,13 @@ def draw_node_list():
 
     for i, node in enumerate(globals.node_list):
         if globals.selected_node == i and globals.current_window == 2:
-            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1) | curses.A_REVERSE)
+            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), get_color("node_list", reverse=True))
         else:
-            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), curses.color_pair(1))
+            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), get_color("node_list"))
 
-    nodes_box.attrset(curses.color_pair(2) if globals.current_window == 2 else curses.color_pair(0))
+    nodes_box.attrset(get_color("window_frame_selected") if globals.current_window == 2 else get_color("window_frame"))
     nodes_box.box()
-    nodes_box.attrset(curses.color_pair(0))
+    nodes_box.attrset(get_color("window_frame"))
     nodes_box.refresh()
 
     refresh_pad(2)
@@ -259,7 +269,7 @@ def draw_packetlog_win():
 
         # Add headers
         headers = f"{'From':<{columns[0]}} {'To':<{columns[1]}} {'Port':<{columns[2]}} {'Payload':<{width-span}}"
-        packetlog_win.addstr(1, 1, headers[:width - 2],curses.A_UNDERLINE)  # Truncate headers if they exceed window width
+        packetlog_win.addstr(1, 1, headers[:width - 2],get_color("log_header", underline=True))  # Truncate headers if they exceed window width
 
         for i, packet in enumerate(reversed(globals.packet_buffer)):
             if i >= height - 3:  # Skip if exceeds the window height
@@ -283,7 +293,7 @@ def draw_packetlog_win():
             logString = logString[:width - 3]
 
             # Add to the window
-            packetlog_win.addstr(i + 2, 1, logString)
+            packetlog_win.addstr(i + 2, 1, logString, get_color("log"))
 
         packetlog_win.box()
         packetlog_win.refresh()
@@ -315,16 +325,26 @@ def main_ui(stdscr):
     function_win = curses.newwin(3, width, height - 3, 0)
     packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
 
-    draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit")
+    draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit",0 ,get_color("commands"))
 
     # Draw boxes around windows
-    channel_box.attrset(curses.color_pair(2))
+
+    # Set the normal frame color for the channel box
+    channel_box.attrset(get_color("window_frame"))
     channel_box.box()
-    channel_box.attrset(curses.color_pair(0))
+
+    # Draw boxes for other windows
+    entry_win.attrset(get_color("window_frame"))
     entry_win.box()
+
+    nodes_box.attrset(get_color("window_frame"))
     nodes_box.box()
+
+    messages_box.attrset(get_color("window_frame"))
     messages_box.box()
-    function_win.box() 
+
+    function_win.attrset(get_color("window_frame"))
+    function_win.box()
 
     # Refresh all windows
     entry_win.refresh()
@@ -343,7 +363,7 @@ def main_ui(stdscr):
     draw_messages_window(True)
 
     while True:
-        draw_text_field(entry_win, f"Input: {input_text[-(width - 10):]}")
+        draw_text_field(entry_win, f"Input: {input_text[-(width - 10):]}", get_color("input"))
 
         # Get user input from entry window
         char = entry_win.get_wch()
@@ -411,40 +431,40 @@ def main_ui(stdscr):
             globals.current_window = (globals.current_window + delta) % 3
 
             if old_window == 0:
-                channel_box.attrset(curses.color_pair(0))
+                channel_box.attrset(get_color("window_frame"))
                 channel_box.box()
                 channel_box.refresh()
                 highlight_line(False, 0, globals.selected_channel)
                 refresh_pad(0)
             if old_window == 1:
-                messages_box.attrset(curses.color_pair(0))
+                messages_box.attrset(get_color("window_frame"))
                 messages_box.box()
                 messages_box.refresh()
                 refresh_pad(1)
             elif old_window == 2:
-                nodes_box.attrset(curses.color_pair(0))
+                nodes_box.attrset(get_color("window_frame"))
                 nodes_box.box()
                 nodes_box.refresh()
                 highlight_line(False, 2, globals.selected_node)
                 refresh_pad(2)
 
             if globals.current_window == 0:
-                channel_box.attrset(curses.color_pair(2))
+                channel_box.attrset(get_color("window_frame_selected"))
                 channel_box.box()
-                channel_box.attrset(curses.color_pair(0))
+                channel_box.attrset(get_color("window_frame"))
                 channel_box.refresh()
                 highlight_line(True, 0, globals.selected_channel)
                 refresh_pad(0)
             elif globals.current_window == 1:
-                messages_box.attrset(curses.color_pair(2))
+                messages_box.attrset(get_color("window_frame_selected"))
                 messages_box.box()
-                messages_box.attrset(curses.color_pair(0))
+                messages_box.attrset(get_color("window_frame"))
                 messages_box.refresh()
                 refresh_pad(1)
             elif globals.current_window == 2:
-                nodes_box.attrset(curses.color_pair(2))
+                nodes_box.attrset(get_color("window_frame_selected"))
                 nodes_box.box()
-                nodes_box.attrset(curses.color_pair(0))
+                nodes_box.attrset(get_color("window_frame"))
                 nodes_box.refresh()
                 highlight_line(True, 2, globals.selected_node)
                 refresh_pad(2)

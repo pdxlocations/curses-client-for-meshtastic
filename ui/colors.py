@@ -1,9 +1,38 @@
 import curses
+import globals
+
+COLOR_MAP = {
+    "black": curses.COLOR_BLACK,
+    "red": curses.COLOR_RED,
+    "green": curses.COLOR_GREEN,
+    "yellow": curses.COLOR_YELLOW,
+    "blue": curses.COLOR_BLUE,
+    "magenta": curses.COLOR_MAGENTA,
+    "cyan": curses.COLOR_CYAN,
+    "white": curses.COLOR_WHITE
+}
 
 def setup_colors():
+    """
+    Initialize curses color pairs based on the COLOR_CONFIG.
+    """
     curses.start_color()
-    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK) 
-    curses.init_pair(3, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)
+    for idx, (category, (fg_name, bg_name)) in enumerate(globals.COLOR_CONFIG.items(), start=1):
+        fg = COLOR_MAP.get(fg_name.lower(), curses.COLOR_WHITE)
+        bg = COLOR_MAP.get(bg_name.lower(), curses.COLOR_BLACK)
+        curses.init_pair(idx, fg, bg)
+        globals.COLOR_CONFIG[category] = idx
+
+
+def get_color(category, bold=False, reverse=False, underline=False):
+    """
+    Retrieve a curses color pair with optional attributes.
+    """
+    color = curses.color_pair(globals.COLOR_CONFIG[category])
+    if bold:
+        color |= curses.A_BOLD
+    if reverse:
+        color |= curses.A_REVERSE
+    if underline:
+        color |= curses.A_UNDERLINE
+    return color

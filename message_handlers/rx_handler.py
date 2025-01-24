@@ -3,6 +3,7 @@ from utilities.utils import get_node_list, decimal_to_hex, get_name_from_number
 import globals
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
+import time
 
 
 from datetime import datetime
@@ -68,7 +69,7 @@ def on_receive(packet, interface):
                 globals.all_messages[globals.channel_list[channel_number]] = []
 
             # Timestamp handling
-            current_timestamp = int(packet['rxTime'])  # Use the packet's rxTime for timestamp
+            current_timestamp = time.time() 
             current_hour = datetime.fromtimestamp(current_timestamp).strftime('%Y-%m-%d %H:00')
 
             # Retrieve the last timestamp if available

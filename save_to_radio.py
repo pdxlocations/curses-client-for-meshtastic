@@ -43,6 +43,7 @@ def save_changes(interface, menu_path, modified_settings):
             long_name = modified_settings.get("longName")
             short_name = modified_settings.get("shortName")
             is_licensed = modified_settings.get("isLicensed")
+            is_licensed = is_licensed == "True" or is_licensed is True
             node.setOwner(long_name, short_name, is_licensed)
             logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name} and Licensed Mode {is_licensed}")
             return
