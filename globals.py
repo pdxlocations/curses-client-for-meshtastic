@@ -25,3 +25,10 @@ ack_implicit_str = "[◌]"
 ack_str = "[✓]"
 nak_str = "[x]"
 ack_unknown_str = "[…]"
+
+COLOR_CONFIG = { # white, black, red, green, yellow, blue, magenta, cyan
+    "default_text": {"foreground": "white", "background": "black"},
+    "rx_messages": {"foreground": "green", "background": "black"},
+    "tx_messages": {"foreground": "cyan", "background": "black"},
+    "timestamps": {"foreground": "yellow", "background": "black"}
+}
