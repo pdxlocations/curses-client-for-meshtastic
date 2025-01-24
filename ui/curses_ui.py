@@ -475,7 +475,7 @@ def main_ui(stdscr):
                 draw_channel_list()
                 draw_messages_window(True)
 
-            else:
+            elif len(input_text) > 0:
                 # Enter key pressed, send user input as message
                 send_message(input_text, channel=globals.selected_channel)
                 draw_messages_window(True)
