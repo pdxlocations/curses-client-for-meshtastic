@@ -5,3 +5,4 @@ client.db
 .DS_Store
 client.log
 settings.log
+config.json

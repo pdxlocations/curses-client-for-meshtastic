@@ -6,6 +6,7 @@ from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 import ui.dialog
 from ui.colors import setup_colors, get_color
+import default_config as config
 
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
@@ -122,7 +123,7 @@ def draw_channel_list():
             channel = get_name_from_number(channel, type='long')
 
         # Determine whether to add the notification
-        notification = " " + globals.notification_symbol if i in globals.notifications else ""
+        notification = " " + config.notification_symbol if i in globals.notifications else ""
 
         # Truncate the channel name if it's too long to fit in the window
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
@@ -163,7 +164,7 @@ def draw_messages_window(scroll_to_bottom = False):
             for line in wrapped_lines:
                 if prefix.startswith("--"):
                     color = get_color("timestamps")
-                elif prefix.startswith(globals.sent_message_prefix):
+                elif prefix.startswith(config.sent_message_prefix):
                     color = get_color("tx_messages") 
                 else:
                     color = get_color("rx_messages") 

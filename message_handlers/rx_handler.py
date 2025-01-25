@@ -4,6 +4,7 @@ import globals
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
 import time
+import default_config as config
 
 
 from datetime import datetime
@@ -89,7 +90,7 @@ def on_receive(packet, interface):
             if last_hour != current_hour:
                 globals.all_messages[globals.channel_list[channel_number]].append((f"-- {current_hour} --", ""))
 
-            globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string} ", message_string))
+            globals.all_messages[globals.channel_list[channel_number]].append((f"{config.message_prefix} {message_from_string} ", message_string))
 
             if refresh_channels:
                 draw_channel_list()

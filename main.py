@@ -19,6 +19,7 @@ from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels, get_node_list, get_nodeNum
 from db_handler import init_nodedb, load_messages_from_db
 import globals
+import default_config as config
 
 # Set environment variables for ncurses compatibility
 os.environ["NCURSES_NO_UTF8_ACS"] = "1"
@@ -28,7 +29,7 @@ os.environ["LANG"] = "C.UTF-8"
 # Configure logging
 # Run `tail -f client.log` in another terminal to view live
 logging.basicConfig(
-    filename=globals.log_file_path,
+    filename=config.log_file_path,
     level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
