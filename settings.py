@@ -192,9 +192,6 @@ def settings_menu(stdscr, interface):
                     new_value = current_value if new_value is None else [int(item) for item in new_value]
 
                 elif field.enum_type:  # Enum field
-                    # enum_options = [v.name for v in field.enum_type.values]
-                    # new_value = get_enum_input(enum_options, current_value)
-
                     enum_options = {v.name: v.number for v in field.enum_type.values}
                     new_value_name = get_enum_input(list(enum_options.keys()), current_value)
                     new_value = enum_options.get(new_value_name, current_value)
@@ -220,6 +217,7 @@ def settings_menu(stdscr, interface):
                 # Add the new value to the appropriate level
                 modified_settings[selected_option] = new_value
 
+                # Convert enum string to int
                 if field.enum_type:
                     enum_value_descriptor = field.enum_type.values_by_number.get(new_value)
                     new_value = enum_value_descriptor.name if enum_value_descriptor else new_value
