@@ -91,6 +91,9 @@ def draw_splash(stdscr):
     curses.curs_set(0)
 
     stdscr.clear()
+    stdscr.attrset(get_color("window_frame"))
+    stdscr.bkgd(get_color("background"))
+    
     height, width = stdscr.getmaxyx()
     message_1 = "/ Λ"
     message_2 = "/ / \\"
@@ -104,8 +107,6 @@ def draw_splash(stdscr):
     stdscr.addstr(start_y+1, start_x-1, message_2, get_color("splash_logo", bold=True))
     stdscr.addstr(start_y+2, start_x-2, message_3, get_color("splash_logo", bold=True))
     stdscr.addstr(start_y+4, start_x2, message_4, get_color("splash_text"))
-    stdscr.attrset(get_color("window_frame"))
-    stdscr.bkgd(get_color("background"))
     stdscr.box()
     stdscr.refresh()
     curses.napms(500)
