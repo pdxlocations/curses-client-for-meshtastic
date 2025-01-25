@@ -185,7 +185,7 @@ def settings_menu(stdscr, interface):
 
                 elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(selected_option, str(current_value))
-                    new_value = new_value == "True"
+                    new_value = new_value == "True" or new_value is True
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field
                     new_value = get_repeated_input(current_value)
