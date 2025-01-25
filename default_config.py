@@ -110,7 +110,7 @@ COLOR_CONFIG = loaded_config["COLOR_CONFIG"]
 
 
 if __name__ == "__main__":
-    logging.basicConfig( # Run `tail -f client.log` in another terminal to view live
+    logging.basicConfig(
     filename="default_config.log",
     level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
     format="%(asctime)s - %(levelname)s - %(message)s"
