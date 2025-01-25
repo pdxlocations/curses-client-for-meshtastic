@@ -4,7 +4,7 @@ import logging
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
 from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
-from ui.colors import setup_colors
+from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
 import globals
@@ -40,12 +40,8 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
         try:
             # Use red color for "Reboot" or "Shutdown"
-            color = curses.color_pair(5) if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else curses.color_pair(1)
-
-            if idx == selected_index:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), curses.A_REVERSE | color)
-            else:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
+            color = get_color("settings_sensitive" if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else "default", reverse = (idx == selected_index))
+            menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
         except curses.error:
             pass
 
@@ -53,10 +49,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     if show_save_option:
         save_option = "Save Changes"
         save_position = height - 2
-        if selected_index == len(current_menu):
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2) | curses.A_REVERSE)
-        else:
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2))
+        menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, get_color("settings_okay", reverse = (selected_index == len(current_menu))))
 
     menu_win.refresh()
 
