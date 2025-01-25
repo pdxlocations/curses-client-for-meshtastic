@@ -25,6 +25,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     # Create a new curses window with dynamic dimensions
     menu_win = curses.newwin(height, width, start_y, start_x)
     menu_win.clear()
+    menu_win.attrset((get_color("window_frame")))
     menu_win.border()
     menu_win.keypad(True)
 
@@ -32,7 +33,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     header = " > ".join(word.title() for word in menu_path)
     if len(header) > width - 4:
         header = header[:width - 7] + "..."
-    menu_win.addstr(1, 2, header, curses.A_BOLD)
+    menu_win.addstr(1, 2, header, get_color("settings_breadcrumbs", bold=True))
 
     # Display the menu options
     for idx, option in enumerate(current_menu):
