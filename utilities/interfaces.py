@@ -1,6 +1,5 @@
-import meshtastic.serial_interface
-import meshtastic.tcp_interface
-import meshtastic.ble_interface
+import logging
+import meshtastic.serial_interface, meshtastic.tcp_interface, meshtastic.ble_interface
 import globals
 
 def initialize_interface(args):
@@ -12,6 +11,6 @@ def initialize_interface(args):
         try:
             return meshtastic.serial_interface.SerialInterface(args.port)
         except PermissionError as ex:
-            print("You probably need to add yourself to the `dialout` group to use a serial connection.")
+            logging.error("You probably need to add yourself to the `dialout` group to use a serial connection.")
         if globals.interface.devPath is None:
             return meshtastic.tcp_interface.TCPInterface("meshtastic.local")

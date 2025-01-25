@@ -1,9 +1,10 @@
+import logging
+import time
 from meshtastic import BROADCAST_NUM
 from utilities.utils import get_node_list, decimal_to_hex, get_name_from_number
 import globals
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
-import time
 import default_config as config
 
 
@@ -100,4 +101,4 @@ def on_receive(packet, interface):
             save_message_to_db(globals.channel_list[channel_number], message_from_id, message_string)
 
     except KeyError as e:
-        print(f"Error processing packet: {e}")
+        logging.error(f"Error processing packet: {e}")

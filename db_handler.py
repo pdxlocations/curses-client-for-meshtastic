@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from datetime import datetime
+import logging
 
 import globals
 import default_config as config
@@ -45,10 +46,10 @@ def save_message_to_db(channel, user_id, message_text):
             return timestamp
 
     except sqlite3.Error as e:
-        print(f"SQLite error in save_message_to_db: {e}")
+        logging.error(f"SQLite error in save_message_to_db: {e}")
 
     except Exception as e:
-        print(f"Unexpected error in save_message_to_db: {e}")
+        logging.error(f"Unexpected error in save_message_to_db: {e}")
 
 def update_ack_nak(channel, timestamp, message, ack):
     try:
@@ -66,10 +67,10 @@ def update_ack_nak(channel, timestamp, message, ack):
             db_connection.commit()
 
     except sqlite3.Error as e:
-        print(f"SQLite error in update_ack_nak: {e}")
+        logging.error(f"SQLite error in update_ack_nak: {e}")
 
     except Exception as e:
-        print(f"Unexpected error in update_ack_nak: {e}")
+        logging.error(f"Unexpected error in update_ack_nak: {e}")
 
 
 from datetime import datetime
@@ -142,10 +143,10 @@ def load_messages_from_db():
                         globals.all_messages[channel].extend(messages)
 
                 except sqlite3.Error as e:
-                    print(f"SQLite error while loading messages from table '{table_name}': {e}")
+                    logging.error(f"SQLite error while loading messages from table '{table_name}': {e}")
 
     except sqlite3.Error as e:
-        print(f"SQLite error in load_messages_from_db: {e}")
+        logging.error(f"SQLite error in load_messages_from_db: {e}")
 
 
 def init_nodedb():
@@ -197,9 +198,9 @@ def init_nodedb():
             db_connection.commit()
 
     except sqlite3.Error as e:
-        print(f"SQLite error in init_nodedb: {e}")
+        logging.error(f"SQLite error in init_nodedb: {e}")
     except Exception as e:
-        print(f"Unexpected error in init_nodedb: {e}")
+        logging.error(f"Unexpected error in init_nodedb: {e}")
 
 def maybe_store_nodeinfo_in_db(packet):
     """Save nodeinfo unless that record is already there."""
@@ -281,6 +282,6 @@ def maybe_store_nodeinfo_in_db(packet):
 
 
     except sqlite3.Error as e:
-        print(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
+        logging.error(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
     finally:
         db_connection.close()
