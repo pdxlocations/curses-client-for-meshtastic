@@ -21,6 +21,18 @@ def format_json_single_line_arrays(data, indent=4):
 
     return format_value(data, indent)
 
+# Recursive function to check and update nested dictionaries
+def update_dict(default, actual):
+    updated = False
+    for key, value in default.items():
+        if key not in actual:
+            actual[key] = value
+            updated = True
+        elif isinstance(value, dict):
+            # Recursively check nested dictionaries
+            updated = update_dict(value, actual[key]) or updated
+    return updated
+
 def initialize_config():
     app_directory = os.path.dirname(os.path.abspath(__file__))
     json_file_path = os.path.join(app_directory, "config.json")
@@ -52,12 +64,12 @@ def initialize_config():
             "window_frame_selected": ["green", "black"],
             "log_header": ["blue", "black"],
             "log": ["green", "black"],
+            "settings_default": ["white", "black"],
             "settings_sensitive": ["red", "black"],
             "settings_save": ["green", "black"],
             "settings_breadcrumbs": ["white", "black"]
         },
     }
-
 
     if not os.path.exists(json_file_path):
         with open(json_file_path, "w", encoding="utf-8") as json_file:
@@ -69,20 +81,16 @@ def initialize_config():
         loaded_config = json.load(json_file)
 
     # Check and add missing variables
-    updated = False
-    for key, value in default_config_variables.items():
-        if key not in loaded_config:
-            loaded_config[key] = value
-            updated = True
+    updated = update_dict(default_config_variables, loaded_config)
 
     # Update the JSON file if any variables were missing
     if updated:
-        with open(json_file_path, "w", encoding="utf-8") as json_file:
-            json.dump(loaded_config, json_file, indent=4, ensure_ascii=False)
-        logging.info(f"JSON file updated with missing default variables.")
+            formatted_json = format_json_single_line_arrays(loaded_config)
+            with open(json_file_path, "w", encoding="utf-8") as json_file:
+                json_file.write(formatted_json)
+            logging.info(f"JSON file updated with missing default variables and COLOR_CONFIG items.")
 
     return loaded_config
-
 
 # Call the function when the script is imported
 loaded_config = initialize_config()

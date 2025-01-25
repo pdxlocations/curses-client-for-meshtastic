@@ -6,3 +6,4 @@ client.db
 client.log
 settings.log
 config.json
+default_config.log

@@ -44,7 +44,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
         try:
             # Use red color for "Reboot" or "Shutdown"
-            color = get_color("settings_sensitive" if option in sensitive_settings else "default", reverse = (idx == selected_index))
+            color = get_color("settings_sensitive" if option in sensitive_settings else "settings_default", reverse = (idx == selected_index))
             menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
         except curses.error:
             pass
