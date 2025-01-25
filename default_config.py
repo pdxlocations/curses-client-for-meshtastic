@@ -33,6 +33,8 @@ def initialize_config():
             "window_frame_selected": ["green", "black"],
             "log_header": ["blue", "black"],
             "log": ["green", "black"],
+            "settings_sensitive": ["red", "black"],
+            "settings_save": ["green", "black"]
         },
     }
 
