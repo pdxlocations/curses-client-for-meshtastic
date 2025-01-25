@@ -1,6 +1,25 @@
 import os
 import json
+import logging
 
+def format_json_single_line_arrays(data, indent=4):
+    """
+    Formats JSON with arrays on a single line while keeping other elements properly indented.
+    """
+    def format_value(value, current_indent):
+        if isinstance(value, dict):
+            items = []
+            for key, val in value.items():
+                items.append(
+                    f'{" " * current_indent}"{key}": {format_value(val, current_indent + indent)}'
+                )
+            return "{\n" + ",\n".join(items) + f"\n{' ' * (current_indent - indent)}}}"
+        elif isinstance(value, list):
+            return f"[{', '.join(json.dumps(el, ensure_ascii=False) for el in value)}]"
+        else:
+            return json.dumps(value, ensure_ascii=False)
+
+    return format_value(data, indent)
 
 def initialize_config():
     app_directory = os.path.dirname(os.path.abspath(__file__))
@@ -38,13 +57,13 @@ def initialize_config():
         },
     }
 
-    # Step 1: Check if the JSON file exists; if not, create it
+
     if not os.path.exists(json_file_path):
         with open(json_file_path, "w", encoding="utf-8") as json_file:
-            json.dump(default_config_variables, json_file, indent=4, ensure_ascii=False)
-        print(f"JSON file created at {json_file_path} with default variables.")
+            formatted_json = format_json_single_line_arrays(default_config_variables)
+            json_file.write(formatted_json)
 
-    # Step 2: Ensure all default variables exist in the JSON file
+    # Ensure all default variables exist in the JSON file
     with open(json_file_path, "r", encoding="utf-8") as json_file:
         loaded_config = json.load(json_file)
 
@@ -59,7 +78,7 @@ def initialize_config():
     if updated:
         with open(json_file_path, "w", encoding="utf-8") as json_file:
             json.dump(loaded_config, json_file, indent=4, ensure_ascii=False)
-        print(f"JSON file updated with missing default variables.")
+        logging.info(f"JSON file updated with missing default variables.")
 
     return loaded_config
 
@@ -79,8 +98,13 @@ nak_str = loaded_config["nak_str"]
 ack_unknown_str = loaded_config["ack_unknown_str"]
 COLOR_CONFIG = loaded_config["COLOR_CONFIG"]
 
-# Example of using the loaded variables
+
 if __name__ == "__main__":
+    logging.basicConfig( # Run `tail -f client.log` in another terminal to view live
+    filename="default_config.log",
+    level=logging.INFO,  # DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format="%(asctime)s - %(levelname)s - %(message)s"
+    )
     print("\nLoaded Configuration:")
     print(f"Database File Path: {db_file_path}")
     print(f"Log File Path: {log_file_path}")
