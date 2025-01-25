@@ -53,7 +53,7 @@ def save_changes(interface, menu_path, modified_settings):
 
             try:
                 channel = menu_path[-1]
-                channel_num = int(channel.split()[-1])
+                channel_num = int(channel.split()[-1]) - 1
             except (IndexError, ValueError) as e:
                 channel_num = None
 
