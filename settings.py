@@ -4,10 +4,14 @@ import logging
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
 from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
-from ui.colors import setup_colors
+from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
 import globals
+
+width = 60
+save_option = "Save Changes"
+sensitive_settings = ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"]
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
     global menu_win
@@ -15,7 +19,6 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     # Calculate the dynamic height based on the number of menu items
     num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
     height = min(curses.LINES - 2, num_items + 5)  # Ensure the menu fits within the terminal height
-    width = 60
     start_y = (curses.LINES - height) // 2
     start_x = (curses.COLS - width) // 2
 
@@ -40,23 +43,34 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
         try:
             # Use red color for "Reboot" or "Shutdown"
-            color = curses.color_pair(5) if option in ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"] else curses.color_pair(1)
-
-            if idx == selected_index:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", curses.A_REVERSE | color)
-            else:
-                menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}", color)
+            color = get_color("settings_sensitive" if option in sensitive_settings else "default", reverse = (idx == selected_index))
+            menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
         except curses.error:
             pass
 
     # Show save option if applicable
     if show_save_option:
-        save_option = "Save Changes"
         save_position = height - 2
-        if selected_index == len(current_menu):
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2) | curses.A_REVERSE)
-        else:
-            menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, curses.color_pair(2))
+        menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, get_color("settings_save", reverse = (selected_index == len(current_menu))))
+
+    menu_win.refresh()
+
+def move_highlight(old_idx, new_idx, options, show_save_option, menu_win):
+
+    if(old_idx == new_idx): # no-op
+        return
+
+    max_index = len(options) + (1 if show_save_option else 0) - 1
+
+    if show_save_option and old_idx == max_index: # special case un-highlight "Save" option
+        menu_win.chgat(max_index + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save"))
+    else:
+        menu_win.chgat(old_idx + 3, 4, width - 8, get_color("settings_sensitive" if options[old_idx] in sensitive_settings else "default"))
+
+    if show_save_option and new_idx == max_index: # special case highlight "Save" option
+        menu_win.chgat(max_index + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save", reverse = True))
+    else:
+       menu_win.chgat(new_idx + 3, 4, width - 8, get_color("settings_sensitive" if options[new_idx] in sensitive_settings else "default", reverse = True))
 
     menu_win.refresh()
 
@@ -68,31 +82,42 @@ def settings_menu(stdscr, interface):
     selected_index = 0
     modified_settings = {}
     
+    need_redraw = True
+    show_save_option = False
+
     while True:
-        options = list(current_menu.keys())
+        if(need_redraw):
+            options = list(current_menu.keys())
 
-        show_save_option = (
-            len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
-        ) or (
-            len(menu_path) == 2 and "User Settings" in menu_path 
-        ) or (
-            len(menu_path) == 3 and "Channels" in menu_path
-        )
+            show_save_option = (
+                len(menu_path) > 2 and ("Radio Settings" in menu_path or "Module Settings" in menu_path)
+            ) or (
+                len(menu_path) == 2 and "User Settings" in menu_path 
+            ) or (
+                len(menu_path) == 3 and "Channels" in menu_path
+            )
 
-        # Display the menu
-        display_menu(current_menu, menu_path, selected_index, show_save_option)
+            # Display the menu
+            display_menu(current_menu, menu_path, selected_index, show_save_option)
+
+            need_redraw = False
 
         # Capture user input
         key = menu_win.getch()
 
         if key == curses.KEY_UP:
+            old_selected_index = selected_index
             selected_index = max(0, selected_index - 1)
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
             
         elif key == curses.KEY_DOWN:
+            old_selected_index = selected_index
             max_index = len(options) + (1 if show_save_option else 0) - 1
             selected_index = min(max_index, selected_index + 1)
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
+            need_redraw = True
             menu_win.clear()
             menu_win.refresh()
             if show_save_option and selected_index == len(options):
@@ -195,6 +220,7 @@ def settings_menu(stdscr, interface):
                 selected_index = 0
 
         elif key == curses.KEY_LEFT:
+            need_redraw = True
 
             menu_win.clear()
             menu_win.refresh()
