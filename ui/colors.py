@@ -1,5 +1,5 @@
 import curses
-import globals
+import default_config as config
 
 COLOR_MAP = {
     "black": curses.COLOR_BLACK,
@@ -17,18 +17,18 @@ def setup_colors():
     Initialize curses color pairs based on the COLOR_CONFIG.
     """
     curses.start_color()
-    for idx, (category, (fg_name, bg_name)) in enumerate(globals.COLOR_CONFIG.items(), start=1):
+    for idx, (category, (fg_name, bg_name)) in enumerate(config.COLOR_CONFIG.items(), start=1):
         fg = COLOR_MAP.get(fg_name.lower(), curses.COLOR_WHITE)
         bg = COLOR_MAP.get(bg_name.lower(), curses.COLOR_BLACK)
         curses.init_pair(idx, fg, bg)
-        globals.COLOR_CONFIG[category] = idx
+        config.COLOR_CONFIG[category] = idx
 
 
 def get_color(category, bold=False, reverse=False, underline=False):
     """
     Retrieve a curses color pair with optional attributes.
     """
-    color = curses.color_pair(globals.COLOR_CONFIG[category])
+    color = curses.color_pair(config.COLOR_CONFIG[category])
     if bold:
         color |= curses.A_BOLD
     if reverse:

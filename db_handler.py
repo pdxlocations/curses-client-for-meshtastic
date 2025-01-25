@@ -1,8 +1,9 @@
 import sqlite3
-import globals
 import time
 from datetime import datetime
 
+import globals
+import default_config as config
 from utilities.utils import get_name_from_number
 
 def get_table_name(channel):
@@ -14,7 +15,7 @@ def get_table_name(channel):
 def save_message_to_db(channel, user_id, message_text):
     """Save messages to the database, ensuring the table exists."""
     try:
-        with sqlite3.connect(globals.db_file_path) as db_connection:
+        with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
 
             quoted_table_name = get_table_name(channel)
@@ -51,7 +52,7 @@ def save_message_to_db(channel, user_id, message_text):
 
 def update_ack_nak(channel, timestamp, message, ack):
     try:
-        with sqlite3.connect(globals.db_file_path) as db_connection:
+        with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
             update_query = f"""
                 UPDATE {get_table_name(channel)}
@@ -76,7 +77,7 @@ from datetime import datetime
 def load_messages_from_db():
     """Load messages from the database for all channels and update globals.all_messages and globals.channel_list."""
     try:
-        with sqlite3.connect(globals.db_file_path) as db_connection:
+        with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
 
             # Retrieve all table names that match the pattern
@@ -120,18 +121,18 @@ def load_messages_from_db():
                         if hour not in hourly_messages:
                             hourly_messages[hour] = []
                         
-                        ack_str = globals.ack_unknown_str
+                        ack_str = config.ack_unknown_str
                         if ack_type == "Implicit":
-                            ack_str = globals.ack_implicit_str
+                            ack_str = config.ack_implicit_str
                         elif ack_type == "Ack":
-                            ack_str = globals.ack_str
+                            ack_str = config.ack_str
                         elif ack_type == "Nak":
-                            ack_str = globals.nak_str
+                            ack_str = config.nak_str
 
                         if user_id == str(globals.myNodeNum):
-                            formatted_message = (f"{globals.sent_message_prefix}{ack_str}: ", message)
+                            formatted_message = (f"{config.sent_message_prefix}{ack_str}: ", message)
                         else:
-                            formatted_message = (f"{globals.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
+                            formatted_message = (f"{config.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
                         
                         hourly_messages[hour].append(formatted_message)
 
@@ -150,7 +151,7 @@ def load_messages_from_db():
 def init_nodedb():
     """Initialize the node database and update it with nodes from the interface."""
     try:
-        with sqlite3.connect(globals.db_file_path) as db_connection:
+        with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
 
             # Table name construction
@@ -203,7 +204,7 @@ def init_nodedb():
 def maybe_store_nodeinfo_in_db(packet):
     """Save nodeinfo unless that record is already there."""
     try:
-        with sqlite3.connect(globals.db_file_path) as db_connection:
+        with sqlite3.connect(config.db_file_path) as db_connection:
 
             table_name = f"{str(globals.myNodeNum)}_nodedb"
             nodeinfo_table = f'"{table_name}"'  # Quote the table name becuase we might begin with numerics

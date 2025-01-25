@@ -5,6 +5,7 @@ from meshtastic.protobuf import mesh_pb2, portnums_pb2
 from utilities.utils import get_name_from_number
 import globals
 import google.protobuf.json_format
+import default_config as config
 
 ack_naks = {}
 
@@ -23,16 +24,16 @@ def onAckNak(packet):
     ack_type = None
     if(packet['decoded']['routing']['errorReason'] == "NONE"):
         if(packet['from'] == globals.myNodeNum): # Ack "from" ourself means implicit ACK
-            confirm_string = globals.ack_implicit_str
+            confirm_string = config.ack_implicit_str
             ack_type = "Implicit"
         else:
-            confirm_string = globals.ack_str
+            confirm_string = config.ack_str
             ack_type = "Ack"
     else:
-        confirm_string = globals.nak_str
+        confirm_string = config.nak_str
         ack_type = "Nak"
 
-    globals.all_messages[acknak['channel']][acknak['messageIndex']] = (globals.sent_message_prefix + confirm_string + ": ", message)
+    globals.all_messages[acknak['channel']][acknak['messageIndex']] = (config.sent_message_prefix + confirm_string + ": ", message)
 
     update_ack_nak(acknak['channel'], acknak['timestamp'], message, ack_type)
 
@@ -105,7 +106,7 @@ def on_response_traceroute(packet):
 
     if globals.channel_list[channel_number] not in globals.all_messages:
         globals.all_messages[globals.channel_list[channel_number]] = []
-    globals.all_messages[globals.channel_list[channel_number]].append((f"{globals.message_prefix} {message_from_string}", msg_str))
+    globals.all_messages[globals.channel_list[channel_number]].append((f"{config.message_prefix} {message_from_string}", msg_str))
 
     if refresh_channels:
         draw_channel_list()
@@ -158,7 +159,7 @@ def send_message(message, destination=BROADCAST_NUM, channel=0):
     if last_hour != current_hour:
         globals.all_messages[channel_id].append((f"-- {current_hour} --", ""))
 
-    globals.all_messages[channel_id].append((globals.sent_message_prefix + globals.ack_unknown_str + ": ", message))
+    globals.all_messages[channel_id].append((config.sent_message_prefix + config.ack_unknown_str + ": ", message))
 
     timestamp = save_message_to_db(channel_id, myid, message)
 
