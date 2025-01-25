@@ -1,5 +1,6 @@
 import curses
 import ipaddress
+from ui.colors import get_color
 
 def get_user_input(prompt):
     # Calculate the dynamic height and width for the input window
@@ -10,6 +11,8 @@ def get_user_input(prompt):
 
     # Create a new window for user input
     input_win = curses.newwin(height, width, start_y, start_x)
+    input_win.bkgd(get_color("background"))
+    input_win.attrset(get_color("window_frame"))
     input_win.border()
 
     # Display the prompt
@@ -54,6 +57,8 @@ def get_bool_selection(message, current_value):
     start_x = (curses.COLS - width) // 2
 
     bool_win = curses.newwin(height, width, start_y, start_x)
+    bool_win.bkgd(get_color("background"))
+    bool_win.attrset(get_color("window_frame"))
     bool_win.keypad(True)
 
     while True:
@@ -63,9 +68,9 @@ def get_bool_selection(message, current_value):
 
         for idx, option in enumerate(options):
             if idx == selected_index:
-                bool_win.addstr(idx + 3, 4, option, curses.A_REVERSE)
+                bool_win.addstr(idx + 3, 4, option, get_color("settings_default", reverse=True))
             else:
-                bool_win.addstr(idx + 3, 4, option)
+                bool_win.addstr(idx + 3, 4, option, get_color("settings_default"))
 
         bool_win.refresh()
         key = bool_win.getch()
@@ -87,6 +92,8 @@ def get_repeated_input(current_value):
     start_x = (curses.COLS - width) // 2
 
     repeated_win = curses.newwin(height, width, start_y, start_x)
+    repeated_win.bkgd(get_color("background"))
+    repeated_win.attrset(get_color("window_frame"))
     repeated_win.keypad(True)  # Enable keypad for special keys
 
     curses.echo()
@@ -128,18 +135,20 @@ def get_enum_input(options, current_value):
     start_x = (curses.COLS - width) // 2
 
     enum_win = curses.newwin(height, width, start_y, start_x)
+    enum_win.bkgd(get_color("background"))
+    enum_win.attrset(get_color("window_frame"))
     enum_win.keypad(True)
 
     while True:
         enum_win.clear()
         enum_win.border()
-        enum_win.addstr(1, 2, "Select an option:", curses.A_BOLD)
+        enum_win.addstr(1, 2, "Select an option:", get_color("settings_default", bold=True))
 
         for idx, option in enumerate(options):
             if idx == selected_index:
-                enum_win.addstr(idx + 2, 4, option, curses.A_REVERSE)
+                enum_win.addstr(idx + 2, 4, option, get_color("settings_default", reverse=True))
             else:
-                enum_win.addstr(idx + 2, 4, option)
+                enum_win.addstr(idx + 2, 4, option, get_color("settings_default"))
 
         enum_win.refresh()
         key = enum_win.getch()
@@ -163,6 +172,8 @@ def get_fixed32_input(current_value):
     start_x = (curses.COLS - width) // 2
 
     fixed32_win = curses.newwin(height, width, start_y, start_x)
+    fixed32_win.bkgd(get_color("background"))
+    fixed32_win.attrset(get_color("window_frame"))
     fixed32_win.keypad(True)
 
     curses.echo()

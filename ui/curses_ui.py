@@ -105,6 +105,7 @@ def draw_splash(stdscr):
     stdscr.addstr(start_y+2, start_x-2, message_3, get_color("splash_logo", bold=True))
     stdscr.addstr(start_y+4, start_x2, message_4, get_color("splash_text"))
     stdscr.attrset(get_color("window_frame"))
+    stdscr.bkgd(get_color("background"))
     stdscr.box()
     stdscr.refresh()
     curses.napms(500)
@@ -318,13 +319,25 @@ def main_ui(stdscr):
     messages_box = curses.newwin(height - 6, messages_width, 3, channel_width)
     nodes_box = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
 
+    entry_win.bkgd(get_color("background"))
+    channel_box.bkgd(get_color("background"))
+    messages_box.bkgd(get_color("background"))
+    nodes_box.bkgd(get_color("background"))
+
     # Will be resized to what we need when drawn
     messages_pad = curses.newpad(1, 1)
     nodes_pad = curses.newpad(1,1)
     channel_pad = curses.newpad(1,1)
 
+    messages_pad.bkgd(get_color("background"))
+    nodes_pad.bkgd(get_color("background"))
+    channel_pad.bkgd(get_color("background"))
+
     function_win = curses.newwin(3, width, height - 3, 0)
     packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
+
+    function_win.bkgd(get_color("background"))
+    packetlog_win.bkgd(get_color("background"))
 
     draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit",0 ,get_color("commands"))
 

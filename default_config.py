@@ -50,6 +50,7 @@ def initialize_config():
         "ack_unknown_str": "[…]",
         "COLOR_CONFIG": {
             "default": ["white", "black"],
+            "background": [" ", "black"],
             "splash_logo": ["green", "black"],
             "splash_text": ["white", "black"],
             "input": ["white", "black"],
