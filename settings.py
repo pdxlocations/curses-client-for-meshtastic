@@ -49,7 +49,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     if show_save_option:
         save_option = "Save Changes"
         save_position = height - 2
-        menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, get_color("settings_okay", reverse = (selected_index == len(current_menu))))
+        menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, get_color("settings_save", reverse = (selected_index == len(current_menu))))
 
     menu_win.refresh()
 
@@ -60,14 +60,14 @@ def move_highlight(old_idx, new_idx, max_idx, show_save, menu_win):
     width = 60
     save_option = "Save Changes"
     if show_save and old_idx == max_idx: # special case un-highlight "Save" option
-        menu_win.chgat(max_idx + 4, (width - len(save_option)) // 2, len(save_option), curses.color_pair(2))
+        menu_win.chgat(max_idx + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save"))
     else:
-        menu_win.chgat(old_idx + 3, 4, width - 8, curses.color_pair(1))
+        menu_win.chgat(old_idx + 3, 4, width - 8, get_color("default"))
 
     if show_save and new_idx == max_idx: # special case highlight "Save" option
-        menu_win.chgat(max_idx + 4, (width - len(save_option)) // 2, len(save_option), curses.color_pair(2) | curses.A_REVERSE)
+        menu_win.chgat(max_idx + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save", reverse = True))
     else:
-       menu_win.chgat(new_idx + 3, 4, width - 8, curses.color_pair(1) | curses.A_REVERSE )
+       menu_win.chgat(new_idx + 3, 4, width - 8, get_color("default", reverse = True))
 
     menu_win.refresh()
 

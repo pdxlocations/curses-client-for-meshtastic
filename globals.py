@@ -44,5 +44,5 @@ COLOR_CONFIG = {
     "log_header": ("blue", "black"),
     "log": ("green", "black"),
     "settings_sensitive": ("red", "black"),
-    "settings_okay": ("green", "black")
+    "settings_save": ("green", "black")
 }
