@@ -82,7 +82,7 @@ def initialize_config():
         "settings_save": ["green", "white"],
         "settings_breadcrumbs": ["black", "white"]
     }
-    COLOR_CONFIG_TTY = {
+    COLOR_CONFIG_GREEN = {
         "default": ["green", "black"],
         "background": [" ", "black"],
         "splash_logo": ["green", "black"],
@@ -118,7 +118,7 @@ def initialize_config():
         "theme": "dark",
         "COLOR_CONFIG_DARK": COLOR_CONFIG_DARK,
         "COLOR_CONFIG_LIGHT": COLOR_CONFIG_LIGHT,
-        "COLOR_CONFIG_TTY": COLOR_CONFIG_TTY
+        "COLOR_CONFIG_GREEN": COLOR_CONFIG_GREEN
     }
 
     if not os.path.exists(json_file_path):
@@ -160,8 +160,8 @@ if theme == "dark":
     COLOR_CONFIG = loaded_config["COLOR_CONFIG_DARK"]
 elif theme == "light":
     COLOR_CONFIG = loaded_config["COLOR_CONFIG_LIGHT"]
-elif theme == "tty":
-    COLOR_CONFIG = loaded_config["COLOR_CONFIG_TTY"]
+elif theme == "green":
+    COLOR_CONFIG = loaded_config["COLOR_CONFIG_GREEN"]
 
 
 if __name__ == "__main__":
