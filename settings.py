@@ -30,7 +30,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     menu_win.border()
     menu_win.keypad(True)
 
-    menu_pad = curses.newpad(len(current_menu), width - 8)
+    menu_pad = curses.newpad(len(current_menu) + 1, width - 8)
 
     # Display the current menu path as a header
     header = " > ".join(word.title() for word in menu_path)
