@@ -72,7 +72,7 @@ def move_highlight(old_idx, new_idx, options, show_save_option, menu_win):
     if show_save_option and new_idx == max_index: # special case highlight "Save" option
         menu_win.chgat(max_index + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save", reverse = True))
     else:
-       menu_win.chgat(new_idx + 3, 4, width - 8, get_color("settings_sensitive") if options[new_idx] in sensitive_settings else get_color("settings_default", reverse = True))
+       menu_win.chgat(new_idx + 3, 4, width - 8, get_color("settings_sensitive", reverse=True) if options[new_idx] in sensitive_settings else get_color("settings_default", reverse = True))
 
     menu_win.refresh()
 
