@@ -37,7 +37,74 @@ def initialize_config():
     app_directory = os.path.dirname(os.path.abspath(__file__))
     json_file_path = os.path.join(app_directory, "config.json")
 
-    # Default configuration variables
+    COLOR_CONFIG_DARK = {
+        "default": ["white", "black"],
+        "background": [" ", "black"],
+        "splash_logo": ["green", "black"],
+        "splash_text": ["white", "black"],
+        "input": ["white", "black"],
+        "node_list": ["white", "black"],
+        "channel_list": ["white", "black"],
+        "channel_selected": ["green", "black"],
+        "rx_messages": ["cyan", "black"],
+        "tx_messages": ["green", "black"],
+        "timestamps": ["white", "black"],
+        "commands": ["white", "black"],
+        "window_frame": ["white", "black"],
+        "window_frame_selected": ["green", "black"],
+        "log_header": ["blue", "black"],
+        "log": ["green", "black"],
+        "settings_default": ["white", "black"],
+        "settings_sensitive": ["red", "black"],
+        "settings_save": ["green", "black"],
+        "settings_breadcrumbs": ["white", "black"]
+    }
+
+    COLOR_CONFIG_LIGHT = {
+        "default": ["black", "white"],
+        "background": [" ", "white"],
+        "splash_logo": ["green", "white"],
+        "splash_text": ["black", "white"],
+        "input": ["black", "white"],
+        "node_list": ["black", "white"],
+        "channel_list": ["black", "white"],
+        "channel_selected": ["green", "white"],
+        "rx_messages": ["cyan", "white"],
+        "tx_messages": ["green", "white"],
+        "timestamps": ["black", "white"],
+        "commands": ["black", "white"],
+        "window_frame": ["black", "white"],
+        "window_frame_selected": ["green", "white"],
+        "log_header": ["black", "white"],
+        "log": ["blue", "white"],
+        "settings_default": ["black", "white"],
+        "settings_sensitive": ["red", "white"],
+        "settings_save": ["green", "white"],
+        "settings_breadcrumbs": ["black", "white"]
+    }
+    COLOR_CONFIG_TTY = {
+        "default": ["green", "black"],
+        "background": [" ", "black"],
+        "splash_logo": ["green", "black"],
+        "splash_text": ["green", "black"],
+        "input": ["green", "black"],
+        "node_list": ["green", "black"],
+        "channel_list": ["green", "black"],
+        "channel_selected": ["yellow", "black"],
+        "rx_messages": ["green", "black"],
+        "tx_messages": ["green", "black"],
+        "timestamps": ["green", "black"],
+        "commands": ["green", "black"],
+        "window_frame": ["green", "black"],
+        "window_frame_selected": ["yellow", "black"],
+        "log_header": ["green", "black"],
+        "log": ["green", "black"],
+        "settings_default": ["green", "black"],
+        "settings_sensitive": ["green", "black"],
+        "settings_save": ["green", "black"],
+        "settings_breadcrumbs": ["green", "black"]
+    }
+
     default_config_variables = {
         "db_file_path": os.path.join(app_directory, "client.db"),
         "log_file_path": os.path.join(app_directory, "client.log"),
@@ -48,28 +115,10 @@ def initialize_config():
         "ack_str": "[✓]",
         "nak_str": "[x]",
         "ack_unknown_str": "[…]",
-        "COLOR_CONFIG": {
-            "default": ["white", "black"],
-            "background": [" ", "black"],
-            "splash_logo": ["green", "black"],
-            "splash_text": ["white", "black"],
-            "input": ["white", "black"],
-            "node_list": ["white", "black"],
-            "channel_list": ["white", "black"],
-            "channel_selected": ["green", "black"],
-            "rx_messages": ["cyan", "black"],
-            "tx_messages": ["green", "black"],
-            "timestamps": ["white", "black"],
-            "commands": ["white", "black"],
-            "window_frame": ["white", "black"],
-            "window_frame_selected": ["green", "black"],
-            "log_header": ["blue", "black"],
-            "log": ["green", "black"],
-            "settings_default": ["white", "black"],
-            "settings_sensitive": ["red", "black"],
-            "settings_save": ["green", "black"],
-            "settings_breadcrumbs": ["white", "black"]
-        },
+        "theme": "dark",
+        "COLOR_CONFIG_DARK": COLOR_CONFIG_DARK,
+        "COLOR_CONFIG_LIGHT": COLOR_CONFIG_LIGHT,
+        "COLOR_CONFIG_TTY": COLOR_CONFIG_TTY
     }
 
     if not os.path.exists(json_file_path):
@@ -106,7 +155,13 @@ ack_implicit_str = loaded_config["ack_implicit_str"]
 ack_str = loaded_config["ack_str"]
 nak_str = loaded_config["nak_str"]
 ack_unknown_str = loaded_config["ack_unknown_str"]
-COLOR_CONFIG = loaded_config["COLOR_CONFIG"]
+theme = loaded_config["theme"]
+if theme == "dark":
+    COLOR_CONFIG = loaded_config["COLOR_CONFIG_DARK"]
+elif theme == "light":
+    COLOR_CONFIG = loaded_config["COLOR_CONFIG_LIGHT"]
+elif theme == "tty":
+    COLOR_CONFIG = loaded_config["COLOR_CONFIG_TTY"]
 
 
 if __name__ == "__main__":
