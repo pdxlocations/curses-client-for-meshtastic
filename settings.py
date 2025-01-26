@@ -81,6 +81,7 @@ def settings_menu(stdscr, interface):
     menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
     menu_path = ["Main Menu"]
+    menu_index = []
     selected_index = 0
     modified_settings = {}
     
@@ -229,6 +230,7 @@ def settings_menu(stdscr, interface):
             else:
                 current_menu = current_menu[selected_option]
                 menu_path.append(selected_option)
+                menu_index.append(selected_index)
                 selected_index = 0
 
         elif key == curses.KEY_LEFT:
@@ -245,7 +247,7 @@ def settings_menu(stdscr, interface):
                 current_menu = menu["Main Menu"]
                 for step in menu_path[1:]:
                     current_menu = current_menu.get(step, {})
-                selected_index = 0
+                selected_index = menu_index.pop()
 
         elif key == 27:  # Escape key
             menu_win.clear()
