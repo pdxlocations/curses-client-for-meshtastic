@@ -16,8 +16,8 @@ def get_user_input(prompt):
     input_win.border()
 
     # Display the prompt
-    input_win.addstr(1, 2, prompt, curses.A_BOLD)
-    input_win.addstr(3, 2, "Enter value: ")
+    input_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
+    input_win.addstr(3, 2, "Enter value: ", get_color("settings_default"))
     input_win.refresh()
 
     curses.curs_set(1)
@@ -32,11 +32,11 @@ def get_user_input(prompt):
             break
         elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace
             user_input = user_input[:-1]
-            input_win.addstr(3, 15, " " * (len(user_input) + 1))  # Clear the line
-            input_win.addstr(3, 15, user_input)
+            input_win.addstr(3, 15, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
+            input_win.addstr(3, 15, user_input, get_color("settings_default"))
         else:
             user_input += chr(key)
-            input_win.addstr(3, 15, user_input)
+            input_win.addstr(3, 15, user_input, get_color("settings_default"))
 
     curses.curs_set(0)
 
@@ -64,7 +64,7 @@ def get_bool_selection(message, current_value):
     while True:
         bool_win.clear()
         bool_win.border()
-        bool_win.addstr(1, 2, message, curses.A_BOLD)
+        bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
 
         for idx, option in enumerate(options):
             if idx == selected_index:
@@ -103,9 +103,9 @@ def get_repeated_input(current_value):
     while True:
         repeated_win.clear()
         repeated_win.border()
-        repeated_win.addstr(1, 2, "Enter comma-separated values:", curses.A_BOLD)
-        repeated_win.addstr(3, 2, f"Current: {', '.join(map(str, current_value))}")
-        repeated_win.addstr(5, 2, f"New value: {user_input}")
+        repeated_win.addstr(1, 2, "Enter comma-separated values:", get_color("settings_default", bold=True))
+        repeated_win.addstr(3, 2, f"Current: {', '.join(map(str, current_value))}", get_color("settings_default"))
+        repeated_win.addstr(5, 2, f"New value: {user_input}", get_color("settings_default"))
         repeated_win.refresh()
 
         key = repeated_win.getch()
