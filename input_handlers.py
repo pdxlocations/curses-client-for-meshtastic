@@ -60,25 +60,32 @@ def get_bool_selection(message, current_value):
     bool_win.bkgd(get_color("background"))
     bool_win.attrset(get_color("window_frame"))
     bool_win.keypad(True)
+    bool_win.clear()
+
+    bool_win.border()
+    bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
+
+    for idx, option in enumerate(options):
+        if idx == selected_index:
+            bool_win.addstr(idx + 3, 4, option, get_color("settings_default", reverse=True))
+        else:
+            bool_win.addstr(idx + 3, 4, option, get_color("settings_default"))
+
+    bool_win.refresh()
 
     while True:
-        bool_win.clear()
-        bool_win.border()
-        bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
-
-        for idx, option in enumerate(options):
-            if idx == selected_index:
-                bool_win.addstr(idx + 3, 4, option, get_color("settings_default", reverse=True))
-            else:
-                bool_win.addstr(idx + 3, 4, option, get_color("settings_default"))
-
-        bool_win.refresh()
         key = bool_win.getch()
 
         if key == curses.KEY_UP:
-            selected_index = max(0, selected_index - 1)
+            if(selected_index > 0):
+                selected_index = selected_index - 1
+                bool_win.chgat(1 + 3, 4, len(options[1]), get_color("settings_default"))
+                bool_win.chgat(0 + 3, 4, len(options[0]), get_color("settings_default", reverse = True))
         elif key == curses.KEY_DOWN:
-            selected_index = min(len(options) - 1, selected_index + 1)
+            if(selected_index < len(options) - 1):
+                selected_index = selected_index + 1
+                bool_win.chgat(0 + 3, 4, len(options[0]), get_color("settings_default"))
+                bool_win.chgat(1 + 3, 4, len(options[1]), get_color("settings_default", reverse = True))
         elif key == ord('\n'):  # Enter key
             return options[selected_index]
         elif key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
