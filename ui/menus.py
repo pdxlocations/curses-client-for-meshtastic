@@ -41,16 +41,6 @@ def generate_menu_from_protobuf(interface):
 # Function to generate the menu structure from protobuf messages
     menu_structure = {"Main Menu": {}}
 
-    # Add Radio Settings
-    radio = config_pb2.Config()
-    current_radio_config = interface.localNode.localConfig if interface else None
-    menu_structure["Main Menu"]["Radio Settings"] = extract_fields(radio, current_radio_config)
-
-    # Add Module Settings
-    module = module_config_pb2.ModuleConfig()
-    current_module_config = interface.localNode.moduleConfig if interface else None
-    menu_structure["Main Menu"]["Module Settings"] = extract_fields(module, current_module_config)
-
     # Add User Settings
     current_node_info = interface.getMyNodeInfo() if interface else None
 
@@ -81,6 +71,16 @@ def generate_menu_from_protobuf(interface):
             if current_channel:
                 channel_config = extract_fields(channel, current_channel.settings)
                 menu_structure["Main Menu"]["Channels"][f"Channel {i + 1}"] = channel_config
+
+    # Add Radio Settings
+    radio = config_pb2.Config()
+    current_radio_config = interface.localNode.localConfig if interface else None
+    menu_structure["Main Menu"]["Radio Settings"] = extract_fields(radio, current_radio_config)
+
+    # Add Module Settings
+    module = module_config_pb2.ModuleConfig()
+    current_module_config = interface.localNode.moduleConfig if interface else None
+    menu_structure["Main Menu"]["Module Settings"] = extract_fields(module, current_module_config)
 
     # Add additional settings options
     menu_structure["Main Menu"]["Reboot"] = settings_reboot
