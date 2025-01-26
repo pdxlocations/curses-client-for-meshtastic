@@ -146,24 +146,28 @@ def settings_menu(stdscr, interface):
                     settings_reboot(interface)
                     logging.info(f"Node Reboot Requested by menu")
                     break
+                continue
             elif selected_option == "Reset Node DB":
                 confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
                 if confirmation == "True":
                     settings_reset_nodedb(interface)
                     logging.info(f"Node DB Reset Requested by menu")
                     break
+                continue
             elif selected_option == "Shutdown":
                 confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
                 if confirmation == "True":
                     settings_shutdown(interface)
                     logging.info(f"Node Shutdown Requested by menu")
                     break
+                continue
             elif selected_option == "Factory Reset":
                 confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
                 if confirmation == "True":
                     settings_factory_reset(interface)
                     logging.info(f"Factory Reset Requested by menu")
                     break
+                continue
 
             field_info = current_menu.get(selected_option)
             if isinstance(field_info, tuple):
