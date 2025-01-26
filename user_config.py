@@ -1,42 +1,32 @@
 import curses
 import json
 import os
+from ui.colors import get_color, setup_colors
 from default_config import format_json_single_line_arrays
 
-def setup_colors():
-    curses.start_color()
-    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Highlight
-    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Default
 
-def get_color(key):
-    # Define a placeholder for centralized color handling
-    colors = {
-        "highlight": curses.color_pair(1),
-        "default": curses.color_pair(2),
-    }
-    return colors.get(key, curses.color_pair(2))
 
 def display_menu(window, items, selected_index, title, show_save):
     window.clear()
     height, width = window.getmaxyx()
 
-    window.addstr(0, (width - len(title)) // 2, title, get_color("default"))
+    window.addstr(0, (width - len(title)) // 2, title, get_color("settings_default"))
 
     for i, (key, value) in enumerate(items.items()):
         value_display = str(value)[:width // 2 - 4]  # Truncate if too long
         key_display = key[:width // 2 - 4]  # Truncate if too long
 
         if i == selected_index:
-            window.addstr(i + 2, 2, f"{key_display:<{width // 2 - 2}}: {value_display}", get_color("highlight"))
+            window.addstr(i + 2, 2, f"{key_display:<{width // 2 - 2}}: {value_display}", get_color("settings_default")| curses.A_REVERSE)
         else:
-            window.addstr(i + 2, 2, f"{key_display:<{width // 2 - 2}}: {value_display}", get_color("default"))
+            window.addstr(i + 2, 2, f"{key_display:<{width // 2 - 2}}: {value_display}", get_color("settings_default"))
 
     if show_save:
         save_text = "Save Changes"
         if selected_index == len(items):
-            window.addstr(height - 2, (width - len(save_text)) // 2, save_text, get_color("highlight"))
+            window.addstr(height - 2, (width - len(save_text)) // 2, save_text, get_color("settings_default") | curses.A_REVERSE)
         else:
-            window.addstr(height - 2, (width - len(save_text)) // 2, save_text, get_color("default"))
+            window.addstr(height - 2, (width - len(save_text)) // 2, save_text, get_color("settings_default"))
 
     window.refresh()
 
@@ -47,13 +37,13 @@ def select_color(window, current_color):
 
     while True:
         window.clear()
-        window.addstr(0, 2, "Select a color (Enter to confirm, ESC to cancel):", get_color("default"))
+        window.addstr(0, 2, "Select a color (Enter to confirm, ESC to cancel):", get_color("settings_default"))
 
         for i, color in enumerate(colors):
             if i == selected_index:
-                window.addstr(i + 2, 4, color, get_color("highlight"))
+                window.addstr(i + 2, 4, color, get_color("settings_default", reverse=True))
             else:
-                window.addstr(i + 2, 4, color, get_color("default"))
+                window.addstr(i + 2, 4, color, get_color("settings_default"))
 
         window.refresh()
         key = window.getch()
@@ -70,9 +60,9 @@ def select_color(window, current_color):
 def edit_value(window, key, current_value):
     curses.curs_set(1)
     window.clear()
-    window.addstr(1, 2, f"Editing {key}: (Press Enter to save, ESC to cancel)", get_color("default"))
-    window.addstr(3, 2, f"Current Value: {current_value}", get_color("default"))
-    window.addstr(5, 2, "New Value: ", get_color("default"))
+    window.addstr(1, 2, f"Editing {key}: (Press Enter to save, ESC to cancel)", get_color("settings_default"))
+    window.addstr(3, 2, f"Current Value: {current_value}", get_color("settings_default"))
+    window.addstr(5, 2, "New Value: ", get_color("settings_default"))
     window.refresh()
 
     curses.echo()
@@ -85,7 +75,7 @@ def edit_value(window, key, current_value):
 def edit_color_pair(window, key, current_value):
     curses.curs_set(0)
     window.clear()
-    window.addstr(1, 2, f"Editing {key} (foreground/background):", get_color("default"))
+    window.addstr(1, 2, f"Editing {key} (foreground/background):", get_color("settings_default"))
     window.refresh()
 
     fg_color = select_color(window, current_value[0])
@@ -99,7 +89,7 @@ def save_json(file_path, data):
         f.write(formatted_json)
 
 def nested_menu(stdscr, data, menu_path, file_path):
-    setup_colors()
+
     curses.curs_set(0)
 
     selected_index = 0
@@ -120,7 +110,7 @@ def nested_menu(stdscr, data, menu_path, file_path):
         elif key == ord("\n"):
             if selected_index == len(keys):  # Save option selected
                 save_json(file_path, data)
-                stdscr.addstr(height - 4, 2, "Changes saved successfully!", get_color("default"))
+                stdscr.addstr(height - 4, 2, "Changes saved successfully!", get_color("settings_default"))
                 stdscr.refresh()
                 curses.napms(1500)
             else:
@@ -151,7 +141,9 @@ def main_menu_handler(stdscr, menu_structure, file_path):
 
 
 def main():
+
     curses.wrapper(json_editor, "config.json")
+    setup_colors()
 
 if __name__ == "__main__":
     main()
