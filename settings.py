@@ -188,6 +188,7 @@ def settings_menu(stdscr, interface):
                 if selected_option in ['longName', 'shortName', 'isLicensed']:
                     if selected_option in ['longName', 'shortName']:
                         new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                        new_value = current_value if new_value is None else new_value
                         current_menu[selected_option] = (field, new_value)
 
                     elif selected_option == 'isLicensed':
@@ -233,7 +234,7 @@ def settings_menu(stdscr, interface):
                 modified_settings[selected_option] = new_value
 
                 # Convert enum string to int
-                if field.enum_type:
+                if field and field.enum_type:
                     enum_value_descriptor = field.enum_type.values_by_number.get(new_value)
                     new_value = enum_value_descriptor.name if enum_value_descriptor else new_value
 
