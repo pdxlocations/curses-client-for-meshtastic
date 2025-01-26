@@ -298,7 +298,8 @@ def draw_packetlog_win():
 
             # Add to the window
             packetlog_win.addstr(i + 2, 1, logString, get_color("log"))
-
+            
+        packetlog_win.attrset(get_color("window_frame"))
         packetlog_win.box()
         packetlog_win.refresh()
 
