@@ -82,6 +82,9 @@ def generate_menu_from_protobuf(interface):
     current_module_config = interface.localNode.moduleConfig if interface else None
     menu_structure["Main Menu"]["Module Settings"] = extract_fields(module, current_module_config)
 
+    # Add App Settings
+    menu_structure["Main Menu"]["App Settings"] = {"Open": "app_settings"}
+
     # Add additional settings options
     menu_structure["Main Menu"]["Reboot"] = settings_reboot
     menu_structure["Main Menu"]["Reset Node DB"] = settings_reset_nodedb

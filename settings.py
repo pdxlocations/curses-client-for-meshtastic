@@ -7,6 +7,7 @@ from input_handlers import get_bool_selection, get_repeated_input, get_user_inpu
 from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
+from user_config import json_editor
 import globals
 
 width = 60
@@ -167,6 +168,10 @@ def settings_menu(stdscr, interface):
                     settings_factory_reset(interface)
                     logging.info(f"Factory Reset Requested by menu")
                     break
+                continue
+            elif selected_option == "App Settings":
+                json_editor(stdscr, "config.json")  # Open the App Settings menu
+                need_redraw = True
                 continue
 
             field_info = current_menu.get(selected_option)
