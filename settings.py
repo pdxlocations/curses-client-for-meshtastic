@@ -187,9 +187,12 @@ def settings_menu(stdscr, interface):
                     break
                 continue
             elif selected_option == "App Settings":
-                json_editor(stdscr, "config.json")  # Open the App Settings menu
-                need_redraw = True
+                menu_win.clear()
+                menu_win.refresh()
+                json_editor(stdscr)  # Open the App Settings menu
                 continue
+                # need_redraw = True
+                
 
             field_info = current_menu.get(selected_option)
             if isinstance(field_info, tuple):
