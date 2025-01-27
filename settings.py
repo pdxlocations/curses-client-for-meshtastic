@@ -24,7 +24,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
 
     # Create a new curses window with dynamic dimensions
     menu_win = curses.newwin(height, width, start_y, start_x)
-    menu_win.clear()
+    menu_win.erase()
     menu_win.bkgd(get_color("background"))
     menu_win.attrset(get_color("window_frame"))
     menu_win.border()
@@ -137,11 +137,11 @@ def settings_menu(stdscr, interface):
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
             need_redraw = True
-            menu_win.clear()
+            menu_win.erase()
             menu_win.refresh()
             if show_save_option and selected_index == len(options):
                 save_changes(interface, menu_path, modified_settings)
-                modified_settings.clear()
+                modified_settings.erase()
                 logging.info("Changes Saved")
 
                 if len(menu_path) > 1:
@@ -253,7 +253,7 @@ def settings_menu(stdscr, interface):
         elif key == curses.KEY_LEFT:
             need_redraw = True
 
-            menu_win.clear()
+            menu_win.erase()
             menu_win.refresh()
 
             modified_settings.clear()
@@ -267,7 +267,7 @@ def settings_menu(stdscr, interface):
                 selected_index = menu_index.pop()
 
         elif key == 27:  # Escape key
-            menu_win.clear()
+            menu_win.erase()
             menu_win.refresh()
             break
 

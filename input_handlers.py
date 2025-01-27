@@ -41,7 +41,7 @@ def get_user_input(prompt):
     curses.curs_set(0)
 
     # Clear the input window
-    input_win.clear()
+    input_win.erase()
     input_win.refresh()
     return user_input
 
@@ -60,7 +60,7 @@ def get_bool_selection(message, current_value):
     bool_win.bkgd(get_color("background"))
     bool_win.attrset(get_color("window_frame"))
     bool_win.keypad(True)
-    bool_win.clear()
+    bool_win.erase()
 
     bool_win.border()
     bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
@@ -108,7 +108,7 @@ def get_repeated_input(current_value):
     user_input = ""
 
     while True:
-        repeated_win.clear()
+        repeated_win.erase()
         repeated_win.border()
         repeated_win.addstr(1, 2, "Enter comma-separated values:", get_color("settings_default", bold=True))
         repeated_win.addstr(3, 2, f"Current: {', '.join(map(str, current_value))}", get_color("settings_default"))
@@ -164,7 +164,7 @@ def get_enum_input(options, current_value):
 
     enum_pad = curses.newpad(len(options) + 1, width - 8)
 
-    enum_win.clear()
+    enum_win.erase()
     enum_win.border()
     enum_win.addstr(1, 2, "Select an option:", get_color("settings_default", bold=True))
 
@@ -214,7 +214,7 @@ def get_fixed32_input(current_value):
     user_input = ""
 
     while True:
-        fixed32_win.clear()
+        fixed32_win.erase()
         fixed32_win.border()
         fixed32_win.addstr(1, 2, "Enter an IP address (xxx.xxx.xxx.xxx):", curses.A_BOLD)
         fixed32_win.addstr(3, 2, f"Current: {current_value}")
