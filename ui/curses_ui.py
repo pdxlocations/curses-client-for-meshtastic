@@ -8,6 +8,13 @@ import ui.dialog
 from ui.colors import setup_colors, get_color
 import default_config as config
 
+def refresh_all():
+    for i, box in enumerate([channel_box, messages_box, nodes_box]):
+        box.attrset(get_color("window_frame_selected") if globals.current_window == i else get_color("window_frame"))
+        box.box()
+        box.refresh()
+        refresh_pad(i)
+
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
     return messages_box.getmaxyx()[0] - 2 - packetlog_height
@@ -496,9 +503,7 @@ def main_ui(stdscr):
             curses.curs_set(0)  # Hide cursor
             ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
             curses.curs_set(1)  # Show cursor again
-            draw_channel_list()
-            draw_messages_window()
-            draw_node_list()
+            refresh_all()
 
         elif char in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             if globals.current_window == 2:
@@ -538,9 +543,7 @@ def main_ui(stdscr):
             curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
             curses.curs_set(1)
-            draw_channel_list()
-            draw_messages_window()
-            draw_node_list()
+            refresh_all()
         
         elif char == chr(16):
             # Display packet log
