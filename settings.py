@@ -118,16 +118,21 @@ def settings_menu(stdscr, interface):
         # Capture user input
         key = menu_win.getch()
 
+        max_index = len(options) + (1 if show_save_option else 0) - 1
+
         if key == curses.KEY_UP:
             old_selected_index = selected_index
-            max_index = len(options) + (1 if show_save_option else 0) - 1
             selected_index = max_index if selected_index == 0 else selected_index - 1
             move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
             
         elif key == curses.KEY_DOWN:
             old_selected_index = selected_index
-            max_index = len(options) + (1 if show_save_option else 0) - 1
             selected_index = 0 if selected_index == max_index else selected_index + 1
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
+
+        elif key == ord("\t") and show_save_option:
+            old_selected_index = selected_index
+            selected_index = max_index
             move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
