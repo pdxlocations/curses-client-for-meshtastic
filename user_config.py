@@ -98,53 +98,58 @@ def edit_color_pair(window, key, current_value):
 width = 60
 
 def render_menu(current_data, menu_path, selected_index):
-        # Calculate the dynamic height based on menu items
-        num_items = len(current_data)
-        height = min(curses.LINES - 2, num_items + 5)
-        start_y = (curses.LINES - height) // 2
-        start_x = (curses.COLS - width) // 2
+    # Calculate the dynamic height based on menu items + 1 for "Save" button
+    num_items = len(current_data) + 1  # Add 1 for the "Save" button
+    height = min(curses.LINES - 2, num_items + 5)
+    start_y = (curses.LINES - height) // 2
+    start_x = (curses.COLS - width) // 2
 
-        # Create window
-        menu_win = curses.newwin(height, width, start_y, start_x)
-        menu_win.clear()
-        menu_win.bkgd(get_color("background"))
-        menu_win.attrset(get_color("window_frame"))
-        menu_win.border()
-        menu_win.keypad(True)
+    # Create window
+    menu_win = curses.newwin(height, width, start_y, start_x)
+    menu_win.clear()
+    menu_win.bkgd(get_color("background"))
+    menu_win.attrset(get_color("window_frame"))
+    menu_win.border()
+    menu_win.keypad(True)
 
-        # Display the menu path
-        header = " > ".join(menu_path)
-        if len(header) > width - 4:
-            header = header[:width - 7] + "..."
-        menu_win.addstr(1, 2, header, get_color("settings_breadcrumbs", bold=True))
+    # Display the menu path
+    header = " > ".join(menu_path)
+    if len(header) > width - 4:
+        header = header[:width - 7] + "..."
+    menu_win.addstr(1, 2, header, get_color("settings_breadcrumbs", bold=True))
 
-        # Display menu options
-        menu_pad = curses.newpad(num_items + 1, width - 8)
-        for idx, key in enumerate(current_data):
-            value = current_data[key] if isinstance(current_data, dict) else key
+    # Display menu options
+    menu_pad = curses.newpad(num_items + 1, width - 8)
+    keys = list(current_data.keys())  # Extract keys for indexing
+    for idx, key in enumerate(keys):
+        value = current_data[key]
 
-            # Truncate long keys and values
-            max_key_len = width // 2 - 4  # Allow space for padding
-            max_value_len = width // 2 - 6
-            display_key = f"{key}"[:max_key_len]
-            display_value = f"{value}"[:max_value_len] if not isinstance(value, (dict, list)) else "[...]"
+        # Truncate long keys and values
+        max_key_len = width // 2 - 4  # Allow space for padding
+        max_value_len = width // 2 - 6
+        display_key = f"{key}"[:max_key_len]
+        display_value = f"{value}"[:max_value_len] if not isinstance(value, (dict, list)) else "[...]"
 
-            color = get_color("settings_default", reverse=(idx == selected_index))
-            try:
-                menu_pad.addstr(
-                    idx,
-                    0,
-                    f"{display_key:<{max_key_len}} {display_value}".ljust(width - 8),
-                    color,
-                )
-            except curses.error:
-                pass  # Safeguard against edge cases
+        color = get_color("settings_default", reverse=(idx == selected_index))
+        try:
+            menu_pad.addstr(
+                idx,
+                0,
+                f"{display_key:<{max_key_len}} {display_value}".ljust(width - 8),
+                color,
+            )
+        except curses.error:
+            pass  # Safeguard against edge cases
 
-        # Refresh window and pad
-        menu_win.refresh()
-        menu_pad.refresh(0, 0, start_y + 3, start_x + 4, start_y + height - 3, start_x + width - 4)
+    # Add "Save" button
+    save_color = get_color("settings_save", reverse=(selected_index == len(keys)))
+    menu_pad.addstr(len(keys), 0, "Save".center(width - 8), save_color)
 
-        return menu_win, menu_pad
+    # Refresh window and pad
+    menu_win.refresh()
+    menu_pad.refresh(0, 0, start_y + 3, start_x + 4, start_y + height - 3, start_x + width - 4)
+
+    return menu_win, menu_pad, keys
 
 def json_editor(stdscr):
     menu_path = ["App Settings"]
@@ -161,10 +166,11 @@ def json_editor(stdscr):
     with open(file_path, "r") as f:
         data = json.load(f)
 
+    modified_settings = {}  # Collect modified settings
+
     while True:
         # Render menu
-        keys = list(data.keys()) if isinstance(data, dict) else range(len(data))
-        menu_win, menu_pad = render_menu(data, menu_path, selected_index)
+        menu_win, menu_pad, keys = render_menu(data, menu_path, selected_index)
 
         # Handle user input
         key = menu_win.getch()
@@ -172,17 +178,24 @@ def json_editor(stdscr):
         if key == curses.KEY_UP:
             selected_index = max(0, selected_index - 1)
         elif key == curses.KEY_DOWN:
-            selected_index = min(len(keys) - 1, selected_index + 1)
+            selected_index = min(len(keys), selected_index + 2)  # Include "Save" button
         elif key in (curses.KEY_RIGHT, ord("\n")):
-            selected_key = keys[selected_index]
-            if isinstance(data[selected_key], (dict, list)):
-                menu_path.append(str(selected_key))
-                data = data[selected_key]
-                selected_index = 0
+            if selected_index < len(keys):  # Handle key selection
+                selected_key = keys[selected_index]
+                if isinstance(data[selected_key], (dict, list)):
+                    menu_path.append(str(selected_key))
+                    data = data[selected_key]
+                    selected_index = 0
+                else:
+                    # Edit the value
+                    new_value = edit_value(stdscr, selected_key, data[selected_key])
+                    data[selected_key] = new_value
+                    modified_settings[selected_key] = new_value
             else:
-                # Edit the value
-                new_value = edit_value(stdscr, selected_key, data[selected_key])
-                data[selected_key] = new_value
+                save_json(file_path, data)
+                stdscr.refresh()
+                stdscr.getch()
+                break  # Exit App Settings and return to main menu
         elif key in (27, curses.KEY_LEFT):  # ESC or Left Arrow
             if len(menu_path) > 1:
                 # Go back one level
@@ -197,15 +210,13 @@ def json_editor(stdscr):
                 menu_win.clear()
                 menu_win.refresh()
                 break
-        elif key == ord("s"):
-            save_json(file_path, data)
-            stdscr.addstr(curses.LINES - 2, 2, "Changes saved! Press any key to continue...", curses.A_BOLD)
-            stdscr.refresh()
-            stdscr.getch()
 
 
     # Save changes on exit
+    menu_win.clear()
+    menu_win.refresh()
     save_json(file_path, data)
+
 
 def save_json(file_path, data):
     formatted_json = format_json_single_line_arrays(data)
@@ -216,11 +227,7 @@ def save_json(file_path, data):
 def main(stdscr):
     curses.curs_set(0)
     stdscr.keypad(True)
-
-    # Initialize colors
-    # setup_colors()
-
-    # Launch JSON editor
+    setup_colors()
     json_editor(stdscr)
 
 
