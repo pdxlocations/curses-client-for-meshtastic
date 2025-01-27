@@ -496,6 +496,9 @@ def main_ui(stdscr):
             curses.curs_set(0)  # Hide cursor
             ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
             curses.curs_set(1)  # Show cursor again
+            draw_channel_list()
+            draw_messages_window()
+            draw_node_list()
 
         elif char in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             if globals.current_window == 2:
@@ -535,6 +538,9 @@ def main_ui(stdscr):
             curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
             curses.curs_set(1)
+            draw_channel_list()
+            draw_messages_window()
+            draw_node_list()
         
         elif char == chr(16):
             # Display packet log
