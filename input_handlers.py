@@ -60,25 +60,32 @@ def get_bool_selection(message, current_value):
     bool_win.bkgd(get_color("background"))
     bool_win.attrset(get_color("window_frame"))
     bool_win.keypad(True)
+    bool_win.clear()
+
+    bool_win.border()
+    bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
+
+    for idx, option in enumerate(options):
+        if idx == selected_index:
+            bool_win.addstr(idx + 3, 4, option, get_color("settings_default", reverse=True))
+        else:
+            bool_win.addstr(idx + 3, 4, option, get_color("settings_default"))
+
+    bool_win.refresh()
 
     while True:
-        bool_win.clear()
-        bool_win.border()
-        bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
-
-        for idx, option in enumerate(options):
-            if idx == selected_index:
-                bool_win.addstr(idx + 3, 4, option, get_color("settings_default", reverse=True))
-            else:
-                bool_win.addstr(idx + 3, 4, option, get_color("settings_default"))
-
-        bool_win.refresh()
         key = bool_win.getch()
 
         if key == curses.KEY_UP:
-            selected_index = max(0, selected_index - 1)
+            if(selected_index > 0):
+                selected_index = selected_index - 1
+                bool_win.chgat(1 + 3, 4, len(options[1]), get_color("settings_default"))
+                bool_win.chgat(0 + 3, 4, len(options[0]), get_color("settings_default", reverse = True))
         elif key == curses.KEY_DOWN:
-            selected_index = min(len(options) - 1, selected_index + 1)
+            if(selected_index < len(options) - 1):
+                selected_index = selected_index + 1
+                bool_win.chgat(0 + 3, 4, len(options[0]), get_color("settings_default"))
+                bool_win.chgat(1 + 3, 4, len(options[1]), get_color("settings_default", reverse = True))
         elif key == ord('\n'):  # Enter key
             return options[selected_index]
         elif key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
@@ -126,6 +133,22 @@ def get_repeated_input(current_value):
             except ValueError:
                 pass  # Ignore invalid character inputs
 
+def move_highlight(old_idx, new_idx, options, enum_win, enum_pad):
+    if old_idx == new_idx:
+        return # no-op
+
+    enum_pad.chgat(old_idx, 0, enum_pad.getmaxyx()[1], get_color("settings_default"))
+    enum_pad.chgat(new_idx, 0, enum_pad.getmaxyx()[1], get_color("settings_default", reverse = True))
+
+    enum_win.refresh()
+
+    start_index = max(0, new_idx - (enum_win.getmaxyx()[0] - 4))
+
+    enum_win.refresh()
+    enum_pad.refresh(start_index, 0,
+                     enum_win.getbegyx()[0] + 2, enum_win.getbegyx()[1] + 4,
+                     enum_win.getbegyx()[0] + enum_win.getmaxyx()[0] - 2, enum_win.getbegyx()[1] + 4 + enum_win.getmaxyx()[1] - 4)
+
 def get_enum_input(options, current_value):
     selected_index = options.index(current_value) if current_value in options else 0
 
@@ -139,24 +162,34 @@ def get_enum_input(options, current_value):
     enum_win.attrset(get_color("window_frame"))
     enum_win.keypad(True)
 
+    enum_pad = curses.newpad(len(options) + 1, width - 8)
+
+    enum_win.clear()
+    enum_win.border()
+    enum_win.addstr(1, 2, "Select an option:", get_color("settings_default", bold=True))
+
+    for idx, option in enumerate(options):
+        if idx == selected_index:
+            enum_pad.addstr(idx, 0, option.ljust(width - 8), get_color("settings_default", reverse=True))
+        else:
+            enum_pad.addstr(idx, 0, option.ljust(width - 8), get_color("settings_default"))
+
+    enum_win.refresh()
+    enum_pad.refresh(0, 0,
+                     enum_win.getbegyx()[0] + 2, enum_win.getbegyx()[1] + 4,
+                     enum_win.getbegyx()[0] + enum_win.getmaxyx()[0] - 2, enum_win.getbegyx()[1] + enum_win.getmaxyx()[1] - 4)
+
     while True:
-        enum_win.clear()
-        enum_win.border()
-        enum_win.addstr(1, 2, "Select an option:", get_color("settings_default", bold=True))
-
-        for idx, option in enumerate(options):
-            if idx == selected_index:
-                enum_win.addstr(idx + 2, 4, option, get_color("settings_default", reverse=True))
-            else:
-                enum_win.addstr(idx + 2, 4, option, get_color("settings_default"))
-
-        enum_win.refresh()
         key = enum_win.getch()
 
         if key == curses.KEY_UP:
+            old_selected_index = selected_index
             selected_index = max(0, selected_index - 1)
+            move_highlight(old_selected_index, selected_index, options, enum_win, enum_pad)
         elif key == curses.KEY_DOWN:
+            old_selected_index = selected_index
             selected_index = min(len(options) - 1, selected_index + 1)
+            move_highlight(old_selected_index, selected_index, options, enum_win, enum_pad)
         elif key == ord('\n'):  # Enter key
             return options[selected_index]
         elif key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow

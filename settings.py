@@ -15,7 +15,7 @@ save_option = "Save Changes"
 sensitive_settings = ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"]
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
-    global menu_win
+    global menu_win, menu_pad
 
     # Calculate the dynamic height based on the number of menu items
     num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
@@ -30,6 +30,8 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     menu_win.attrset(get_color("window_frame"))
     menu_win.border()
     menu_win.keypad(True)
+
+    menu_pad = curses.newpad(len(current_menu) + 1, width - 8)
 
     # Display the current menu path as a header
     header = " > ".join(word.title() for word in menu_path)
@@ -47,7 +49,7 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
         try:
             # Use red color for "Reboot" or "Shutdown"
             color = get_color("settings_sensitive" if option in sensitive_settings else "settings_default", reverse = (idx == selected_index))
-            menu_win.addstr(idx + 3, 4, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
+            menu_pad.addstr(idx, 0, f"{display_option:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
         except curses.error:
             pass
 
@@ -57,6 +59,9 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
         menu_win.addstr(save_position, (width - len(save_option)) // 2, save_option, get_color("settings_save", reverse = (selected_index == len(current_menu))))
 
     menu_win.refresh()
+    menu_pad.refresh(0, 0,
+                     menu_win.getbegyx()[0] + 3, menu_win.getbegyx()[1] + 4,
+                     menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
 
 def move_highlight(old_idx, new_idx, options, show_save_option, menu_win):
 
@@ -66,22 +71,28 @@ def move_highlight(old_idx, new_idx, options, show_save_option, menu_win):
     max_index = len(options) + (1 if show_save_option else 0) - 1
 
     if show_save_option and old_idx == max_index: # special case un-highlight "Save" option
-        menu_win.chgat(max_index + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save"))
+        menu_win.chgat(menu_win.getmaxyx()[0] - 2, (width - len(save_option)) // 2, len(save_option), get_color("settings_save"))
     else:
-        menu_win.chgat(old_idx + 3, 4, width - 8, get_color("settings_sensitive") if options[old_idx] in sensitive_settings else get_color("settings_default"))
+        menu_pad.chgat(old_idx, 0, menu_pad.getmaxyx()[1], get_color("settings_sensitive") if options[old_idx] in sensitive_settings else get_color("settings_default"))
 
     if show_save_option and new_idx == max_index: # special case highlight "Save" option
-        menu_win.chgat(max_index + 4, (width - len(save_option)) // 2, len(save_option), get_color("settings_save", reverse = True))
+        menu_win.chgat(menu_win.getmaxyx()[0] - 2, (width - len(save_option)) // 2, len(save_option), get_color("settings_save", reverse = True))
     else:
-       menu_win.chgat(new_idx + 3, 4, width - 8, get_color("settings_sensitive", reverse=True) if options[new_idx] in sensitive_settings else get_color("settings_default", reverse = True))
+       menu_pad.chgat(new_idx, 0,menu_pad.getmaxyx()[1], get_color("settings_sensitive", reverse=True) if options[new_idx] in sensitive_settings else get_color("settings_default", reverse = True))
 
     menu_win.refresh()
+
+    start_index = max(0, new_idx - (menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0)) - (1 if show_save_option and new_idx == max_index else 0))  # Leave room for borders
+    menu_pad.refresh(start_index, 0,
+                     menu_win.getbegyx()[0] + 3, menu_win.getbegyx()[1] + 4,
+                     menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
 
 def settings_menu(stdscr, interface):
 
     menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
     menu_path = ["Main Menu"]
+    menu_index = []
     selected_index = 0
     modified_settings = {}
     
@@ -108,15 +119,21 @@ def settings_menu(stdscr, interface):
         # Capture user input
         key = menu_win.getch()
 
+        max_index = len(options) + (1 if show_save_option else 0) - 1
+
         if key == curses.KEY_UP:
             old_selected_index = selected_index
-            selected_index = max(0, selected_index - 1)
+            selected_index = max_index if selected_index == 0 else selected_index - 1
             move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
             
         elif key == curses.KEY_DOWN:
             old_selected_index = selected_index
-            max_index = len(options) + (1 if show_save_option else 0) - 1
-            selected_index = min(max_index, selected_index + 1)
+            selected_index = 0 if selected_index == max_index else selected_index + 1
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
+
+        elif key == ord("\t") and show_save_option:
+            old_selected_index = selected_index
+            selected_index = max_index
             move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
@@ -181,6 +198,7 @@ def settings_menu(stdscr, interface):
                 if selected_option in ['longName', 'shortName', 'isLicensed']:
                     if selected_option in ['longName', 'shortName']:
                         new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                        new_value = current_value if new_value is None else new_value
                         current_menu[selected_option] = (field, new_value)
 
                     elif selected_option == 'isLicensed':
@@ -226,7 +244,7 @@ def settings_menu(stdscr, interface):
                 modified_settings[selected_option] = new_value
 
                 # Convert enum string to int
-                if field.enum_type:
+                if field and field.enum_type:
                     enum_value_descriptor = field.enum_type.values_by_number.get(new_value)
                     new_value = enum_value_descriptor.name if enum_value_descriptor else new_value
 
@@ -234,6 +252,7 @@ def settings_menu(stdscr, interface):
             else:
                 current_menu = current_menu[selected_option]
                 menu_path.append(selected_option)
+                menu_index.append(selected_index)
                 selected_index = 0
 
         elif key == curses.KEY_LEFT:
@@ -250,7 +269,7 @@ def settings_menu(stdscr, interface):
                 current_menu = menu["Main Menu"]
                 for step in menu_path[1:]:
                     current_menu = current_menu.get(step, {})
-                selected_index = 0
+                selected_index = menu_index.pop()
 
         elif key == 27:  # Escape key
             menu_win.clear()
