@@ -12,7 +12,7 @@ def edit_color_pair(key, current_value):
     """
     Allows the user to select a foreground and background color for a key.
     """
-    colors = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
+    colors = [" ", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
     fg_color = select_color_from_list(f"Select Foreground Color for {key}", current_value[0], colors)
     bg_color = select_color_from_list(f"Select Background Color for {key}", current_value[1], colors)
 
