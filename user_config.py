@@ -69,8 +69,8 @@ def select_color_from_list(prompt, current_color, colors):
                 selected_index += 1
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
-
             return colors[selected_index]
+        
         elif key == curses.KEY_LEFT or key == 27:  # ESC key
             return current_color
 
@@ -244,27 +244,31 @@ def json_editor(stdscr):
         menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
     )
 
-
+    need_redraw = True
     while True:
-
-
-
         key = menu_win.getch()
-        # max_index = len(options) + (1 if show_save_option else 0) - 1
+        if(need_redraw):
+            menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
+            need_redraw = False
+
 
         if key == curses.KEY_UP:
-            # selected_index = max_index if selected_index == 0 else selected_index - 1
             old_selected_index = selected_index
             selected_index = max(0, selected_index - 1)
             move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
 
         elif key == curses.KEY_DOWN:
-            # selected_index = 0 if selected_index == max_index else selected_index + 1
+
             old_selected_index = selected_index
             selected_index = min(len(options) - 1, selected_index + 1)
             move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
+
+            need_redraw = True
+            menu_win.erase()
+            menu_win.refresh()
+
             if selected_index < len(options):  # Handle selection of a menu item
                 selected_key = options[selected_index]
 
@@ -297,10 +301,15 @@ def json_editor(stdscr):
                 # Save button selected
                 save_json(file_path, data)
                 stdscr.refresh()
-                stdscr.getch()
+                # stdscr.getch()
                 continue
 
         elif key in (27, curses.KEY_LEFT):  # Escape or Left Arrow
+
+            need_redraw = True
+            menu_win.erase()
+            menu_win.refresh()
+
             # Navigate back in the menu
             if len(menu_path) > 1:
                 menu_path.pop()
