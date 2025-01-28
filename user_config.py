@@ -87,7 +87,7 @@ def select_color_from_list(prompt, current_color, colors):
                         color_win.getbegyx()[0] + 3, color_win.getbegyx()[1] + 4,
                         color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
 
-def edit_value(parent_window, key, current_value):
+def edit_value(key, current_value):
     width = 60
     height = 10
     input_width = width - 16  # Allow space for "New Value: "
@@ -276,19 +276,14 @@ def json_editor(stdscr):
 
     # Render the menu
     menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
-
     need_redraw = True
 
-
     while True:
-
         if(need_redraw):
-            
             menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
             menu_win.refresh()
             need_redraw = False
             
-
         max_index = len(options) + (1 if show_save_option else 0) - 1
         key = menu_win.getch()
 
@@ -343,10 +338,9 @@ def json_editor(stdscr):
 
                 else:
                     # General value editing
-                    new_value = edit_value(stdscr, selected_key, selected_data)
+                    new_value = edit_value(selected_key, selected_data)
                     current_data[selected_key] = new_value
                     need_redraw = True
-
 
             else:
                 # Save button selected
@@ -373,9 +367,6 @@ def json_editor(stdscr):
                 menu_win.refresh()
                 break
 
-    # Final cleanup
-    # menu_win.clear()
-    # menu_win.refresh()
 
 def save_json(file_path, data):
     formatted_json = format_json_single_line_arrays(data)
