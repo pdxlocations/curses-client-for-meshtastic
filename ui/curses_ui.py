@@ -35,6 +35,10 @@ def refresh_pad(window):
         selected_item = globals.selected_message
         start_index = globals.selected_message
 
+        if globals.display_log:
+            packetlog_win.box()
+            packetlog_win.refresh()
+
     if(window == 2):
         pad = nodes_pad
         box = nodes_box
