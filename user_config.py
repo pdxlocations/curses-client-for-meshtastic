@@ -305,6 +305,10 @@ def json_editor(stdscr):
             selected_index = 0 if selected_index == max_index else selected_index + 1
             move_highlight(old_selected_index, selected_index, options, menu_win, menu_pad)
 
+        elif key == ord("\t") and show_save_option:
+            old_selected_index = selected_index
+            selected_index = max_index
+            move_highlight(old_selected_index, selected_index, options, menu_win, menu_pad)
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
 
