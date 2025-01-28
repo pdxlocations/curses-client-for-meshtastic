@@ -101,12 +101,14 @@ def edit_value(parent_window, key, current_value):
     edit_win.border()
 
     # Display instructions
-    edit_win.addstr(1, 2, f"Editing {key}:", get_color("settings_default", bold=True))
-    edit_win.addstr(2, 2, "Press Enter when done or ESC to cancel.", get_color("settings_default"))
+    edit_win.addstr(1, 2, f"Editing {key}", get_color("settings_default", bold=True))
+    # edit_win.addstr(2, 2, "Press Enter when done or ESC to cancel.", get_color("settings_default"))
 
     # Properly wrap `current_value` by characters
     wrap_width = width - 4  # Account for border and padding
     wrapped_lines = [current_value[i:i+wrap_width] for i in range(0, len(current_value), wrap_width)]
+
+    edit_win.addstr(3, 2, "Current Value: ", get_color("settings_default"))
 
     for i, line in enumerate(wrapped_lines[:4]):  # Limit display to fit the window height
         edit_win.addstr(4 + i, 2, line, get_color("settings_default"))
@@ -128,21 +130,25 @@ def edit_value(parent_window, key, current_value):
 
         edit_win.move(7, 13 + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
 
-        key = edit_win.getch()
+        # key = edit_win.getch()
+        key = edit_win.get_wch()
 
-        if key in (27, curses.KEY_LEFT):  # ESC or Left Arrow
+        if key in (chr(27), curses.KEY_LEFT):  # ESC or Left Arrow
             curses.curs_set(0)
             return current_value  # Exit without returning a value
-        elif key == ord('\n'):  # Enter key
+        elif key in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             break
-        elif key in (curses.KEY_BACKSPACE, 127):  # Backspace
+        elif key in (curses.KEY_BACKSPACE, chr(127)):  # Backspace
             if user_input:  # Only process if there's something to delete
                 user_input = user_input[:-1]
                 if scroll_offset > 0 and len(user_input) < scroll_offset + input_width:
                     scroll_offset -= 1  # Move back if text is shorter than scrolled area
         else:
-            char = chr(key)
-            user_input += char
+            # Append typed character to input text
+            if(isinstance(key, str)):
+                user_input += key
+            else:
+                user_input += chr(key)
 
             if len(user_input) > input_width:  # Scroll if input exceeds visible area
                 scroll_offset += 1
