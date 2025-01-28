@@ -1,4 +1,5 @@
 import globals
+from datetime import datetime
 from meshtastic.protobuf import config_pb2
 import re
 
@@ -69,3 +70,36 @@ def get_name_from_number(number, type='long'):
                 pass
     # If no match is found, use the ID as a string
     return str(decimal_to_hex(number))
+
+def get_time_ago(timestamp):
+    now = datetime.now()
+    dt = datetime.fromtimestamp(timestamp)
+    delta = now - dt
+
+    value = 0
+    unit = ""
+
+    if delta.days > 365:
+        value = delta.days // 365
+        unit = "y"
+    elif delta.days > 30:
+        value = delta.days // 30
+        unit = "mon"
+    elif delta.days > 7:
+        value = delta.days // 7
+        unit = "w"
+    elif delta.days > 0:
+        value = delta.days
+        unit = "d"
+    elif delta.seconds > 3600:
+        value = delta.seconds // 3600
+        unit = "h"
+    elif delta.seconds > 60:
+        value = delta.seconds // 60
+        unit = "min"
+
+    if len(unit) > 0:
+        return f"{value} {unit} ago"
+
+    return "now"
+
