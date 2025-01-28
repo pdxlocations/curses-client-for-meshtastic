@@ -247,21 +247,41 @@ def json_editor(stdscr):
     need_redraw = True
     while True:
         key = menu_win.getch()
+        max_index = len(options) + (1 if show_save_option else 0) - 1
         if(need_redraw):
             menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
             need_redraw = False
 
 
+
+
+
+
+
+
         if key == curses.KEY_UP:
+
             old_selected_index = selected_index
-            selected_index = max(0, selected_index - 1)
+            # selected_index = max(0, selected_index - 1)
+            selected_index = max_index if selected_index == 0 else selected_index - 1
             move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
 
         elif key == curses.KEY_DOWN:
 
+
             old_selected_index = selected_index
-            selected_index = min(len(options) - 1, selected_index + 1)
+            # selected_index = min(len(options) - 1, selected_index + 1)
+            selected_index = 0 if selected_index == max_index else selected_index + 1
             move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
+
+
+
+
+
+
+
+
+
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
 
