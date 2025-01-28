@@ -377,6 +377,7 @@ def save_json(file_path, data):
     formatted_json = format_json_single_line_arrays(data)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(formatted_json)
+    setup_colors(reinit=True)
 
 def main(stdscr):
     curses.curs_set(0)
