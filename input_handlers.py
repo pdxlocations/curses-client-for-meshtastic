@@ -163,7 +163,8 @@ def get_enum_input(options, current_value):
     enum_win.keypad(True)
 
     enum_pad = curses.newpad(len(options) + 1, width - 8)
-
+    enum_pad.bkgd(get_color("background"))
+    
     enum_win.erase()
     enum_win.border()
     enum_win.addstr(1, 2, "Select an option:", get_color("settings_default", bold=True))
