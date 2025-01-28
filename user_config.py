@@ -5,19 +5,21 @@ from ui.colors import get_color, setup_colors
 from default_config import format_json_single_line_arrays
 
 width = 60
+save_option_text = "Save Changes"
 
-def edit_color_pair(window, key, current_value):
+def edit_color_pair(key, current_value):
+
     """
     Allows the user to select a foreground and background color for a key.
     """
     colors = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
-    fg_color = select_color_from_list(window, f"Select Foreground Color for {key}", current_value[0], colors)
-    bg_color = select_color_from_list(window, f"Select Background Color for {key}", current_value[1], colors)
+    fg_color = select_color_from_list(f"Select Foreground Color for {key}", current_value[0], colors)
+    bg_color = select_color_from_list(f"Select Background Color for {key}", current_value[1], colors)
 
     return [fg_color, bg_color]
 
 
-def select_color_from_list(window, prompt, current_color, colors):
+def select_color_from_list(prompt, current_color, colors):
     """
     Displays a scrollable list of colors for the user to choose from using a pad.
     """
@@ -86,25 +88,6 @@ def select_color_from_list(window, prompt, current_color, colors):
                         color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
 
 
-def move_highlight(old_idx, new_idx, options, menu_win, menu_pad):
-    if old_idx == new_idx:
-        return # no-op
-    show_save_option = True
-    max_index = len(options) + (1 if show_save_option else 0) - 1
-
-    menu_pad.chgat(old_idx, 0, menu_pad.getmaxyx()[1], get_color("settings_default"))
-    menu_pad.chgat(new_idx, 0, menu_pad.getmaxyx()[1], get_color("settings_default", reverse = True))
-
-    menu_win.refresh()
-
-    start_index = max(0, new_idx - (menu_win.getmaxyx()[0] - 4))
-
-
-    start_index = max(0, new_idx - (menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0)) - (1 if show_save_option and new_idx == max_index else 0))  # Leave room for borders
-    menu_pad.refresh(start_index, 0,
-                     menu_win.getbegyx()[0] + 3, menu_win.getbegyx()[1] + 4,
-                     menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
-
 
 def edit_value(parent_window, key, current_value):
     width = 60
@@ -142,6 +125,7 @@ def edit_value(parent_window, key, current_value):
                 edit_win.addstr(6, 13, " " * (width - 15))  # Clear the line
                 edit_win.addstr(6, 13, "".join(input_buffer))  # Reprint the buffer
                 edit_win.refresh()
+
         elif key == curses.KEY_RIGHT or key == ord('\n'):
             new_value = "".join(input_buffer)  # Save the input
             break
@@ -170,8 +154,6 @@ def render_menu(current_data, menu_path, selected_index):
     else:
         options = []  # Fallback in case of unexpected data types
 
-    show_save_option = True  # Always show the Save button
-    save_option_text = "Save Changes"
 
     # Calculate dynamic dimensions for the menu
     num_items = len(options)
@@ -201,7 +183,7 @@ def render_menu(current_data, menu_path, selected_index):
         value = current_data[key] if isinstance(current_data, dict) else current_data[int(key.strip("[]"))]
         display_key = f"{key}"[:width // 2 - 2]
         display_value = (
-            f"{value}"[:width // 2 - 4]
+            f"{value}"[:width // 2 - 8]
         )
 
         color = get_color("settings_default", reverse=(idx == selected_index))
@@ -247,17 +229,12 @@ def json_editor(stdscr):
 
         # Refresh menu and pad
         menu_win.refresh()
-
-        # Visible lines for scrolling
-        visible_lines = menu_win.getmaxyx()[0] - 5  # Space for borders and header
-        scroll_offset = max(0, selected_index - visible_lines // 2)
-
         menu_pad.refresh(
-            scroll_offset,
+            0,
             0,
             menu_win.getbegyx()[0] + 3,
             menu_win.getbegyx()[1] + 4,
-            menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 5,
+            menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
             menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
         )
 
@@ -265,11 +242,9 @@ def json_editor(stdscr):
         max_index = len(options) + (1 if show_save_option else 0) - 1
 
         if key == curses.KEY_UP:
-            # Move up in the menu
             selected_index = max_index if selected_index == 0 else selected_index - 1
 
         elif key == curses.KEY_DOWN:
-            # Move down in the menu
             selected_index = 0 if selected_index == max_index else selected_index + 1
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
@@ -285,13 +260,13 @@ def json_editor(stdscr):
                 elif isinstance(current_data, list):
                     selected_data = current_data[int(selected_key.strip("[]"))]
 
-
-
                     
                 if isinstance(selected_data, list) and len(selected_data) == 2:
                     # Edit color pair
-                    new_value = edit_color_pair(stdscr, selected_key, selected_data)
+                    new_value = edit_color_pair(
+                        selected_key, selected_data)
                     current_data[selected_key] = new_value
+
 
                 elif isinstance(selected_data, (dict, list)):
                     # Navigate into nested data
@@ -307,10 +282,9 @@ def json_editor(stdscr):
             else:
                 # Save button selected
                 save_json(file_path, data)
-                stdscr.addstr(curses.LINES - 2, 2, "Settings saved! Press any key to continue...", curses.A_BOLD)
                 stdscr.refresh()
                 stdscr.getch()
-                break  # Exit the editor
+                continue
 
         elif key in (27, curses.KEY_LEFT):  # Escape or Left Arrow
             # Navigate back in the menu
