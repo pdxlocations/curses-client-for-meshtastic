@@ -2,7 +2,7 @@ import curses
 import json
 import os
 from ui.colors import get_color, setup_colors
-from default_config import format_json_single_line_arrays
+from default_config import format_json_single_line_arrays, loaded_config
 
 width = 60
 save_option_text = "Save Changes"
@@ -112,9 +112,10 @@ def edit_value(key, current_value):
 
     edit_win.refresh()
 
-    # **Handle theme selection using select_from_list**
+    # Handle theme selection dynamically
     if key == "theme":
-        theme_options = ["dark", "light", "green"]
+        # Load theme names dynamically from the JSON
+        theme_options = [k.split("_", 2)[2].lower() for k in loaded_config.keys() if k.startswith("COLOR_CONFIG")]
         return select_color_from_list("Select Theme", current_value, theme_options)
 
     # Standard Input Mode (Scrollable)
