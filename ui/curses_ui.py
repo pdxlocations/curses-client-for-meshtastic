@@ -125,7 +125,7 @@ def draw_splash(stdscr):
 
 
 def draw_channel_list():
-    channel_pad.clear()
+    channel_pad.erase()
     win_height, win_width = channel_box.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))  # Leave room for borders
 
@@ -159,7 +159,7 @@ def draw_channel_list():
 
 def draw_messages_window(scroll_to_bottom = False):
     """Update the messages window based on the selected channel and scroll position."""
-    messages_pad.clear()
+    messages_pad.erase()
 
     channel = globals.channel_list[globals.selected_channel]
 
@@ -201,7 +201,7 @@ def draw_messages_window(scroll_to_bottom = False):
     draw_packetlog_win()
 
 def draw_node_list():
-    nodes_pad.clear()
+    nodes_pad.erase()
     win_height = nodes_box.getmaxyx()[0]
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
 
@@ -276,7 +276,7 @@ def draw_packetlog_win():
     span = 0
 
     if globals.display_log:
-        packetlog_win.clear()
+        packetlog_win.erase()
         height, width = packetlog_win.getmaxyx()
         
         for column in columns[:-1]:
@@ -531,8 +531,7 @@ def main_ui(stdscr):
 
                 # Clear entry window and reset input text
                 input_text = ""
-                entry_win.clear()       
-                # entry_win.refresh()
+                entry_win.erase()
 
         elif char in (curses.KEY_BACKSPACE, chr(127)):
             if input_text:
@@ -556,7 +555,7 @@ def main_ui(stdscr):
                 draw_messages_window(True)
             else:
                 globals.display_log = False
-                packetlog_win.clear()
+                packetlog_win.erase()
                 draw_messages_window(True)
         else:
             # Append typed character to input text
