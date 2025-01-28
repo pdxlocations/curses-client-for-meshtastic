@@ -1,7 +1,7 @@
 import curses
 import textwrap
 import globals
-from utilities.utils import get_name_from_number, get_channels
+from utilities.utils import get_name_from_number, get_channels, get_time_ago
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 import ui.dialog
@@ -14,6 +14,43 @@ def refresh_all():
         box.box()
         box.refresh()
         refresh_pad(i)
+
+def draw_node_details():
+    nodes_snapshot = list(globals.interface.nodes.values())
+
+    node = None
+    for node in nodes_snapshot:
+        if globals.node_list[globals.selected_node] == node['num']:
+            break
+
+    function_win.erase()
+    function_win.box()
+
+    nodestr = ""
+    width = function_win.getmaxyx()[1]
+    node_details_list = [f"{node['user']['longName']}"
+                           if 'user' in node and 'longName' in node['user'] else "",
+                         f"({node['user']['shortName']})"
+                           if 'user' in node and 'shortName' in node['user'] else "",
+                         f" | {node['user']['hwModel']}"
+                           if 'user' in node and 'hwModel' in node['user'] else "",
+                         f" | {get_time_ago(node['lastHeard'])}" if 'lastHeard' in node else "",
+                         f" | Hops: {node['hopsAway']}" if 'hopsAway' in node else "",
+                         f" | SNR: {node['snr']}dB"
+                           if ('snr' in node and 'hopsAway' in node and node['hopsAway'] == 0)
+                           else "",
+                         ]
+
+    for s in node_details_list:
+        if len(nodestr) + len(s) < width:
+            nodestr = nodestr + s
+
+    draw_centered_text_field(function_win, nodestr, 0, get_color("commands"))
+
+def draw_function_win():
+    draw_centered_text_field(function_win,
+                             f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit",
+                             0, get_color("commands"))
 
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
@@ -34,6 +71,10 @@ def refresh_pad(window):
         lines = get_msg_window_lines()
         selected_item = globals.selected_message
         start_index = globals.selected_message
+
+        if globals.display_log:
+            packetlog_win.box()
+            packetlog_win.refresh()
 
     if(window == 2):
         pad = nodes_pad
@@ -121,7 +162,7 @@ def draw_splash(stdscr):
 
 
 def draw_channel_list():
-    channel_pad.clear()
+    channel_pad.erase()
     win_height, win_width = channel_box.getmaxyx()
     start_index = max(0, globals.selected_channel - (win_height - 3))  # Leave room for borders
 
@@ -155,7 +196,7 @@ def draw_channel_list():
 
 def draw_messages_window(scroll_to_bottom = False):
     """Update the messages window based on the selected channel and scroll position."""
-    messages_pad.clear()
+    messages_pad.erase()
 
     channel = globals.channel_list[globals.selected_channel]
 
@@ -197,7 +238,7 @@ def draw_messages_window(scroll_to_bottom = False):
     draw_packetlog_win()
 
 def draw_node_list():
-    nodes_pad.clear()
+    nodes_pad.erase()
     win_height = nodes_box.getmaxyx()[0]
     start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
 
@@ -256,6 +297,8 @@ def select_node(idx):
     highlight_line(True, 2, globals.selected_node)
     refresh_pad(2)
 
+    draw_node_details()
+
 def scroll_nodes(direction):
     new_selected_node = globals.selected_node + direction
 
@@ -272,7 +315,7 @@ def draw_packetlog_win():
     span = 0
 
     if globals.display_log:
-        packetlog_win.clear()
+        packetlog_win.erase()
         height, width = packetlog_win.getmaxyx()
         
         for column in columns[:-1]:
@@ -349,7 +392,7 @@ def main_ui(stdscr):
     function_win.bkgd(get_color("background"))
     packetlog_win.bkgd(get_color("background"))
 
-    draw_centered_text_field(function_win, f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit",0 ,get_color("commands"))
+    draw_function_win()
 
     # Draw boxes around windows
 
@@ -466,6 +509,7 @@ def main_ui(stdscr):
                 messages_box.refresh()
                 refresh_pad(1)
             elif old_window == 2:
+                draw_function_win()
                 nodes_box.attrset(get_color("window_frame"))
                 nodes_box.box()
                 nodes_box.refresh()
@@ -486,6 +530,7 @@ def main_ui(stdscr):
                 messages_box.refresh()
                 refresh_pad(1)
             elif globals.current_window == 2:
+                draw_node_details()
                 nodes_box.attrset(get_color("window_frame_selected"))
                 nodes_box.box()
                 nodes_box.attrset(get_color("window_frame"))
@@ -527,8 +572,7 @@ def main_ui(stdscr):
 
                 # Clear entry window and reset input text
                 input_text = ""
-                entry_win.clear()       
-                # entry_win.refresh()
+                entry_win.erase()
 
         elif char in (curses.KEY_BACKSPACE, chr(127)):
             if input_text:
@@ -552,7 +596,7 @@ def main_ui(stdscr):
                 draw_messages_window(True)
             else:
                 globals.display_log = False
-                packetlog_win.clear()
+                packetlog_win.erase()
                 draw_messages_window(True)
         else:
             # Append typed character to input text
