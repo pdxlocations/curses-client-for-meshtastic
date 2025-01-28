@@ -191,6 +191,24 @@ def render_menu(current_data, menu_path, selected_index):
 
     return menu_win, menu_pad, options
 
+def move_highlight(old_idx, new_idx, menu_win, enum_pad):
+    if old_idx == new_idx:
+        return # no-op
+
+    enum_pad.chgat(old_idx, 0, enum_pad.getmaxyx()[1], get_color("settings_default"))
+    enum_pad.chgat(new_idx, 0, enum_pad.getmaxyx()[1], get_color("settings_default", reverse = True))
+
+    menu_win.refresh()
+
+    start_index = max(0, new_idx - (menu_win.getmaxyx()[0] - 6))
+
+    menu_win.refresh()
+    enum_pad.refresh(start_index, 0,
+                     menu_win.getbegyx()[0] + 3,
+                     menu_win.getbegyx()[1] + 4,
+                     menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
+                     menu_win.getbegyx()[1] + 4 + menu_win.getmaxyx()[1] - 4)
+
 
 def json_editor(stdscr):
     menu_path = ["App Settings"]
@@ -211,29 +229,40 @@ def json_editor(stdscr):
     data = original_data  # Reference to the original data
     current_data = data  # Track the current level of the menu
 
-    while True:
-        # Render the menu
-        menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
+    # Render the menu
+    menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
 
-        # Refresh menu and pad
-        menu_win.refresh()
-        menu_pad.refresh(
-            0,
-            0,
-            menu_win.getbegyx()[0] + 3,
-            menu_win.getbegyx()[1] + 4,
-            menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
-            menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
-        )
+    # Refresh menu and pad
+    menu_win.refresh()
+    menu_pad.refresh(
+        0,
+        0,
+        menu_win.getbegyx()[0] + 3,
+        menu_win.getbegyx()[1] + 4,
+        
+        menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
+        menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
+    )
+
+
+    while True:
+
+
 
         key = menu_win.getch()
-        max_index = len(options) + (1 if show_save_option else 0) - 1
+        # max_index = len(options) + (1 if show_save_option else 0) - 1
 
         if key == curses.KEY_UP:
-            selected_index = max_index if selected_index == 0 else selected_index - 1
+            # selected_index = max_index if selected_index == 0 else selected_index - 1
+            old_selected_index = selected_index
+            selected_index = max(0, selected_index - 1)
+            move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
 
         elif key == curses.KEY_DOWN:
-            selected_index = 0 if selected_index == max_index else selected_index + 1
+            # selected_index = 0 if selected_index == max_index else selected_index + 1
+            old_selected_index = selected_index
+            selected_index = min(len(options) - 1, selected_index + 1)
+            move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
             if selected_index < len(options):  # Handle selection of a menu item
