@@ -25,7 +25,7 @@ def select_color_from_list(prompt, current_color, colors):
     """
     selected_index = colors.index(current_color) if current_color in colors else 0
 
-    height = min(len(colors) + 4, curses.LINES - 2)
+    height = min(len(colors) + 5, curses.LINES - 2)
     width = 60
     start_y = (curses.LINES - height) // 2
     start_x = (curses.COLS - width) // 2
@@ -41,7 +41,7 @@ def select_color_from_list(prompt, current_color, colors):
     color_win.clear()
     color_win.border()
     color_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
-    color_win.addstr(2, 2, "Use UP/DOWN to navigate, ENTER to confirm, ESC to cancel.", get_color("settings_default"))
+    # color_win.addstr(2, 2, "Use UP/DOWN to navigate, ENTER to confirm, ESC to cancel.", get_color("settings_default"))
 
     # Render color options on the pad
     for idx, color in enumerate(colors):
@@ -52,26 +52,26 @@ def select_color_from_list(prompt, current_color, colors):
 
     # Initial refresh
     color_win.refresh()
-    scroll_offset = 0
-    visible_lines = height - 4  # Space for padding and border
+    color_pad.refresh(0, 0,
+                    color_win.getbegyx()[0] + 3, color_win.getbegyx()[1] + 4,
+                    color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
 
     while True:
         key = color_win.getch()
 
         if key == curses.KEY_UP:
+
             if selected_index > 0:
                 selected_index -= 1
-                if selected_index < scroll_offset:
-                    scroll_offset -= 1
+
         elif key == curses.KEY_DOWN:
             if selected_index < len(colors) - 1:
                 selected_index += 1
-                if selected_index >= scroll_offset + visible_lines:
-                    scroll_offset += 1
+
         elif key == curses.KEY_RIGHT or key == ord('\n'):
 
             return colors[selected_index]
-        elif key == 27:  # ESC key
+        elif key == curses.KEY_LEFT or key == 27:  # ESC key
             return current_color
 
         # Refresh the pad with updated selection and scroll offset
@@ -84,7 +84,7 @@ def select_color_from_list(prompt, current_color, colors):
 
         color_win.refresh()
         color_pad.refresh(0, 0,
-                        color_win.getbegyx()[0] + 2, color_win.getbegyx()[1] + 4,
+                        color_win.getbegyx()[0] + 3, color_win.getbegyx()[1] + 4,
                         color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
 
 
@@ -108,38 +108,29 @@ def edit_value(parent_window, key, current_value):
     edit_win.addstr(6, 2, "New Value: ", get_color("settings_default"))
     edit_win.refresh()
 
-    curses.curs_set(1)  # Show the cursor for input
-    curses.echo()
 
-    new_value = None  # Default to None if ESC is pressed
-    input_buffer = []  # To build the input dynamically
+    curses.curs_set(1)
 
+    user_input = ""
     while True:
-        char = edit_win.getch()
-
-        if char == 27:  # ESC key
+        key = edit_win.getch(6, 13 + len(user_input))  # Adjust cursor position dynamically
+        if key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
+            curses.curs_set(0)
+            return None  # Exit without returning a value
+        elif key == ord('\n'):  # Enter key
             break
-        elif char == curses.KEY_BACKSPACE or char == 127:  # Handle backspace
-            if input_buffer:
-                input_buffer.pop()
-                edit_win.addstr(6, 13, " " * (width - 15))  # Clear the line
-                edit_win.addstr(6, 13, "".join(input_buffer))  # Reprint the buffer
-                edit_win.refresh()
-
-        elif key == curses.KEY_RIGHT or key == ord('\n'):
-            new_value = "".join(input_buffer)  # Save the input
-            break
+        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace
+            user_input = user_input[:-1]
+            edit_win.addstr(6, 13, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
+            edit_win.addstr(6, 13, user_input, get_color("settings_default"))
         else:
-            if len(input_buffer) < (width - 15):  # Prevent overflow
-                input_buffer.append(chr(char))
-                edit_win.addstr(6, 13 + len(input_buffer) - 1, chr(char))
-                edit_win.refresh()
+            user_input += chr(key)
+            edit_win.addstr(6, 13, user_input, get_color("settings_default"))
 
-    curses.noecho()
     curses.curs_set(0)
 
     # Return the new value, or None if ESC was pressed
-    return current_value if new_value is None else new_value
+    return current_value if user_input is None else user_input
 
 
 def render_menu(current_data, menu_path, selected_index):
@@ -189,7 +180,6 @@ def render_menu(current_data, menu_path, selected_index):
         color = get_color("settings_default", reverse=(idx == selected_index))
         menu_pad.addstr(idx, 0, f"{display_key:<{width // 2 - 2}} {display_value}".ljust(width - 8), color)
 
-
     # Add Save button to the main window
     save_button_position = height - 2
     menu_win.addstr(
@@ -199,9 +189,7 @@ def render_menu(current_data, menu_path, selected_index):
         get_color("settings_save", reverse=(selected_index == len(options))),
     )
 
-
     return menu_win, menu_pad, options
-
 
 
 def json_editor(stdscr):
@@ -260,20 +248,17 @@ def json_editor(stdscr):
                 elif isinstance(current_data, list):
                     selected_data = current_data[int(selected_key.strip("[]"))]
 
-                    
                 if isinstance(selected_data, list) and len(selected_data) == 2:
                     # Edit color pair
                     new_value = edit_color_pair(
                         selected_key, selected_data)
                     current_data[selected_key] = new_value
 
-
                 elif isinstance(selected_data, (dict, list)):
                     # Navigate into nested data
                     menu_path.append(str(selected_key))
                     current_data = selected_data
                     selected_index = 0  # Reset the selected index
-
 
                 else:
                     # General value editing
@@ -309,13 +294,11 @@ def save_json(file_path, data):
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(formatted_json)
 
-
 def main(stdscr):
     curses.curs_set(0)
     stdscr.keypad(True)
     setup_colors()
     json_editor(stdscr)
-
 
 if __name__ == "__main__":
     curses.wrapper(main)
