@@ -189,21 +189,51 @@ def render_menu(current_data, menu_path, selected_index):
         get_color("settings_save", reverse=(selected_index == len(options))),
     )
 
+    # Refresh menu and pad
+    menu_win.refresh()
+    menu_pad.refresh(
+        0,
+        0,
+        menu_win.getbegyx()[0] + 3,
+        menu_win.getbegyx()[1] + 4,
+        
+        menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
+        menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
+    )
+
+
+
+
     return menu_win, menu_pad, options
 
-def move_highlight(old_idx, new_idx, menu_win, enum_pad):
+
+
+
+
+
+
+def move_highlight(old_idx, new_idx, options, menu_win, menu_pad):
     if old_idx == new_idx:
         return # no-op
 
-    enum_pad.chgat(old_idx, 0, enum_pad.getmaxyx()[1], get_color("settings_default"))
-    enum_pad.chgat(new_idx, 0, enum_pad.getmaxyx()[1], get_color("settings_default", reverse = True))
+    show_save_option = True
 
-    menu_win.refresh()
+    max_index = len(options) + (1 if show_save_option else 0) - 1
+
+    if show_save_option and old_idx == max_index: # special case un-highlight "Save" option
+        menu_win.chgat(menu_win.getmaxyx()[0] - 2, (width - len(save_option_text)) // 2, len(save_option_text), get_color("settings_save"))
+    else:
+        menu_pad.chgat(old_idx, 0, menu_pad.getmaxyx()[1], get_color("settings_default"))
+
+    if show_save_option and new_idx == max_index: # special case highlight "Save" option
+        menu_win.chgat(menu_win.getmaxyx()[0] - 2, (width - len(save_option_text)) // 2, len(save_option_text), get_color("settings_save", reverse = True))
+    else:
+       menu_pad.chgat(new_idx, 0,menu_pad.getmaxyx()[1], get_color("settings_default", reverse = True))
 
     start_index = max(0, new_idx - (menu_win.getmaxyx()[0] - 6))
 
     menu_win.refresh()
-    enum_pad.refresh(start_index, 0,
+    menu_pad.refresh(start_index, 0,
                      menu_win.getbegyx()[0] + 3,
                      menu_win.getbegyx()[1] + 4,
                      menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
@@ -232,55 +262,33 @@ def json_editor(stdscr):
     # Render the menu
     menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
 
-    # Refresh menu and pad
-    menu_win.refresh()
-    menu_pad.refresh(
-        0,
-        0,
-        menu_win.getbegyx()[0] + 3,
-        menu_win.getbegyx()[1] + 4,
-        
-        menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 3,
-        menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
-    )
-
     need_redraw = True
+
+
     while True:
-        key = menu_win.getch()
-        max_index = len(options) + (1 if show_save_option else 0) - 1
+
         if(need_redraw):
+            
             menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
+            menu_win.refresh()
             need_redraw = False
+            
 
-
-
-
-
-
+        max_index = len(options) + (1 if show_save_option else 0) - 1
+        key = menu_win.getch()
 
 
         if key == curses.KEY_UP:
 
             old_selected_index = selected_index
-            # selected_index = max(0, selected_index - 1)
             selected_index = max_index if selected_index == 0 else selected_index - 1
-            move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
+            move_highlight(old_selected_index, selected_index, options, menu_win, menu_pad)
 
         elif key == curses.KEY_DOWN:
 
-
             old_selected_index = selected_index
-            # selected_index = min(len(options) - 1, selected_index + 1)
             selected_index = 0 if selected_index == max_index else selected_index + 1
-            move_highlight(old_selected_index, selected_index, menu_win, menu_pad)
-
-
-
-
-
-
-
-
+            move_highlight(old_selected_index, selected_index, options, menu_win, menu_pad)
 
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
@@ -288,6 +296,7 @@ def json_editor(stdscr):
             need_redraw = True
             menu_win.erase()
             menu_win.refresh()
+
 
             if selected_index < len(options):  # Handle selection of a menu item
                 selected_key = options[selected_index]
@@ -317,11 +326,13 @@ def json_editor(stdscr):
                     # General value editing
                     new_value = edit_value(stdscr, selected_key, selected_data)
                     current_data[selected_key] = new_value
+                    need_redraw = True
+
+
             else:
                 # Save button selected
                 save_json(file_path, data)
                 stdscr.refresh()
-                # stdscr.getch()
                 continue
 
         elif key in (27, curses.KEY_LEFT):  # Escape or Left Arrow
@@ -344,8 +355,8 @@ def json_editor(stdscr):
                 break
 
     # Final cleanup
-    menu_win.clear()
-    menu_win.refresh()
+    # menu_win.clear()
+    # menu_win.refresh()
 
 def save_json(file_path, data):
     formatted_json = format_json_single_line_arrays(data)
