@@ -87,11 +87,10 @@ def select_color_from_list(prompt, current_color, colors):
                         color_win.getbegyx()[0] + 3, color_win.getbegyx()[1] + 4,
                         color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
 
-
-
 def edit_value(parent_window, key, current_value):
     width = 60
-    height = 8
+    height = 10
+    input_width = width - 16  # Allow space for "New Value: "
     start_y = (curses.LINES - height) // 2
     start_x = (curses.COLS - width) // 2
 
@@ -101,36 +100,56 @@ def edit_value(parent_window, key, current_value):
     edit_win.attrset(get_color("window_frame"))
     edit_win.border()
 
-    # Display instructions and current value
+    # Display instructions
     edit_win.addstr(1, 2, f"Editing {key}:", get_color("settings_default", bold=True))
-    edit_win.addstr(2, 2, "Press Enter to save or ESC to cancel.", get_color("settings_default"))
-    edit_win.addstr(4, 2, f"Current Value: {current_value}", get_color("settings_default"))
-    edit_win.addstr(6, 2, "New Value: ", get_color("settings_default"))
-    edit_win.refresh()
+    edit_win.addstr(2, 2, "Press Enter when done or ESC to cancel.", get_color("settings_default"))
 
+    # Properly wrap `current_value` by characters
+    wrap_width = width - 4  # Account for border and padding
+    wrapped_lines = [current_value[i:i+wrap_width] for i in range(0, len(current_value), wrap_width)]
+
+    for i, line in enumerate(wrapped_lines[:4]):  # Limit display to fit the window height
+        edit_win.addstr(4 + i, 2, line, get_color("settings_default"))
+
+    edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))
+    edit_win.refresh()
 
     curses.curs_set(1)
 
+    # User input handling with scrolling
     user_input = ""
+    scroll_offset = 0  # Determines which part of the text is visible
+
     while True:
-        key = edit_win.getch(6, 13 + len(user_input))  # Adjust cursor position dynamically
-        if key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
+        visible_text = user_input[scroll_offset:scroll_offset + input_width]  # Only show what fits
+        edit_win.addstr(7, 13, " " * input_width, get_color("settings_default"))  # Clear previous text
+        edit_win.addstr(7, 13, visible_text, get_color("settings_default"))  # Display text
+        edit_win.refresh()
+
+        edit_win.move(7, 13 + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
+
+        key = edit_win.getch()
+
+        if key in (27, curses.KEY_LEFT):  # ESC or Left Arrow
             curses.curs_set(0)
-            return None  # Exit without returning a value
+            return current_value  # Exit without returning a value
         elif key == ord('\n'):  # Enter key
             break
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace
-            user_input = user_input[:-1]
-            edit_win.addstr(6, 13, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
-            edit_win.addstr(6, 13, user_input, get_color("settings_default"))
+        elif key in (curses.KEY_BACKSPACE, 127):  # Backspace
+            if user_input:  # Only process if there's something to delete
+                user_input = user_input[:-1]
+                if scroll_offset > 0 and len(user_input) < scroll_offset + input_width:
+                    scroll_offset -= 1  # Move back if text is shorter than scrolled area
         else:
-            user_input += chr(key)
-            edit_win.addstr(6, 13, user_input, get_color("settings_default"))
+            char = chr(key)
+            user_input += char
+
+            if len(user_input) > input_width:  # Scroll if input exceeds visible area
+                scroll_offset += 1
 
     curses.curs_set(0)
 
-    # Return the new value, or None if ESC was pressed
-    return current_value if user_input is None else user_input
+    return user_input if user_input else current_value
 
 
 def render_menu(current_data, menu_path, selected_index):
@@ -144,7 +163,6 @@ def render_menu(current_data, menu_path, selected_index):
         options = [f"[{i}]" for i in range(len(current_data))]
     else:
         options = []  # Fallback in case of unexpected data types
-
 
     # Calculate dynamic dimensions for the menu
     num_items = len(options)
@@ -201,15 +219,7 @@ def render_menu(current_data, menu_path, selected_index):
         menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
     )
 
-
-
-
     return menu_win, menu_pad, options
-
-
-
-
-
 
 
 def move_highlight(old_idx, new_idx, options, menu_win, menu_pad):
