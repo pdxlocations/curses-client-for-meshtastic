@@ -36,12 +36,12 @@ def select_color_from_list(prompt, current_color, colors):
     color_win.keypad(True)
 
     color_pad = curses.newpad(len(colors) + 1, width - 8)
+    color_pad.bkgd(get_color("background"))
 
     # Render header
     color_win.clear()
     color_win.border()
     color_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
-    # color_win.addstr(2, 2, "Use UP/DOWN to navigate, ENTER to confirm, ESC to cancel.", get_color("settings_default"))
 
     # Render color options on the pad
     for idx, color in enumerate(colors):
@@ -102,23 +102,25 @@ def edit_value(parent_window, key, current_value):
 
     # Display instructions
     edit_win.addstr(1, 2, f"Editing {key}", get_color("settings_default", bold=True))
-    # edit_win.addstr(2, 2, "Press Enter when done or ESC to cancel.", get_color("settings_default"))
+    edit_win.addstr(3, 2, "Current Value:", get_color("settings_default"))
 
-    # Properly wrap `current_value` by characters
     wrap_width = width - 4  # Account for border and padding
     wrapped_lines = [current_value[i:i+wrap_width] for i in range(0, len(current_value), wrap_width)]
-
-    edit_win.addstr(3, 2, "Current Value: ", get_color("settings_default"))
 
     for i, line in enumerate(wrapped_lines[:4]):  # Limit display to fit the window height
         edit_win.addstr(4 + i, 2, line, get_color("settings_default"))
 
-    edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))
     edit_win.refresh()
 
+    # **Handle theme selection using select_from_list**
+    if key == "theme":
+        theme_options = ["dark", "light", "green"]
+        return select_color_from_list("Select Theme", current_value, theme_options)
+
+    # Standard Input Mode (Scrollable)
+    edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))
     curses.curs_set(1)
 
-    # User input handling with scrolling
     user_input = ""
     scroll_offset = 0  # Determines which part of the text is visible
 
@@ -129,8 +131,6 @@ def edit_value(parent_window, key, current_value):
         edit_win.refresh()
 
         edit_win.move(7, 13 + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
-
-        # key = edit_win.getch()
         key = edit_win.get_wch()
 
         if key in (chr(27), curses.KEY_LEFT):  # ESC or Left Arrow
@@ -144,8 +144,7 @@ def edit_value(parent_window, key, current_value):
                 if scroll_offset > 0 and len(user_input) < scroll_offset + input_width:
                     scroll_offset -= 1  # Move back if text is shorter than scrolled area
         else:
-            # Append typed character to input text
-            if(isinstance(key, str)):
+            if isinstance(key, str):
                 user_input += key
             else:
                 user_input += chr(key)
@@ -154,7 +153,6 @@ def edit_value(parent_window, key, current_value):
                 scroll_offset += 1
 
     curses.curs_set(0)
-
     return user_input if user_input else current_value
 
 
@@ -192,6 +190,7 @@ def render_menu(current_data, menu_path, selected_index):
 
     # Create the pad for scrolling
     menu_pad = curses.newpad(num_items + 1, width - 8)
+    menu_pad.bkgd(get_color("background"))
 
     # Populate the pad with menu options
     for idx, key in enumerate(options):
