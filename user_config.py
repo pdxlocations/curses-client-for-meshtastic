@@ -6,7 +6,6 @@ from default_config import format_json_single_line_arrays
 
 width = 60
 
-
 def edit_color_pair(window, key, current_value):
     """
     Allows the user to select a foreground and background color for a key.
@@ -87,7 +86,6 @@ def select_color_from_list(window, prompt, current_color, colors):
                         color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
 
 
-
 def move_highlight(old_idx, new_idx, options, menu_win, menu_pad):
     if old_idx == new_idx:
         return # no-op
@@ -106,10 +104,6 @@ def move_highlight(old_idx, new_idx, options, menu_win, menu_pad):
     menu_pad.refresh(start_index, 0,
                      menu_win.getbegyx()[0] + 3, menu_win.getbegyx()[1] + 4,
                      menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
-
-
-
-    
 
 
 def edit_value(parent_window, key, current_value):
@@ -162,9 +156,6 @@ def edit_value(parent_window, key, current_value):
 
     # Return the new value, or None if ESC was pressed
     return current_value if new_value is None else new_value
-
-
-
 
 
 def render_menu(current_data, menu_path, selected_index):
@@ -227,65 +218,16 @@ def render_menu(current_data, menu_path, selected_index):
     )
 
 
-    menu_win.refresh()
-    menu_pad.refresh(0, 0,
-                     menu_win.getbegyx()[0] + 3, menu_win.getbegyx()[1] + 4,
-                     menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
-
-
-    while True:
-        key = menu_win.getch()
-        max_index = len(current_data) + (1 if show_save_option else 0) - 1
-
-
-        if key == curses.KEY_UP:
-            old_selected_index = selected_index
-            selected_index = max_index if selected_index == 0 else selected_index - 1
-            move_highlight(old_selected_index, selected_index, options, menu_win, menu_pad)
-
-        elif key == curses.KEY_DOWN:
-            old_selected_index = selected_index
-            selected_index = 0 if selected_index == max_index else selected_index + 1
-            move_highlight(old_selected_index, selected_index, options, menu_win, menu_pad)
-            
-        elif key == ord("\t") and show_save_option:
-            old_selected_index = selected_index
-            selected_index = max_index
-            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
-
-        elif key == curses.KEY_RIGHT or key == ord('\n'):
-            menu_win.clear()
-            menu_win.refresh()
-
-            # if show_save_option and selected_index == len(options):
-            #     return menu_win, menu_pad, options
-            #     save_changes(interface, menu_path, modified_settings)
-            #     # modified_settings.clear()
-            #     # logging.info("Changes Saved")
-
-            #     if len(menu_path) > 1:
-            #         menu_path.pop()
-                    
-            #         # for step in menu_path[1:]:
-            #         #     current_menu = current_menu.get(step, {})
-            #         selected_index = 0
-
-
-
-            return menu_win, menu_pad, options
-        
-        elif key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
-            return current_data
-
-
+    return menu_win, menu_pad, options
 
 
 
 def json_editor(stdscr):
     menu_path = ["App Settings"]
-    selected_index = 0  # Track selected option
+    selected_index = 0  # Track the selected option
 
     file_path = "config.json"
+    show_save_option = True  # Always show the Save button
 
     # Ensure the file exists
     if not os.path.exists(file_path):
@@ -299,84 +241,92 @@ def json_editor(stdscr):
     data = original_data  # Reference to the original data
     current_data = data  # Track the current level of the menu
 
-
-
-
     while True:
-        # Render menu
+        # Render the menu
         menu_win, menu_pad, options = render_menu(current_data, menu_path, selected_index)
 
-        # Handle user input
+        # Refresh menu and pad
+        menu_win.refresh()
+
+        # Visible lines for scrolling
+        visible_lines = menu_win.getmaxyx()[0] - 5  # Space for borders and header
+        scroll_offset = max(0, selected_index - visible_lines // 2)
+
+        menu_pad.refresh(
+            scroll_offset,
+            0,
+            menu_win.getbegyx()[0] + 3,
+            menu_win.getbegyx()[1] + 4,
+            menu_win.getbegyx()[0] + menu_win.getmaxyx()[0] - 5,
+            menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 4,
+        )
+
         key = menu_win.getch()
+        max_index = len(options) + (1 if show_save_option else 0) - 1
 
         if key == curses.KEY_UP:
-            selected_index = max(0, selected_index - 1)
+            # Move up in the menu
+            selected_index = max_index if selected_index == 0 else selected_index - 1
 
         elif key == curses.KEY_DOWN:
-            selected_index = min(len(options), selected_index + 1)  # Include "Save" button
+            # Move down in the menu
+            selected_index = 0 if selected_index == max_index else selected_index + 1
 
         elif key in (curses.KEY_RIGHT, ord("\n")):
-            if selected_index < len(options):  # Handle key selection
+            if selected_index < len(options):  # Handle selection of a menu item
                 selected_key = options[selected_index]
 
                 # Handle nested data
                 if isinstance(current_data, dict):
-                    selected_data = current_data[selected_key]
-
+                    if selected_key in current_data:
+                        selected_data = current_data[selected_key]
+                    else:
+                        continue  # Skip invalid key
                 elif isinstance(current_data, list):
                     selected_data = current_data[int(selected_key.strip("[]"))]
 
-                # Check if the selected data is a color pair
-                if (
-                    isinstance(selected_data, list)
-                    and len(selected_data) == 2
-                    # and all(color in [" ", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"] for color in selected_data)
-                ):
-                    # Edit the color pair
+
+
+                    
+                if isinstance(selected_data, list) and len(selected_data) == 2:
+                    # Edit color pair
                     new_value = edit_color_pair(stdscr, selected_key, selected_data)
-                    if isinstance(current_data, dict):
-                        current_data[selected_key] = new_value
-                    elif isinstance(current_data, list):
-                        current_data[int(selected_key.strip("[]"))] = new_value
+                    current_data[selected_key] = new_value
 
                 elif isinstance(selected_data, (dict, list)):
                     # Navigate into nested data
                     menu_path.append(str(selected_key))
                     current_data = selected_data
-                    selected_index = 0
+                    selected_index = 0  # Reset the selected index
+
 
                 else:
                     # General value editing
                     new_value = edit_value(stdscr, selected_key, selected_data)
-                    if isinstance(current_data, dict):
-                        current_data[selected_key] = new_value
-                    elif isinstance(current_data, list):
-                        current_data[int(selected_key.strip("[]"))] = new_value
+                    current_data[selected_key] = new_value
             else:
                 # Save button selected
                 save_json(file_path, data)
                 stdscr.addstr(curses.LINES - 2, 2, "Settings saved! Press any key to continue...", curses.A_BOLD)
                 stdscr.refresh()
                 stdscr.getch()
-                break  # Exit App Settings and return to the main menu
-        elif key in (27, curses.KEY_LEFT):  # ESC or Left Arrow
+                break  # Exit the editor
+
+        elif key in (27, curses.KEY_LEFT):  # Escape or Left Arrow
+            # Navigate back in the menu
             if len(menu_path) > 1:
-                # Go back one level
                 menu_path.pop()
                 current_data = data
                 for path in menu_path[1:]:
-                    if isinstance(current_data, dict):
-                        current_data = current_data[path]
-                    elif isinstance(current_data, list):
-                        current_data = current_data[int(path.strip("[]"))]
+                    current_data = current_data[path] if isinstance(current_data, dict) else current_data[int(path.strip("[]"))]
                 selected_index = 0
             else:
-                # Exit App Settings and return to the main menu
+                # Exit the editor
                 menu_win.clear()
                 menu_win.refresh()
                 break
 
-    # No auto-save; save only when the "Save" button is selected
+    # Final cleanup
     menu_win.clear()
     menu_win.refresh()
 
