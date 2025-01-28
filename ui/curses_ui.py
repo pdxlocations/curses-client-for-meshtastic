@@ -34,7 +34,7 @@ def draw_node_details():
                            if 'user' in node and 'shortName' in node['user'] else "",
                          f" | {node['user']['hwModel']}"
                            if 'user' in node and 'hwModel' in node['user'] else "",
-                         f" | {get_time_ago(node['lastHeard'])}" if 'lastHeard' in node else "",
+                         f" | {get_time_ago(node['lastHeard'])}" if ('lastHeard' in node and node['lastHeard']) else "",
                          f" | Hops: {node['hopsAway']}" if 'hopsAway' in node else "",
                          f" | SNR: {node['snr']}dB"
                            if ('snr' in node and 'hopsAway' in node and node['hopsAway'] == 0)
