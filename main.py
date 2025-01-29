@@ -39,13 +39,17 @@ def main(stdscr):
         draw_splash(stdscr)
         parser = setup_parser()
         args = parser.parse_args()
+
+        logging.info("Initializing interface %s", args)
         globals.interface = initialize_interface(args)
+        logging.info("Inerface initialized")
         globals.myNodeNum = get_nodeNum()
         globals.channel_list = get_channels()
         globals.node_list = get_node_list()
         pub.subscribe(on_receive, 'meshtastic.receive')
         init_nodedb()
         load_messages_from_db()
+        logging.info("Starting main UI")
         main_ui(stdscr)
     except Exception as e:
         logging.error("An error occurred: %s", e)
