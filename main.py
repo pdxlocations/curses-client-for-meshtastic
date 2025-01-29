@@ -42,7 +42,7 @@ def main(stdscr):
 
         logging.info("Initializing interface %s", args)
         globals.interface = initialize_interface(args)
-        logging.info("Inerface initialized")
+        logging.info("Interface initialized")
         globals.myNodeNum = get_nodeNum()
         globals.channel_list = get_channels()
         globals.node_list = get_node_list()
