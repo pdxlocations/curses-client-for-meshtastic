@@ -27,18 +27,22 @@ def get_user_input(prompt):
 
     user_input = ""
     while True:
-        key = input_win.getch(3, 15 + len(user_input))  # Adjust cursor position dynamically
-        if key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
+        key = input_win.get_wch(3, 15 + len(user_input))  # Adjust cursor position dynamically
+        if key == chr(27) or key == curses.KEY_LEFT:  # ESC or Left Arrow
             curses.curs_set(0)
             return None  # Exit without returning a value
-        elif key == ord('\n'):  # Enter key
+        elif key in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             break
-        elif key == curses.KEY_BACKSPACE or key == 127:  # Backspace
+        elif key in (curses.KEY_BACKSPACE, chr(127)):  # Backspace
             user_input = user_input[:-1]
             input_win.addstr(3, 15, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
             input_win.addstr(3, 15, user_input, get_color("settings_default"))
         elif max_length is None or len(user_input) < max_length:  # Enforce max length if applicable
-            user_input += chr(key)
+            # Append typed character to input text
+            if(isinstance(key, str)):
+                user_input += key
+            else:
+                user_input += chr(key)
             input_win.addstr(3, 15, user_input, get_color("settings_default"))
 
     curses.curs_set(0)
