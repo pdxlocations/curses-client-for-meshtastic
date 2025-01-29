@@ -142,27 +142,34 @@ def initialize_config():
 
     return loaded_config
 
+def assign_config_variables(loaded_config):
+    # Assign values to local variables
+    
+    global db_file_path, log_file_path, message_prefix, sent_message_prefix
+    global notification_symbol, ack_implicit_str, ack_str, nak_str, ack_unknown_str
+    global theme, COLOR_CONFIG
+
+    db_file_path = loaded_config["db_file_path"]
+    log_file_path = loaded_config["log_file_path"]
+    message_prefix = loaded_config["message_prefix"]
+    sent_message_prefix = loaded_config["sent_message_prefix"]
+    notification_symbol = loaded_config["notification_symbol"]
+    ack_implicit_str = loaded_config["ack_implicit_str"]
+    ack_str = loaded_config["ack_str"]
+    nak_str = loaded_config["nak_str"]
+    ack_unknown_str = loaded_config["ack_unknown_str"]
+    theme = loaded_config["theme"]
+    if theme == "dark":
+        COLOR_CONFIG = loaded_config["COLOR_CONFIG_DARK"]
+    elif theme == "light":
+        COLOR_CONFIG = loaded_config["COLOR_CONFIG_LIGHT"]
+    elif theme == "green":
+        COLOR_CONFIG = loaded_config["COLOR_CONFIG_GREEN"]
+
+
 # Call the function when the script is imported
 loaded_config = initialize_config()
-
-# Assign values to local variables
-db_file_path = loaded_config["db_file_path"]
-log_file_path = loaded_config["log_file_path"]
-message_prefix = loaded_config["message_prefix"]
-sent_message_prefix = loaded_config["sent_message_prefix"]
-notification_symbol = loaded_config["notification_symbol"]
-ack_implicit_str = loaded_config["ack_implicit_str"]
-ack_str = loaded_config["ack_str"]
-nak_str = loaded_config["nak_str"]
-ack_unknown_str = loaded_config["ack_unknown_str"]
-theme = loaded_config["theme"]
-if theme == "dark":
-    COLOR_CONFIG = loaded_config["COLOR_CONFIG_DARK"]
-elif theme == "light":
-    COLOR_CONFIG = loaded_config["COLOR_CONFIG_LIGHT"]
-elif theme == "green":
-    COLOR_CONFIG = loaded_config["COLOR_CONFIG_GREEN"]
-
+assign_config_variables(loaded_config)
 
 if __name__ == "__main__":
     logging.basicConfig(

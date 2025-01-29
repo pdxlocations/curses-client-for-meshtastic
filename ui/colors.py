@@ -12,16 +12,21 @@ COLOR_MAP = {
     "white": curses.COLOR_WHITE
 }
 
-def setup_colors():
+def setup_colors(reinit=False):
     """
     Initialize curses color pairs based on the COLOR_CONFIG.
     """
     curses.start_color()
+    if reinit:
+        conf = config.initialize_config()
+        config.assign_config_variables(conf)
+
     for idx, (category, (fg_name, bg_name)) in enumerate(config.COLOR_CONFIG.items(), start=1):
         fg = COLOR_MAP.get(fg_name.lower(), curses.COLOR_WHITE)
         bg = COLOR_MAP.get(bg_name.lower(), curses.COLOR_BLACK)
         curses.init_pair(idx, fg, bg)
         config.COLOR_CONFIG[category] = idx
+    print()
 
 
 def get_color(category, bold=False, reverse=False, underline=False):
