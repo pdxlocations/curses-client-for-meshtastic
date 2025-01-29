@@ -20,6 +20,9 @@ def get_user_input(prompt):
     input_win.addstr(3, 2, "Enter value: ", get_color("settings_default"))
     input_win.refresh()
 
+    # Check if "shortName" is in the prompt, and set max length accordingly
+    max_length = 4 if "shortName" in prompt else None
+
     curses.curs_set(1)
 
     user_input = ""
@@ -34,7 +37,7 @@ def get_user_input(prompt):
             user_input = user_input[:-1]
             input_win.addstr(3, 15, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
             input_win.addstr(3, 15, user_input, get_color("settings_default"))
-        else:
+        elif max_length is None or len(user_input) < max_length:  # Enforce max length if applicable
             user_input += chr(key)
             input_win.addstr(3, 15, user_input, get_color("settings_default"))
 
