@@ -1,7 +1,7 @@
 import os
 import json
 import curses
-from ui.colors import get_color, setup_colors
+from ui.colors import get_color, setup_colors, COLOR_MAP
 from default_config import format_json_single_line_arrays, loaded_config
 
 width = 60
@@ -12,9 +12,9 @@ def edit_color_pair(key, current_value):
     """
     Allows the user to select a foreground and background color for a key.
     """
-    colors = [" ", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
-    fg_color = select_from_list(f"Select Foreground Color for {key}", current_value[0], colors)
-    bg_color = select_from_list(f"Select Background Color for {key}", current_value[1], colors)
+    color_list = [" "] + list(COLOR_MAP.keys())
+    fg_color = select_from_list(f"Select Foreground Color for {key}", current_value[0], color_list)
+    bg_color = select_from_list(f"Select Background Color for {key}", current_value[1], color_list)
 
     return [fg_color, bg_color]
 
@@ -122,16 +122,17 @@ def edit_value(key, current_value):
     edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))
     curses.curs_set(1)
 
-    user_input = ""
     scroll_offset = 0  # Determines which part of the text is visible
-
+    user_input = ""
+    input_position = (7, 13)  # Tuple for row and column
+    row, col = input_position  # Unpack tuple
     while True:
         visible_text = user_input[scroll_offset:scroll_offset + input_width]  # Only show what fits
-        edit_win.addstr(7, 13, " " * input_width, get_color("settings_default"))  # Clear previous text
-        edit_win.addstr(7, 13, visible_text, get_color("settings_default"))  # Display text
+        edit_win.addstr(row, col, " " * input_width, get_color("settings_default"))  # Clear previous text
+        edit_win.addstr(row, col, visible_text, get_color("settings_default"))  # Display text
         edit_win.refresh()
 
-        edit_win.move(7, 13 + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
+        edit_win.move(row, col + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
         key = edit_win.get_wch()
 
         if key in (chr(27), curses.KEY_LEFT):  # ESC or Left Arrow

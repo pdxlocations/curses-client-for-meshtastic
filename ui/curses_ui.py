@@ -239,9 +239,6 @@ def draw_messages_window(scroll_to_bottom = False):
 
 def draw_node_list():
     nodes_pad.erase()
-    win_height = nodes_box.getmaxyx()[0]
-    start_index = max(0, globals.selected_node - (win_height - 3))  # Calculate starting index based on selected node and window height
-
     nodes_pad.resize(len(globals.node_list), nodes_box.getmaxyx()[1])
 
     for i, node in enumerate(globals.node_list):

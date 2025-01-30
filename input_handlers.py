@@ -26,8 +26,10 @@ def get_user_input(prompt):
     curses.curs_set(1)
 
     user_input = ""
+    input_position = (3, 15)  # Tuple for row and column
+    row, col = input_position  # Unpack tuple
     while True:
-        key = input_win.get_wch(3, 15 + len(user_input))  # Adjust cursor position dynamically
+        key = input_win.get_wch(row, col + len(user_input))  # Adjust cursor position dynamically
         if key == chr(27) or key == curses.KEY_LEFT:  # ESC or Left Arrow
             curses.curs_set(0)
             return None  # Exit without returning a value
@@ -35,8 +37,8 @@ def get_user_input(prompt):
             break
         elif key in (curses.KEY_BACKSPACE, chr(127)):  # Backspace
             user_input = user_input[:-1]
-            input_win.addstr(3, 15, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
-            input_win.addstr(3, 15, user_input, get_color("settings_default"))
+            input_win.addstr(row, col, " " * (len(user_input) + 1), get_color("settings_default"))  # Clear the line
+            input_win.addstr(row, col, user_input, get_color("settings_default"))
         elif max_length is None or len(user_input) < max_length:  # Enforce max length if applicable
             # Append typed character to input text
             if(isinstance(key, str)):
