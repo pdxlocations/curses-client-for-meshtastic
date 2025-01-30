@@ -48,9 +48,13 @@ def draw_node_details():
     draw_centered_text_field(function_win, nodestr, 0, get_color("commands"))
 
 def draw_function_win():
-    draw_centered_text_field(function_win,
-                             f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit",
-                             0, get_color("commands"))
+    cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit"]
+    function_str = ""
+    for s in cmds:
+        if(len(function_str) + len(s) < function_win.getmaxyx()[1]):
+            function_str += s
+
+    draw_centered_text_field(function_win, function_str, 0, get_color("commands"))
 
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
