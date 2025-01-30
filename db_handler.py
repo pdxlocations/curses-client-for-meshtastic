@@ -1,9 +1,10 @@
+
 import sqlite3
 import time
 from datetime import datetime
 import logging
 
-from utilities.utils import get_name_from_number
+from utilities.utils import decimal_to_hex
 import default_config as config
 import globals
 
@@ -133,7 +134,7 @@ def load_messages_from_db():
                         if user_id == str(globals.myNodeNum):
                             formatted_message = (f"{config.sent_message_prefix}{ack_str}: ", message)
                         else:
-                            formatted_message = (f"{config.message_prefix} {get_name_from_number(int(user_id), 'short')}: ", message)
+                            formatted_message = (f"{config.message_prefix} {get_name_from_database(int(user_id), 'short')}: ", message)
                         
                         hourly_messages[hour].append(formatted_message)
 
@@ -285,3 +286,38 @@ def maybe_store_nodeinfo_in_db(packet):
         logging.error(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
     finally:
         db_connection.close()
+
+
+def get_name_from_database(user_id, type="long"):
+    """
+    Retrieve a user's name (long or short) from the node database.
+    
+    :param user_id: The user ID to look up.
+    :param type: "long" for long name, "short" for short name.
+    :return: The retrieved name or the hex of the user id
+    """
+    try:
+        with sqlite3.connect(config.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+
+            # Construct table name
+            table_name = f"{str(globals.myNodeNum)}_nodedb"
+            nodeinfo_table = f'"{table_name}"'  # Quote table name for safety
+            
+            # Determine the correct column to fetch
+            column_name = "long_name" if type == "long" else "short_name"
+
+            # Query the database
+            query = f"SELECT {column_name} FROM {nodeinfo_table} WHERE user_id = ?"
+            db_cursor.execute(query, (user_id,))
+            result = db_cursor.fetchone()
+
+            return result[0] if result else decimal_to_hex(user_id)
+
+    except sqlite3.Error as e:
+        logging.error(f"SQLite error in get_name_from_database: {e}")
+        return "Unknown"
+
+    except Exception as e:
+        logging.error(f"Unexpected error in get_name_from_database: {e}")
+        return "Unknown"
