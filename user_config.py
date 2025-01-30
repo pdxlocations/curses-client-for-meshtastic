@@ -13,51 +13,51 @@ def edit_color_pair(key, current_value):
     Allows the user to select a foreground and background color for a key.
     """
     colors = [" ", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
-    fg_color = select_color_from_list(f"Select Foreground Color for {key}", current_value[0], colors)
-    bg_color = select_color_from_list(f"Select Background Color for {key}", current_value[1], colors)
+    fg_color = select_from_list(f"Select Foreground Color for {key}", current_value[0], colors)
+    bg_color = select_from_list(f"Select Background Color for {key}", current_value[1], colors)
 
     return [fg_color, bg_color]
 
 
-def select_color_from_list(prompt, current_color, colors):
+def select_from_list(prompt, current_option, list_options):
     """
-    Displays a scrollable list of colors for the user to choose from using a pad.
+    Displays a scrollable list of list_options for the user to choose from using a pad.
     """
-    selected_index = colors.index(current_color) if current_color in colors else 0
+    selected_index = list_options.index(current_option) if current_option in list_options else 0
 
-    height = min(len(colors) + 5, curses.LINES - 2)
+    height = min(len(list_options) + 5, curses.LINES - 2)
     width = 60
     start_y = (curses.LINES - height) // 2
     start_x = (curses.COLS - width) // 2
 
-    color_win = curses.newwin(height, width, start_y, start_x)
-    color_win.bkgd(get_color("background"))
-    color_win.attrset(get_color("window_frame"))
-    color_win.keypad(True)
+    list_win = curses.newwin(height, width, start_y, start_x)
+    list_win.bkgd(get_color("background"))
+    list_win.attrset(get_color("window_frame"))
+    list_win.keypad(True)
 
-    color_pad = curses.newpad(len(colors) + 1, width - 8)
-    color_pad.bkgd(get_color("background"))
+    list_pad = curses.newpad(len(list_options) + 1, width - 8)
+    list_pad.bkgd(get_color("background"))
 
     # Render header
-    color_win.clear()
-    color_win.border()
-    color_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
+    list_win.clear()
+    list_win.border()
+    list_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
 
-    # Render color options on the pad
-    for idx, color in enumerate(colors):
+    # Render options on the pad
+    for idx, color in enumerate(list_options):
         if idx == selected_index:
-            color_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
+            list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
         else:
-            color_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
+            list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
 
     # Initial refresh
-    color_win.refresh()
-    color_pad.refresh(0, 0,
-                    color_win.getbegyx()[0] + 3, color_win.getbegyx()[1] + 4,
-                    color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
+    list_win.refresh()
+    list_pad.refresh(0, 0,
+                    list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
+                    list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
 
     while True:
-        key = color_win.getch()
+        key = list_win.getch()
 
         if key == curses.KEY_UP:
 
@@ -65,27 +65,27 @@ def select_color_from_list(prompt, current_color, colors):
                 selected_index -= 1
 
         elif key == curses.KEY_DOWN:
-            if selected_index < len(colors) - 1:
+            if selected_index < len(list_options) - 1:
                 selected_index += 1
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
-            return colors[selected_index]
+            return list_options[selected_index]
         
         elif key == curses.KEY_LEFT or key == 27:  # ESC key
-            return current_color
+            return current_option
 
         # Refresh the pad with updated selection and scroll offset
-        for idx, color in enumerate(colors):
+        for idx, color in enumerate(list_options):
             if idx == selected_index:
-                color_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
+                list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
             else:
-                color_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
+                list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
 
 
-        color_win.refresh()
-        color_pad.refresh(0, 0,
-                        color_win.getbegyx()[0] + 3, color_win.getbegyx()[1] + 4,
-                        color_win.getbegyx()[0] + color_win.getmaxyx()[0] - 2, color_win.getbegyx()[1] + color_win.getmaxyx()[1] - 4)
+        list_win.refresh()
+        list_pad.refresh(0, 0,
+                        list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
+                        list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
 
 def edit_value(key, current_value):
     width = 60
@@ -116,7 +116,7 @@ def edit_value(key, current_value):
     if key == "theme":
         # Load theme names dynamically from the JSON
         theme_options = [k.split("_", 2)[2].lower() for k in loaded_config.keys() if k.startswith("COLOR_CONFIG")]
-        return select_color_from_list("Select Theme", current_value, theme_options)
+        return select_from_list("Select Theme", current_value, theme_options)
 
     # Standard Input Mode (Scrollable)
     edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))
