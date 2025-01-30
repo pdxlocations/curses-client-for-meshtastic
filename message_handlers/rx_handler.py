@@ -10,7 +10,6 @@ import globals
 from datetime import datetime
 
 def on_receive(packet, interface):
-    global nodes_win
 
     # Update packet log
     globals.packet_buffer.append(packet)
