@@ -1,7 +1,7 @@
 import os
 import json
 import curses
-from ui.colors import get_color, setup_colors
+from ui.colors import get_color, setup_colors, COLOR_MAP
 from default_config import format_json_single_line_arrays, loaded_config
 
 width = 60
@@ -12,9 +12,9 @@ def edit_color_pair(key, current_value):
     """
     Allows the user to select a foreground and background color for a key.
     """
-    colors = [" ", "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white"]
-    fg_color = select_from_list(f"Select Foreground Color for {key}", current_value[0], colors)
-    bg_color = select_from_list(f"Select Background Color for {key}", current_value[1], colors)
+    color_list = [" "] + list(COLOR_MAP.keys())
+    fg_color = select_from_list(f"Select Foreground Color for {key}", current_value[0], color_list)
+    bg_color = select_from_list(f"Select Background Color for {key}", current_value[1], color_list)
 
     return [fg_color, bg_color]
 
