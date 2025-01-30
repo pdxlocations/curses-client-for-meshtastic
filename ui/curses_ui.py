@@ -54,8 +54,8 @@ def draw_function_win():
                              0, get_color("commands"))
 
 def get_msg_window_lines():
-    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
-    return messages_box.getmaxyx()[0] - 1 - packetlog_height
+    packetlog_height = packetlog_win.getmaxyx()[0] - 1 if globals.display_log else 0
+    return messages_box.getmaxyx()[0] - 2 - packetlog_height
 
 def refresh_pad(window):
     win_height = channel_box.getmaxyx()[0]
