@@ -1,6 +1,6 @@
-import curses
-import json
 import os
+import json
+import curses
 from ui.colors import get_color, setup_colors
 from default_config import format_json_single_line_arrays, loaded_config
 

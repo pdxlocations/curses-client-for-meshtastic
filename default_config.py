@@ -1,6 +1,6 @@
-import os
-import json
 import logging
+import json
+import os
 
 def format_json_single_line_arrays(data, indent=4):
     """

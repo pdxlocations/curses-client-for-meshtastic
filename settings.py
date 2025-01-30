@@ -2,8 +2,8 @@ import curses
 import logging
 
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
-from ui.menus import generate_menu_from_protobuf
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
+from ui.menus import generate_menu_from_protobuf
 from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface

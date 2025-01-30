@@ -3,9 +3,9 @@ import time
 from datetime import datetime
 import logging
 
-import globals
-import default_config as config
 from utilities.utils import get_name_from_number
+import default_config as config
+import globals
 
 def get_table_name(channel):
     # Construct the table name

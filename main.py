@@ -18,8 +18,8 @@ from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels, get_node_list, get_nodeNum
 from db_handler import init_nodedb, load_messages_from_db
-import globals
 import default_config as config
+import globals
 
 # Set environment variables for ncurses compatibility
 os.environ["NCURSES_NO_UTF8_ACS"] = "1"

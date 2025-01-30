@@ -1,12 +1,12 @@
 import curses
 import textwrap
-import globals
 from utilities.utils import get_name_from_number, get_channels, get_time_ago
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
-import ui.dialog
 from ui.colors import setup_colors, get_color
 import default_config as config
+import ui.dialog
+import globals
 
 def refresh_all():
     for i, box in enumerate([channel_box, messages_box, nodes_box]):
