@@ -1,6 +1,7 @@
 from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2
 from save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_shutdown
 import logging, traceback
+import base64
 
 def extract_fields(message_instance, current_config=None):
     if isinstance(current_config, dict):  # Handle dictionaries
@@ -14,7 +15,9 @@ def extract_fields(message_instance, current_config=None):
     for field in fields:
         if field.name in {"sessionkey", "channel_num", "id", "ignore_incoming"}:  # Skip certain fields
             continue
-        
+
+
+
         if field.message_type:  # Nested message
             nested_instance = getattr(message_instance, field.name)
             nested_config = getattr(current_config, field.name, None) if current_config else None
@@ -70,6 +73,8 @@ def generate_menu_from_protobuf(interface):
             current_channel = interface.localNode.getChannelByChannelIndex(i)
             if current_channel:
                 channel_config = extract_fields(channel, current_channel.settings)
+                # Convert 'psk' field to Base64
+                channel_config["psk"] = (channel_config["psk"][0], base64.b64encode(channel_config["psk"][1]).decode('utf-8'))
                 menu_structure["Main Menu"]["Channels"][f"Channel {i + 1}"] = channel_config
 
     # Add Radio Settings
