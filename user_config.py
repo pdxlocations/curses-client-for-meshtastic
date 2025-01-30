@@ -122,16 +122,17 @@ def edit_value(key, current_value):
     edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))
     curses.curs_set(1)
 
-    user_input = ""
     scroll_offset = 0  # Determines which part of the text is visible
-
+    user_input = ""
+    input_position = (7, 13)  # Tuple for row and column
+    row, col = input_position  # Unpack tuple
     while True:
         visible_text = user_input[scroll_offset:scroll_offset + input_width]  # Only show what fits
-        edit_win.addstr(7, 13, " " * input_width, get_color("settings_default"))  # Clear previous text
-        edit_win.addstr(7, 13, visible_text, get_color("settings_default"))  # Display text
+        edit_win.addstr(row, col, " " * input_width, get_color("settings_default"))  # Clear previous text
+        edit_win.addstr(row, col, visible_text, get_color("settings_default"))  # Display text
         edit_win.refresh()
 
-        edit_win.move(7, 13 + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
+        edit_win.move(row, col + min(len(user_input) - scroll_offset, input_width))  # Adjust cursor position
         key = edit_win.get_wch()
 
         if key in (chr(27), curses.KEY_LEFT):  # ESC or Left Arrow
