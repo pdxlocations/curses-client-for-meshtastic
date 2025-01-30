@@ -12,7 +12,7 @@ def extract_fields(message_instance, current_config=None):
     menu = {}
     fields = message_instance.DESCRIPTOR.fields
     for field in fields:
-        if field.name in {"sessionkey", "channel_num", "id"}:  # Skip certain fields
+        if field.name in {"sessionkey", "channel_num", "id", "ignore_incoming"}:  # Skip certain fields
             continue
         
         if field.message_type:  # Nested message
