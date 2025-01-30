@@ -1,4 +1,5 @@
 import curses
+from ui.colors import get_color
 
 def dialog(stdscr, title, message):
     height, width = stdscr.getmaxyx()
@@ -15,17 +16,19 @@ def dialog(stdscr, title, message):
 
     # Create dialog window
     win = curses.newwin(dialog_height, dialog_width, y, x)
+    win.bkgd(get_color("background"))
+    win.attrset(get_color("window_frame"))
     win.border(0)
 
     # Add title
-    win.addstr(0, 2, title)
+    win.addstr(0, 2, title, get_color("settings_default"))
 
     # Add message
     for i, l in enumerate(message_lines):
-        win.addstr(2 + i, 2, l)
+        win.addstr(2 + i, 2, l, get_color("settings_default"))
 
     # Add button
-    win.addstr(dialog_height - 2, (dialog_width - 4) // 2, " Ok ", curses.color_pair(1)  | curses.A_REVERSE)
+    win.addstr(dialog_height - 2, (dialog_width - 4) // 2, " Ok ", get_color("settings_default", reverse=True))
 
     # Refresh dialog window
     win.refresh()
