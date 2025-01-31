@@ -115,10 +115,9 @@ def generate_menu_from_protobuf(interface):
     # Add App Settings
     menu_structure["Main Menu"]["App Settings"] = {"Open": "app_settings"}
 
-
-    menu_structure["Main Menu"]["Export Config"] = None
-
     # Add additional settings options
+    menu_structure["Main Menu"]["Export Config"] = None
+    menu_structure["Main Menu"]["Load Config"] = None
     menu_structure["Main Menu"]["Reboot"] = None
     menu_structure["Main Menu"]["Reset Node DB"] = None
     menu_structure["Main Menu"]["Shutdown"] = None

@@ -3,6 +3,7 @@ import json
 import curses
 from ui.colors import get_color, setup_colors, COLOR_MAP
 from default_config import format_json_single_line_arrays, loaded_config
+from input_handlers import select_from_list
 
 width = 60
 save_option_text = "Save Changes"
@@ -19,73 +20,72 @@ def edit_color_pair(key, current_value):
     return [fg_color, bg_color]
 
 
-def select_from_list(prompt, current_option, list_options):
-    """
-    Displays a scrollable list of list_options for the user to choose from using a pad.
-    """
-    selected_index = list_options.index(current_option) if current_option in list_options else 0
+# def select_from_list(prompt, current_option, list_options):
+#     """
+#     Displays a scrollable list of list_options for the user to choose from using a pad.
+#     """
+#     selected_index = list_options.index(current_option) if current_option in list_options else 0
 
-    height = min(len(list_options) + 5, curses.LINES - 2)
-    width = 60
-    start_y = (curses.LINES - height) // 2
-    start_x = (curses.COLS - width) // 2
+#     height = min(len(list_options) + 5, curses.LINES - 2)
+#     width = 60
+#     start_y = (curses.LINES - height) // 2
+#     start_x = (curses.COLS - width) // 2
 
-    list_win = curses.newwin(height, width, start_y, start_x)
-    list_win.bkgd(get_color("background"))
-    list_win.attrset(get_color("window_frame"))
-    list_win.keypad(True)
+#     list_win = curses.newwin(height, width, start_y, start_x)
+#     list_win.bkgd(get_color("background"))
+#     list_win.attrset(get_color("window_frame"))
+#     list_win.keypad(True)
 
-    list_pad = curses.newpad(len(list_options) + 1, width - 8)
-    list_pad.bkgd(get_color("background"))
+#     list_pad = curses.newpad(len(list_options) + 1, width - 8)
+#     list_pad.bkgd(get_color("background"))
 
-    # Render header
-    list_win.clear()
-    list_win.border()
-    list_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
+#     # Render header
+#     list_win.clear()
+#     list_win.border()
+#     list_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
 
-    # Render options on the pad
-    for idx, color in enumerate(list_options):
-        if idx == selected_index:
-            list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
-        else:
-            list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
+#     # Render options on the pad
+#     for idx, color in enumerate(list_options):
+#         if idx == selected_index:
+#             list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
+#         else:
+#             list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
 
-    # Initial refresh
-    list_win.refresh()
-    list_pad.refresh(0, 0,
-                    list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
-                    list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
+#     # Initial refresh
+#     list_win.refresh()
+#     list_pad.refresh(0, 0,
+#                     list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
+#                     list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
 
-    while True:
-        key = list_win.getch()
+#     while True:
+#         key = list_win.getch()
 
-        if key == curses.KEY_UP:
+#         if key == curses.KEY_UP:
 
-            if selected_index > 0:
-                selected_index -= 1
+#             if selected_index > 0:
+#                 selected_index -= 1
 
-        elif key == curses.KEY_DOWN:
-            if selected_index < len(list_options) - 1:
-                selected_index += 1
+#         elif key == curses.KEY_DOWN:
+#             if selected_index < len(list_options) - 1:
+#                 selected_index += 1
 
-        elif key == curses.KEY_RIGHT or key == ord('\n'):
-            return list_options[selected_index]
+#         elif key == curses.KEY_RIGHT or key == ord('\n'):
+#             return list_options[selected_index]
         
-        elif key == curses.KEY_LEFT or key == 27:  # ESC key
-            return current_option
+#         elif key == curses.KEY_LEFT or key == 27:  # ESC key
+#             return current_option
 
-        # Refresh the pad with updated selection and scroll offset
-        for idx, color in enumerate(list_options):
-            if idx == selected_index:
-                list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
-            else:
-                list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
+#         # Refresh the pad with updated selection and scroll offset
+#         for idx, color in enumerate(list_options):
+#             if idx == selected_index:
+#                 list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default", reverse=True))
+#             else:
+#                 list_pad.addstr(idx, 0, color.ljust(width - 8), get_color("settings_default"))
 
-
-        list_win.refresh()
-        list_pad.refresh(0, 0,
-                        list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
-                        list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
+#         list_win.refresh()
+#         list_pad.refresh(0, 0,
+#                         list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
+#                         list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
 
 def edit_value(key, current_value):
     width = 60

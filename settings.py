@@ -4,7 +4,7 @@ import os
 
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
 from utilities.config_io import config_export, config_import
-from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
+from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input, select_from_list
 from ui.menus import generate_menu_from_protobuf
 from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
@@ -198,6 +198,25 @@ def settings_menu(stdscr, interface):
                 except Exception as e:
                     logging.error(f"Unexpected error: {e}")
                 continue
+
+
+
+
+            elif selected_option == "Load Config":
+
+                app_directory = os.path.dirname(os.path.abspath(__file__))
+                config_folder = "node-configs"
+                folder_path = os.path.join(app_directory, config_folder)
+                file_list = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+                filename = select_from_list("Choose a config file", None, file_list)
+                if filename:
+                    file_path = os.path.join(app_directory, config_folder, filename)
+                    overwrite = get_bool_selection(f"Are you sure you want to load {filename}?", None)
+                    if overwrite == "True":
+                        config_import(globals.interface, file_path)
+                    break
+                continue
+
 
 
             elif selected_option == "Reboot":

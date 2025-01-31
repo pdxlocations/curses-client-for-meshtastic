@@ -64,7 +64,7 @@ def setPref(config, comp_name, raw_val) -> bool:
     logging.debug(f"valStr:{raw_val} val:{val}")
 
     if snake_name == "wifi_psk" and len(str(raw_val)) < 8:
-        print(f"Warning: network.wifi_psk must be 8 or more characters.")
+        logging.info(f"Warning: network.wifi_psk must be 8 or more characters.")
         return False
 
     enumType = pref.enum_type
@@ -75,16 +75,16 @@ def setPref(config, comp_name, raw_val) -> bool:
         if e:
             val = e.number
         else:
-            print(
+            logging.info(
                 f"{name[0]}.{uni_name} does not have an enum called {val}, so you can not set it."
             )
-            print(f"Choices in sorted order are:")
+            logging.info(f"Choices in sorted order are:")
             names = []
             for f in enumType.values:
                 # Note: We must use the value of the enum (regardless if camel or snake case)
                 names.append(f"{f.name}")
             for temp_name in sorted(names):
-                print(f"    {temp_name}")
+                logging.info(f"    {temp_name}")
             return False
 
     # repeating fields need to be handled with append, not setattr
@@ -107,17 +107,17 @@ def setPref(config, comp_name, raw_val) -> bool:
         config_values = getattr(config, config_type.name)
         if val == 0:
             # clear values
-            print(f"Clearing {pref.name} list")
+            logging.info(f"Clearing {pref.name} list")
             del getattr(config_values, pref.name)[:]
         else:
-            print(f"Adding '{raw_val}' to the {pref.name} list")
+            logging.info(f"Adding '{raw_val}' to the {pref.name} list")
             cur_vals = [x for x in getattr(config_values, pref.name) if x not in [0, "", b""]]
             cur_vals.append(val)
             getattr(config_values, pref.name)[:] = cur_vals
         return True
 
     prefix = f"{'.'.join(name[0:-1])}." if config_type.message_type is not None else ""
-    print(f"Set {prefix}{uni_name} to {raw_val}")
+    logging.info(f"Set {prefix}{uni_name} to {raw_val}")
 
     return True
 
@@ -131,12 +131,12 @@ def config_import(interface, filename):
         interface.getNode('^local', False).beginSettingsTransaction()
 
         if "owner" in configuration:
-            print(f"Setting device owner to {configuration['owner']}")
+            logging.info(f"Setting device owner to {configuration['owner']}")
             waitForAckNak = True
             interface.getNode('^local', False).setOwner(configuration["owner"])
 
         if "owner_short" in configuration:
-            print(
+            logging.info(
                 f"Setting device owner short to {configuration['owner_short']}"
             )
             waitForAckNak = True
@@ -145,7 +145,7 @@ def config_import(interface, filename):
             )
 
         if "ownerShort" in configuration:
-            print(
+            logging.info(
                 f"Setting device owner short to {configuration['ownerShort']}"
             )
             waitForAckNak = True
@@ -154,11 +154,11 @@ def config_import(interface, filename):
             )
 
         if "channel_url" in configuration:
-            print("Setting channel url to", configuration["channel_url"])
+            logging.info(f"Setting channel url to {configuration['channel_url']}")
             interface.getNode('^local').setURL(configuration["channel_url"])
 
         if "channelUrl" in configuration:
-            print("Setting channel url to", configuration["channelUrl"])
+            logging.info(f"Setting channel url to {configuration['channelUrl']}")
             interface.getNode('^local').setURL(configuration["channelUrl"])
 
         if "location" in configuration:
@@ -169,14 +169,14 @@ def config_import(interface, filename):
 
             if "alt" in configuration["location"]:
                 alt = int(configuration["location"]["alt"] or 0)
-                print(f"Fixing altitude at {alt} meters")
+                logging.info(f"Fixing altitude at {alt} meters")
             if "lat" in configuration["location"]:
                 lat = float(configuration["location"]["lat"] or 0)
-                print(f"Fixing latitude at {lat} degrees")
+                logging.info(f"Fixing latitude at {lat} degrees")
             if "lon" in configuration["location"]:
                 lon = float(configuration["location"]["lon"] or 0)
-                print(f"Fixing longitude at {lon} degrees")
-            print("Setting device position")
+                logging.info(f"Fixing longitude at {lon} degrees")
+            logging.info("Setting device position")
             interface.localNode.setFixedPosition(lat, lon, alt)
 
         if "config" in configuration:
@@ -202,8 +202,7 @@ def config_import(interface, filename):
                 )
 
         interface.getNode('^local', False).commitSettingsTransaction()
-        print("Writing modified configuration to device")
-
+        logging.info("Writing modified configuration to device")
 
 
 
@@ -278,5 +277,5 @@ def config_export(interface) -> str:
                                                                         #was used as a string here and a Dictionary above
     config_txt += yaml.dump(configObj)
 
-    # print(config_txt)
+    # logging.info(config_txt)
     return config_txt
