@@ -398,16 +398,22 @@ def handle_resize(stdscr, firstrun):
         function_win.attrset(get_color("window_frame"))
 
     else:
+        entry_win.erase()
+        channel_box.erase()
+        messages_box.erase()
+        nodes_box.erase()
+        function_win.erase()
+        packetlog_win.erase()
         entry_win.resize(3, width)
         channel_box.resize(height - 6, channel_width)
         messages_box.resize(height - 6, messages_width)
-        messages_box.move(3, channel_width)
+        messages_box.mvwin(3, channel_width)
         nodes_box.resize(height - 6, nodes_width)
-        nodes_box.move(3, channel_width + messages_width)
+        nodes_box.mvwin(3, channel_width + messages_width)
         function_win.resize(3, width)
-        function_win.move(height - 3, 0)
+        function_win.mvwin(height - 3, 0)
         packetlog_win.resize(int(height / 3), messages_width)
-        packetlog_win.move(height - int(height / 3) - 3, channel_width)
+        packetlog_win.mvwin(height - int(height / 3) - 3, channel_width)
 
     draw_function_win()
 
@@ -461,7 +467,7 @@ def main_ui(stdscr):
 
         elif char == curses.KEY_RESIZE:
             input_text = ""
-            handle_resize(stdscr, True)
+            handle_resize(stdscr, False)
 
         elif char == curses.KEY_DOWN:
             if globals.current_window == 0:
