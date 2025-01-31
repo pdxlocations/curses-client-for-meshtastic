@@ -276,7 +276,8 @@ def settings_menu(stdscr, interface):
             menu_win.erase()
             menu_win.refresh()
 
-            modified_settings.clear()
+            if len(menu_path) < 2:
+                modified_settings.clear()
 
             # Navigate back to the previous menu
             if len(menu_path) > 1:
