@@ -9,13 +9,6 @@ import default_config as config
 import ui.dialog
 import globals
 
-def refresh_all():
-    for i, box in enumerate([channel_box, messages_box, nodes_box]):
-        box.attrset(get_color("window_frame_selected") if globals.current_window == i else get_color("window_frame"))
-        box.box()
-        box.refresh()
-        refresh_pad(i)
-
 def draw_node_details():
     nodes_snapshot = list(globals.interface.nodes.values())
 
@@ -577,7 +570,7 @@ def main_ui(stdscr):
             curses.curs_set(0)  # Hide cursor
             ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
             curses.curs_set(1)  # Show cursor again
-            refresh_all()
+            handle_resize(stdscr, False)
 
         elif char in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             if globals.current_window == 2:
@@ -616,7 +609,7 @@ def main_ui(stdscr):
             curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
             curses.curs_set(1)
-            refresh_all()
+            handle_resize(stdscr, False)
         
         elif char == chr(16):
             # Display packet log
