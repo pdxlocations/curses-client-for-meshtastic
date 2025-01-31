@@ -38,14 +38,14 @@ def save_changes(interface, menu_path, modified_settings):
         if menu_path[1] ==  "Radio Settings" or menu_path[1] == "Module Settings":
             config_category = menu_path[2].lower() # for radio and module configs
 
-        if {'latitude', 'longitude', 'altitude'} & modified_settings.keys():
-            lat = float(modified_settings.get('latitude', None))
-            lon = float(modified_settings.get('longitude', None))
-            alt = int(modified_settings.get('altitude', None))
+            if {'latitude', 'longitude', 'altitude'} & modified_settings.keys():
+                lat = float(modified_settings.get('latitude', 0.0))
+                lon = float(modified_settings.get('longitude', 0.0))
+                alt = int(modified_settings.get('altitude', 0))
 
-            interface.localNode.setFixedPosition(lat, lon, alt)
-            logging.info(f"Updated {config_category} with Latitude: {lat} and Longitude {lon} and Altitude {alt}")
-            return
+                interface.localNode.setFixedPosition(lat, lon, alt)
+                logging.info(f"Updated {config_category} with Latitude: {lat} and Longitude {lon} and Altitude {alt}")
+                return
 
         elif menu_path[1] == "User Settings": # for user configs
             config_category = "User Settings" 

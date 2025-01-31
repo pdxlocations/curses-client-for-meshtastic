@@ -86,9 +86,9 @@ def generate_menu_from_protobuf(interface):
 
     # Add Lat/Lon/Alt
     position_data = {
-        "latitude": (None, current_node_info["position"].get("latitude", "Not Set")),
-        "longitude": (None, current_node_info["position"].get("longitude", "Not Set")),
-        "altitude": (None, current_node_info["position"].get("altitude", "Not Set"))
+        "latitude": (None, current_node_info["position"].get("latitude", 0.0)),
+        "longitude": (None, current_node_info["position"].get("longitude", 0.0)),
+        "altitude": (None, current_node_info["position"].get("altitude", 0))
     }
 
     # Get existing position menu items
