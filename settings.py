@@ -15,7 +15,6 @@ save_option = "Save Changes"
 sensitive_settings = ["Reboot", "Reset Node DB", "Shutdown", "Factory Reset"]
 
 def display_menu(current_menu, menu_path, selected_index, show_save_option):
-    global menu_win, menu_pad
 
     # Calculate the dynamic height based on the number of menu items
     num_items = len(current_menu) + (1 if show_save_option else 0)  # Add 1 for the "Save Changes" option if applicable
@@ -63,8 +62,11 @@ def display_menu(current_menu, menu_path, selected_index, show_save_option):
     menu_pad.refresh(0, 0,
                      menu_win.getbegyx()[0] + 3, menu_win.getbegyx()[1] + 4,
                      menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
+    
+    return menu_win, menu_pad
 
-def move_highlight(old_idx, new_idx, options, show_save_option, menu_win):
+
+def move_highlight(old_idx, new_idx, options, show_save_option, menu_win, menu_pad):
 
     if(old_idx == new_idx): # no-op
         return
@@ -113,7 +115,7 @@ def settings_menu(stdscr, interface):
             )
 
             # Display the menu
-            display_menu(current_menu, menu_path, selected_index, show_save_option)
+            menu_win, menu_pad = display_menu(current_menu, menu_path, selected_index, show_save_option)
 
             need_redraw = False
 
@@ -125,17 +127,17 @@ def settings_menu(stdscr, interface):
         if key == curses.KEY_UP:
             old_selected_index = selected_index
             selected_index = max_index if selected_index == 0 else selected_index - 1
-            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win, menu_pad)
             
         elif key == curses.KEY_DOWN:
             old_selected_index = selected_index
             selected_index = 0 if selected_index == max_index else selected_index + 1
-            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win, menu_pad)
 
         elif key == ord("\t") and show_save_option:
             old_selected_index = selected_index
             selected_index = max_index
-            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win)
+            move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win, menu_pad)
 
         elif key == curses.KEY_RIGHT or key == ord('\n'):
             need_redraw = True

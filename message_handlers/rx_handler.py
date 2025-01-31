@@ -1,8 +1,8 @@
 import logging
 import time
-from utilities.utils import get_node_list, get_name_from_number
+from utilities.utils import get_node_list
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
-from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db
+from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db, get_name_from_database
 import default_config as config
 import globals
 
@@ -10,7 +10,6 @@ import globals
 from datetime import datetime
 
 def on_receive(packet, interface):
-    global nodes_win
 
     # Update packet log
     globals.packet_buffer.append(packet)
@@ -64,7 +63,7 @@ def on_receive(packet, interface):
 
             # Add received message to the messages list
             message_from_id = packet['from']
-            message_from_string = get_name_from_number(message_from_id, type='short') + ":"
+            message_from_string = get_name_from_database(message_from_id, type='short') + ":"
 
             if globals.channel_list[channel_number] not in globals.all_messages:
                 globals.all_messages[globals.channel_list[channel_number]] = []

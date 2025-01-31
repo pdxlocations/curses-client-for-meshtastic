@@ -3,8 +3,7 @@ import google.protobuf.json_format
 from meshtastic import BROADCAST_NUM
 from meshtastic.protobuf import mesh_pb2, portnums_pb2
 
-from db_handler import save_message_to_db, update_ack_nak
-from utilities.utils import get_name_from_number
+from db_handler import save_message_to_db, update_ack_nak, get_name_from_database
 import default_config as config
 import globals
 
@@ -57,18 +56,18 @@ def on_response_traceroute(packet):
 
     msg_str = "Traceroute to:\n"
 
-    route_str = get_name_from_number(packet["to"], 'short') or f"{packet['to']:08x}" # Start with destination of response
+    route_str = get_name_from_database(packet["to"], 'short') or f"{packet['to']:08x}" # Start with destination of response
 
     # SNR list should have one more entry than the route, as the final destination adds its SNR also
     lenTowards = 0 if "route" not in msg_dict else len(msg_dict["route"])
     snrTowardsValid = "snrTowards" in msg_dict and len(msg_dict["snrTowards"]) == lenTowards + 1
     if lenTowards > 0: # Loop through hops in route and add SNR if available
         for idx, node_num in enumerate(msg_dict["route"]):
-            route_str += " --> " + (get_name_from_number(node_num, 'short') or f"{node_num:08x}") \
+            route_str += " --> " + (get_name_from_database(node_num, 'short') or f"{node_num:08x}") \
                      + " (" + (str(msg_dict["snrTowards"][idx] / 4) if snrTowardsValid and msg_dict["snrTowards"][idx] != UNK_SNR else "?") + "dB)"
 
     # End with origin of response
-    route_str += " --> " + (get_name_from_number(packet["from"], 'short') or f"{packet['from']:08x}") \
+    route_str += " --> " + (get_name_from_database(packet["from"], 'short') or f"{packet['from']:08x}") \
              + " (" + (str(msg_dict["snrTowards"][-1] / 4) if snrTowardsValid and msg_dict["snrTowards"][-1] != UNK_SNR else "?") + "dB)"
 
     msg_str += route_str + "\n" # Print the route towards destination
@@ -78,15 +77,15 @@ def on_response_traceroute(packet):
     backValid = "hopStart" in packet and "snrBack" in msg_dict and len(msg_dict["snrBack"]) == lenBack + 1
     if backValid:
         msg_str += "Back:\n"
-        route_str = get_name_from_number(packet["from"], 'short') or f"{packet['from']:08x}" # Start with origin of response
+        route_str = get_name_from_database(packet["from"], 'short') or f"{packet['from']:08x}" # Start with origin of response
 
         if lenBack > 0: # Loop through hops in routeBack and add SNR if available
             for idx, node_num in enumerate(msg_dict["routeBack"]):
-                route_str += " --> " + (get_name_from_number(node_num, 'short') or f"{node_num:08x}") \
+                route_str += " --> " + (get_name_from_database(node_num, 'short') or f"{node_num:08x}") \
                          + " (" + (str(msg_dict["snrBack"][idx] / 4) if msg_dict["snrBack"][idx] != UNK_SNR else "?") + "dB)"
 
         # End with destination of response (us)
-        route_str += " --> " + (get_name_from_number(packet["to"], 'short') or f"{packet['to']:08x}") \
+        route_str += " --> " + (get_name_from_database(packet["to"], 'short') or f"{packet['to']:08x}") \
                  + " (" + (str(msg_dict["snrBack"][-1] / 4) if msg_dict["snrBack"][-1] != UNK_SNR else "?") + "dB)"
 
         msg_str += route_str + "\n" # Print the route back to us
@@ -103,7 +102,7 @@ def on_response_traceroute(packet):
         add_notification(channel_number)
         refresh_channels = True
 
-    message_from_string = get_name_from_number(packet['from'], type='short') + ":\n"
+    message_from_string = get_name_from_database(packet['from'], type='short') + ":\n"
 
     if globals.channel_list[channel_number] not in globals.all_messages:
         globals.all_messages[globals.channel_list[channel_number]] = []

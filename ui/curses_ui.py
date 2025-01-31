@@ -1,9 +1,10 @@
 import curses
 import textwrap
-from utilities.utils import get_name_from_number, get_channels, get_time_ago
+from utilities.utils import get_channels, get_time_ago
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 from ui.colors import setup_colors, get_color
+from db_handler import get_name_from_database
 import default_config as config
 import ui.dialog
 import globals
@@ -57,7 +58,7 @@ def draw_function_win():
     draw_centered_text_field(function_win, function_str, 0, get_color("commands"))
 
 def get_msg_window_lines():
-    packetlog_height = packetlog_win.getmaxyx()[0] if globals.display_log else 0
+    packetlog_height = packetlog_win.getmaxyx()[0] - 1 if globals.display_log else 0
     return messages_box.getmaxyx()[0] - 2 - packetlog_height
 
 def refresh_pad(window):
@@ -100,7 +101,7 @@ def highlight_line(highlight, window, line):
 
     if(window == 2):
         pad = nodes_pad
-        select_len = len(get_name_from_number(globals.node_list[line], "long"))
+        select_len = len(get_name_from_database(globals.node_list[line], "long"))
 
         pad.chgat(line, 1, select_len, nd_color | curses.A_REVERSE if highlight else nd_color)
 
@@ -109,7 +110,7 @@ def highlight_line(highlight, window, line):
         win_width = channel_box.getmaxyx()[1]
 
         if(isinstance(channel, int)):
-            channel = get_name_from_number(channel, type="long")
+            channel = get_name_from_database(channel, type="long")
         select_len = min(len(channel), win_width - 4)
 
         if line == globals.selected_channel and highlight == False:
@@ -175,7 +176,7 @@ def draw_channel_list():
     for i, channel in enumerate(list(globals.all_messages.keys())):
         # Convert node number to long name if it's an integer
         if isinstance(channel, int):
-            channel = get_name_from_number(channel, type='long')
+            channel = get_name_from_database(channel, type='long')
 
         # Determine whether to add the notification
         notification = " " + config.notification_symbol if i in globals.notifications else ""
@@ -247,9 +248,9 @@ def draw_node_list():
 
     for i, node in enumerate(globals.node_list):
         if globals.selected_node == i and globals.current_window == 2:
-            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), get_color("node_list", reverse=True))
+            nodes_pad.addstr(i, 1, get_name_from_database(node, "long"), get_color("node_list", reverse=True))
         else:
-            nodes_pad.addstr(i, 1, get_name_from_number(node, "long"), get_color("node_list"))
+            nodes_pad.addstr(i, 1, get_name_from_database(node, "long"), get_color("node_list"))
 
     nodes_box.attrset(get_color("window_frame_selected") if globals.current_window == 2 else get_color("window_frame"))
     nodes_box.box()
@@ -331,10 +332,10 @@ def draw_packetlog_win():
                 break
             
             # Format each field
-            from_id = get_name_from_number(packet['from'], 'short').ljust(columns[0])
+            from_id = get_name_from_database(packet['from'], 'short').ljust(columns[0])
             to_id = (
                 "BROADCAST".ljust(columns[1]) if str(packet['to']) == "4294967295"
-                else get_name_from_number(packet['to'], 'short').ljust(columns[1])
+                else get_name_from_database(packet['to'], 'short').ljust(columns[1])
             )
             if 'decoded' in packet:
                 port = packet['decoded']['portnum'].ljust(columns[2])
