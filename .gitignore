@@ -1,6 +1,7 @@
 venv/
 .venv/
 __pycache__/
+node-configs/
 client.db
 .DS_Store
 client.log

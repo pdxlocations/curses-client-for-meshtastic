@@ -1,7 +1,7 @@
 
 import yaml
 import logging
-from typing import List, Optional
+from typing import List
 from google.protobuf.json_format import MessageToDict
 from meshtastic import BROADCAST_ADDR, mt_config
 from meshtastic.util import camel_to_snake, snake_to_camel, fromStr
@@ -123,8 +123,8 @@ def setPref(config, comp_name, raw_val) -> bool:
 
 
 
-def config_export(interface):
-    with open("config-export.yaml", encoding="utf8") as file:
+def config_import(interface, filename):
+    with open(filename, encoding="utf8") as file:
         configuration = yaml.safe_load(file)
         closeNow = True
 
@@ -207,7 +207,7 @@ def config_export(interface):
 
 
 
-def export_config(interface) -> str:
+def config_export(interface) -> str:
     """used in --export-config"""
     configObj = {}
 
@@ -277,5 +277,6 @@ def export_config(interface) -> str:
     config_txt = "# start of Meshtastic configure yaml\n"		#checkme - "config" (now changed to config_out)
                                                                         #was used as a string here and a Dictionary above
     config_txt += yaml.dump(configObj)
-    print(config_txt)
+
+    # print(config_txt)
     return config_txt
