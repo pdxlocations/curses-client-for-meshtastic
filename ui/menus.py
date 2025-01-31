@@ -1,7 +1,9 @@
-from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2
+from collections import OrderedDict
+from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2, mesh_pb2
 from save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_shutdown
 import logging, traceback
 import base64
+import globals
 
 def extract_fields(message_instance, current_config=None):
     if isinstance(current_config, dict):  # Handle dictionaries
@@ -81,6 +83,30 @@ def generate_menu_from_protobuf(interface):
     radio = config_pb2.Config()
     current_radio_config = interface.localNode.localConfig if interface else None
     menu_structure["Main Menu"]["Radio Settings"] = extract_fields(radio, current_radio_config)
+
+    # Add Lat/Lon/Alt
+    position_data = {
+        "latitude": (None, current_node_info["position"].get("latitude", "Not Set")),
+        "longitude": (None, current_node_info["position"].get("longitude", "Not Set")),
+        "altitude": (None, current_node_info["position"].get("altitude", "Not Set"))
+    }
+
+    # Get existing position menu items
+    existing_position_menu = menu_structure["Main Menu"]["Radio Settings"].get("position", {})
+
+    # Create an ordered position menu with Lat/Lon/Alt inserted in the middle
+    ordered_position_menu = OrderedDict()
+
+    for key, value in existing_position_menu.items():
+        if key == "fixed_position":  # Insert before or after a specific key
+            ordered_position_menu[key] = value
+            ordered_position_menu.update(position_data)  # Insert Lat/Lon/Alt **right here**
+        else:
+            ordered_position_menu[key] = value
+
+    # Update the menu with the new order
+    menu_structure["Main Menu"]["Radio Settings"]["position"] = ordered_position_menu
+
 
     # Add Module Settings
     module = module_config_pb2.ModuleConfig()

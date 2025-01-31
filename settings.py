@@ -215,6 +215,15 @@ def settings_menu(stdscr, interface):
                     for option, (field, value) in current_menu.items():
                         modified_settings[option] = value
 
+                elif selected_option in ['latitude', 'longitude', 'altitude']:
+                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = current_value if new_value is None else new_value
+                    current_menu[selected_option] = (field, new_value)
+
+                    for option in ['latitude', 'longitude', 'altitude']:
+                        if option in current_menu:
+                            modified_settings[option] = current_menu[option][1]
+
                 elif field.type == 8:  # Handle boolean type
                     new_value = get_bool_selection(selected_option, str(current_value))
                     new_value = new_value == "True" or new_value is True
