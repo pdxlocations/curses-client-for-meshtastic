@@ -415,7 +415,6 @@ def handle_resize(stdscr, firstrun):
         packetlog_win.resize(int(height / 3), messages_width)
         packetlog_win.mvwin(height - int(height / 3) - 3, channel_width)
 
-    draw_function_win()
 
     channel_box.box()
     entry_win.box()
@@ -434,9 +433,15 @@ def handle_resize(stdscr, firstrun):
     entry_win.keypad(True)
     curses.curs_set(1)
 
-    draw_channel_list()
-    draw_node_list()
-    draw_messages_window(True)
+    try:
+        draw_function_win()
+        draw_channel_list()
+        draw_messages_window(True)
+        draw_node_list()
+    except:
+        # Resize events can come faster than we can re-draw, which can cause a curses error.
+        # In this case we'll see another curses.KEY_RESIZE in our key handler and draw again later.
+        pass
 
 def main_ui(stdscr):
     global messages_pad, messages_box, nodes_pad, nodes_box, channel_pad, channel_box, function_win, packetlog_win, entry_win
