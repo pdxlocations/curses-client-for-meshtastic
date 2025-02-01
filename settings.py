@@ -2,7 +2,7 @@ import curses
 import logging
 import os
 
-from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
+from save_to_radio import save_changes
 from utilities.config_io import config_export, config_import
 from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input, select_from_list
 from ui.menus import generate_menu_from_protobuf
@@ -227,28 +227,28 @@ def settings_menu(stdscr, interface):
             elif selected_option == "Reboot":
                 confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
                 if confirmation == "True":
-                    settings_reboot(interface)
+                    interface.localNode.reboot()
                     logging.info(f"Node Reboot Requested by menu")
                     break
                 continue
             elif selected_option == "Reset Node DB":
                 confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
                 if confirmation == "True":
-                    settings_reset_nodedb(interface)
+                    interface.localNode.resetNodeDb()
                     logging.info(f"Node DB Reset Requested by menu")
                     break
                 continue
             elif selected_option == "Shutdown":
                 confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
                 if confirmation == "True":
-                    settings_shutdown(interface)
+                    interface.localNode.shutdown()
                     logging.info(f"Node Shutdown Requested by menu")
                     break
                 continue
             elif selected_option == "Factory Reset":
                 confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
                 if confirmation == "True":
-                    settings_factory_reset(interface)
+                    interface.localNode.factoryReset()
                     logging.info(f"Factory Reset Requested by menu")
                     break
                 continue
@@ -259,7 +259,6 @@ def settings_menu(stdscr, interface):
                 continue
                 # need_redraw = True
                 
-
             field_info = current_menu.get(selected_option)
             if isinstance(field_info, tuple):
                 field, current_value = field_info

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2
-import logging, traceback
+import logging
 import base64
 
 
@@ -16,8 +16,6 @@ def extract_fields(message_instance, current_config=None):
     for field in fields:
         if field.name in {"sessionkey", "channel_num", "id", "ignore_incoming"}:  # Skip certain fields
             continue
-
-
 
         if field.message_type:  # Nested message
             nested_instance = getattr(message_instance, field.name)
@@ -37,9 +35,7 @@ def extract_fields(message_instance, current_config=None):
         else:  # Handle other field types
             current_value = getattr(current_config, field.name, "Not Set") if current_config else "Not Set"
             menu[field.name] = (field, current_value)
-    
     return menu
-
 
 def generate_menu_from_protobuf(interface):
 # Function to generate the menu structure from protobuf messages
@@ -58,7 +54,6 @@ def generate_menu_from_protobuf(interface):
                 "shortName": (None, current_user_config.get("shortName", "Not Set")),
                 "isLicensed": (None, current_user_config.get("isLicensed", "False"))
             }
-
         else:
             logging.info("User settings not found in Node Info")
             menu_structure["Main Menu"]["User Settings"] = "No user settings available"
