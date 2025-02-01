@@ -10,12 +10,11 @@ import ui.dialog
 import globals
 
 def draw_node_details():
-    nodes_snapshot = list(globals.interface.nodes.values())
-
     node = None
-    for node in nodes_snapshot:
-        if globals.node_list[globals.selected_node] == node['num']:
-            break
+    try:
+        node = globals.interface.nodesByNum[globals.node_list[globals.selected_node]]
+    except KeyError:
+        return
 
     function_win.erase()
     function_win.box()
