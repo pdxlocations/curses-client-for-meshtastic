@@ -1,6 +1,7 @@
 import globals
 from datetime import datetime
 from meshtastic.protobuf import config_pb2
+import default_config as config
 
 def get_channels():
     """Retrieve channels from the node and update globals.channel_list and globals.all_messages."""
@@ -36,10 +37,17 @@ def get_channels():
 def get_node_list():
     if globals.interface.nodes:
         my_node_num = globals.myNodeNum
-        sorted_nodes = sorted(
-            globals.interface.nodes.values(),
-            key = lambda node: (node['lastHeard'] if ('lastHeard' in node and isinstance(node['lastHeard'], int)) else 0),
-            reverse = True)
+
+        def node_sort(node):
+            if(config.node_sort == 'lastHeard'):
+                return -node['lastHeard'] if ('lastHeard' in node and isinstance(node['lastHeard'], int)) else 0
+            elif(config.node_sort == "name"):
+                return node['user']['longName']
+            elif(config.node_sort == "hops"):
+                return node['hopsAway'] if 'hopsAway' in node else 100
+            else:
+                return node
+        sorted_nodes = sorted(globals.interface.nodes.values(), key = node_sort)
         node_list = [node['num'] for node in sorted_nodes if node['num'] != my_node_num]
         return [my_node_num] + node_list  # Ensuring your node is always first
     return []
