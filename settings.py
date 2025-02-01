@@ -1,8 +1,10 @@
 import curses
 import logging
+import os
 
 from save_to_radio import settings_factory_reset, settings_reboot, settings_reset_nodedb, settings_shutdown, save_changes
-from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input
+from utilities.config_io import config_export, config_import
+from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input, select_from_list
 from ui.menus import generate_menu_from_protobuf
 from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
@@ -166,6 +168,62 @@ def settings_menu(stdscr, interface):
 
             if selected_option == "Exit":
                 break
+
+
+            elif selected_option == "Export Config":
+                filename = get_user_input("Enter a filename for the config file")
+
+                if not filename:
+                    logging.warning("Export aborted: No filename provided.")
+                    continue  # Go back to the menu
+
+                if not filename.lower().endswith(".yaml"):
+                    filename += ".yaml"
+
+                try:
+                    config_text = config_export(globals.interface)
+                    app_directory = os.path.dirname(os.path.abspath(__file__))
+                    config_folder = "node-configs"
+                    yaml_file_path = os.path.join(app_directory, config_folder, filename)
+
+                    if os.path.exists(yaml_file_path):
+                        overwrite = get_bool_selection(f"{filename} already exists. Overwrite?", None)
+                        if overwrite == "False":
+                            logging.info("Export cancelled: User chose not to overwrite.")
+                            continue  # Return to menu
+                    os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
+                    with open(yaml_file_path, "w", encoding="utf-8") as file:
+                        file.write(config_text)
+                    logging.info(f"Config file saved to {yaml_file_path}")
+                    break
+                except PermissionError:
+                    logging.error(f"Permission denied: Unable to write to {yaml_file_path}")
+                except OSError as e:
+                    logging.error(f"OS error while saving config: {e}")
+                except Exception as e:
+                    logging.error(f"Unexpected error: {e}")
+                continue
+
+
+
+
+            elif selected_option == "Load Config":
+
+                app_directory = os.path.dirname(os.path.abspath(__file__))
+                config_folder = "node-configs"
+                folder_path = os.path.join(app_directory, config_folder)
+                file_list = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+                filename = select_from_list("Choose a config file", None, file_list)
+                if filename:
+                    file_path = os.path.join(app_directory, config_folder, filename)
+                    overwrite = get_bool_selection(f"Are you sure you want to load {filename}?", None)
+                    if overwrite == "True":
+                        config_import(globals.interface, file_path)
+                    break
+                continue
+
+
+
             elif selected_option == "Reboot":
                 confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
                 if confirmation == "True":

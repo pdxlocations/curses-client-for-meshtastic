@@ -1,9 +1,8 @@
 from collections import OrderedDict
-from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2, mesh_pb2
-from save_to_radio import settings_reboot, settings_factory_reset, settings_reset_nodedb, settings_shutdown
+from meshtastic.protobuf import config_pb2, module_config_pb2, channel_pb2
 import logging, traceback
 import base64
-import globals
+
 
 def extract_fields(message_instance, current_config=None):
     if isinstance(current_config, dict):  # Handle dictionaries
@@ -117,10 +116,12 @@ def generate_menu_from_protobuf(interface):
     menu_structure["Main Menu"]["App Settings"] = {"Open": "app_settings"}
 
     # Add additional settings options
-    menu_structure["Main Menu"]["Reboot"] = settings_reboot
-    menu_structure["Main Menu"]["Reset Node DB"] = settings_reset_nodedb
-    menu_structure["Main Menu"]["Shutdown"] = settings_shutdown
-    menu_structure["Main Menu"]["Factory Reset"] = settings_factory_reset
+    menu_structure["Main Menu"]["Export Config"] = None
+    menu_structure["Main Menu"]["Load Config"] = None
+    menu_structure["Main Menu"]["Reboot"] = None
+    menu_structure["Main Menu"]["Reset Node DB"] = None
+    menu_structure["Main Menu"]["Shutdown"] = None
+    menu_structure["Main Menu"]["Factory Reset"] = None
 
     # Add Exit option
     menu_structure["Main Menu"]["Exit"] = None
