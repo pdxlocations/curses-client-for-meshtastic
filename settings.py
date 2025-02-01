@@ -93,6 +93,7 @@ def move_highlight(old_idx, new_idx, options, show_save_option, menu_win, menu_p
                      menu_win.getbegyx()[0] + 3 + menu_win.getmaxyx()[0] - 5 - (2 if show_save_option else 0), menu_win.getbegyx()[1] + menu_win.getmaxyx()[1] - 8)
 
 def settings_menu(stdscr, interface):
+    curses.update_lines_cols()
 
     menu = generate_menu_from_protobuf(interface)
     current_menu = menu["Main Menu"]
@@ -135,6 +136,10 @@ def settings_menu(stdscr, interface):
             old_selected_index = selected_index
             selected_index = 0 if selected_index == max_index else selected_index + 1
             move_highlight(old_selected_index, selected_index, options, show_save_option, menu_win, menu_pad)
+
+        elif key == curses.KEY_RESIZE:
+            need_redraw = True
+            curses.update_lines_cols()
 
         elif key == ord("\t") and show_save_option:
             old_selected_index = selected_index

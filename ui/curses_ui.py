@@ -9,13 +9,6 @@ import default_config as config
 import ui.dialog
 import globals
 
-def refresh_all():
-    for i, box in enumerate([channel_box, messages_box, nodes_box]):
-        box.attrset(get_color("window_frame_selected") if globals.current_window == i else get_color("window_frame"))
-        box.box()
-        box.refresh()
-        refresh_pad(i)
-
 def draw_node_details():
     nodes_snapshot = list(globals.interface.nodes.values())
 
@@ -49,9 +42,13 @@ def draw_node_details():
     draw_centered_text_field(function_win, nodestr, 0, get_color("commands"))
 
 def draw_function_win():
-    draw_centered_text_field(function_win,
-                             f"↑→↓← = Select    ENTER = Send    ` = Settings    ^P = Packet Log    ESC = Quit",
-                             0, get_color("commands"))
+    cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit"]
+    function_str = ""
+    for s in cmds:
+        if(len(function_str) + len(s) < function_win.getmaxyx()[1]):
+            function_str += s
+
+    draw_centered_text_field(function_win, function_str, 0, get_color("commands"))
 
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] - 1 if globals.display_log else 0
@@ -351,84 +348,107 @@ def draw_packetlog_win():
         packetlog_win.box()
         packetlog_win.refresh()
 
-
-def main_ui(stdscr):
-    global messages_pad, messages_box, nodes_pad, nodes_box, channel_pad, channel_box, function_win, packetlog_win
-    stdscr.keypad(True)
-    get_channels()
+def handle_resize(stdscr, firstrun):
+    global messages_pad, messages_box, nodes_pad, nodes_box, channel_pad, channel_box, function_win, packetlog_win, entry_win
 
     # Calculate window max dimensions
     height, width = stdscr.getmaxyx()
 
     # Define window dimensions and positions
-    entry_win = curses.newwin(3, width, 0, 0)
     channel_width = 3 * (width // 16)
     nodes_width = 5 * (width // 16)
     messages_width = width - channel_width - nodes_width
 
-    channel_box = curses.newwin(height - 6, channel_width, 3, 0)
-    messages_box = curses.newwin(height - 6, messages_width, 3, channel_width)
-    nodes_box = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
+    if firstrun:
+        entry_win = curses.newwin(3, width, 0, 0)
+        channel_box = curses.newwin(height - 6, channel_width, 3, 0)
+        messages_box = curses.newwin(height - 6, messages_width, 3, channel_width)
+        nodes_box = curses.newwin(height - 6, nodes_width, 3, channel_width + messages_width)
+        function_win = curses.newwin(3, width, height - 3, 0)
+        packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
 
-    entry_win.bkgd(get_color("background"))
-    channel_box.bkgd(get_color("background"))
-    messages_box.bkgd(get_color("background"))
-    nodes_box.bkgd(get_color("background"))
+        # Will be resized to what we need when drawn
+        messages_pad = curses.newpad(1, 1)
+        nodes_pad = curses.newpad(1,1)
+        channel_pad = curses.newpad(1,1)
 
-    # Will be resized to what we need when drawn
-    messages_pad = curses.newpad(1, 1)
-    nodes_pad = curses.newpad(1,1)
-    channel_pad = curses.newpad(1,1)
+        entry_win.bkgd(get_color("background"))
+        channel_box.bkgd(get_color("background"))
+        messages_box.bkgd(get_color("background"))
+        nodes_box.bkgd(get_color("background"))
 
-    messages_pad.bkgd(get_color("background"))
-    nodes_pad.bkgd(get_color("background"))
-    channel_pad.bkgd(get_color("background"))
+        messages_pad.bkgd(get_color("background"))
+        nodes_pad.bkgd(get_color("background"))
+        channel_pad.bkgd(get_color("background"))
 
-    function_win = curses.newwin(3, width, height - 3, 0)
-    packetlog_win = curses.newwin(int(height / 3), messages_width, height - int(height / 3) - 3, channel_width)
+        function_win.bkgd(get_color("background"))
+        packetlog_win.bkgd(get_color("background"))
 
-    function_win.bkgd(get_color("background"))
-    packetlog_win.bkgd(get_color("background"))
+        channel_box.attrset(get_color("window_frame"))
+        entry_win.attrset(get_color("window_frame"))
+        nodes_box.attrset(get_color("window_frame"))
+        messages_box.attrset(get_color("window_frame"))
+        function_win.attrset(get_color("window_frame"))
 
-    draw_function_win()
+    else:
+        entry_win.erase()
+        channel_box.erase()
+        messages_box.erase()
+        nodes_box.erase()
+        function_win.erase()
+        packetlog_win.erase()
+        entry_win.resize(3, width)
+        channel_box.resize(height - 6, channel_width)
+        messages_box.resize(height - 6, messages_width)
+        messages_box.mvwin(3, channel_width)
+        nodes_box.resize(height - 6, nodes_width)
+        nodes_box.mvwin(3, channel_width + messages_width)
+        function_win.resize(3, width)
+        function_win.mvwin(height - 3, 0)
+        packetlog_win.resize(int(height / 3), messages_width)
+        packetlog_win.mvwin(height - int(height / 3) - 3, channel_width)
 
-    # Draw boxes around windows
 
-    # Set the normal frame color for the channel box
-    channel_box.attrset(get_color("window_frame"))
     channel_box.box()
-
-    # Draw boxes for other windows
-    entry_win.attrset(get_color("window_frame"))
     entry_win.box()
-
-    nodes_box.attrset(get_color("window_frame"))
     nodes_box.box()
-
-    messages_box.attrset(get_color("window_frame"))
     messages_box.box()
 
-    function_win.attrset(get_color("window_frame"))
     function_win.box()
 
     # Refresh all windows
     entry_win.refresh()
-
     channel_box.refresh()
     function_win.refresh()
     nodes_box.refresh()
     messages_box.refresh()
-    input_text = ""
 
     entry_win.keypad(True)
     curses.curs_set(1)
 
-    draw_channel_list()
-    draw_node_list()
-    draw_messages_window(True)
+    try:
+        draw_function_win()
+        draw_channel_list()
+        draw_messages_window(True)
+        draw_node_list()
+    except:
+        # Resize events can come faster than we can re-draw, which can cause a curses error.
+        # In this case we'll see another curses.KEY_RESIZE in our key handler and draw again later.
+        pass
+
+def main_ui(stdscr):
+    global messages_pad, messages_box, nodes_pad, nodes_box, channel_pad, channel_box, function_win, packetlog_win, entry_win
+    messages_pad = messages_box = nodes_pad = nodes_box = channel_pad = channel_box = function_win = packetlog_win = entry_win = None
+
+    stdscr.keypad(True)
+    get_channels()
+
+    input_text = ""
+
+    handle_resize(stdscr, True)
 
     while True:
-        draw_text_field(entry_win, f"Input: {input_text[-(width - 10):]}", get_color("input"))
+        draw_text_field(entry_win, f"Input: {input_text[-(stdscr.getmaxyx()[1] - 10):]}", get_color("input"))
 
         # Get user input from entry window
         char = entry_win.get_wch()
@@ -442,6 +462,10 @@ def main_ui(stdscr):
                 scroll_messages(-1)
             elif globals.current_window == 2:
                 scroll_nodes(-1)
+
+        elif char == curses.KEY_RESIZE:
+            input_text = ""
+            handle_resize(stdscr, False)
 
         elif char == curses.KEY_DOWN:
             if globals.current_window == 0:
@@ -546,7 +570,7 @@ def main_ui(stdscr):
             curses.curs_set(0)  # Hide cursor
             ui.dialog.dialog(stdscr, "Traceroute Sent", "Results will appear in messages window.\nNote: Traceroute is limited to once every 30 seconds.")
             curses.curs_set(1)  # Show cursor again
-            refresh_all()
+            handle_resize(stdscr, False)
 
         elif char in (chr(curses.KEY_ENTER), chr(10), chr(13)):
             if globals.current_window == 2:
@@ -585,7 +609,7 @@ def main_ui(stdscr):
             curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
             curses.curs_set(1)
-            refresh_all()
+            handle_resize(stdscr, False)
         
         elif char == chr(16):
             # Display packet log
