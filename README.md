@@ -1,5 +1,9 @@
 ## Contact - A Console UI for Meshtastic
-Powered by Meshtastic.org
+### (Formerly Curses Client for Meshtastic)
+
+#### Powered by Meshtastic.org
+
+This Python curses client for Meshtastic is a terminal-based client designed to manage device settings, enable mesh chat communication, and handle configuration backups and restores.
 
 <img width="846" alt="Screenshot_2024-03-29_at_4 00 29_PM" src="https://github.com/pdxlocations/meshtastic-curses-client/assets/117498748/e99533b7-5c0c-463d-8d5f-6e3cccaeced7">
 
