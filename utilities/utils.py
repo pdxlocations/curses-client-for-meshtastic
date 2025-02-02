@@ -57,21 +57,6 @@ def convert_to_camel_case(string):
     camel_case_string = ''.join(word.capitalize() for word in words)
     return camel_case_string
 
-def get_name_from_number(number, type='long'):
-    name = ""
-    nodes_snapshot = list(globals.interface.nodes.values())
-    
-    for node in nodes_snapshot:
-        if number == node['num']:
-            if type == 'long':
-                return node['user']['longName']
-            elif type == 'short':
-                return node['user']['shortName']
-            else:
-                pass
-    # If no match is found, use the ID as a string
-    return str(decimal_to_hex(number))
-
 def get_time_ago(timestamp):
     now = datetime.now()
     dt = datetime.fromtimestamp(timestamp)
