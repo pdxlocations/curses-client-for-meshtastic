@@ -21,7 +21,7 @@ def draw_node_details():
 
     nodestr = ""
     width = function_win.getmaxyx()[1]
-    node_details_list = [f"{node['user']['longName']}"
+    node_details_list = [f"{node['user']['longName']} "
                            if 'user' in node and 'longName' in node['user'] else "",
                          f"({node['user']['shortName']})"
                            if 'user' in node and 'shortName' in node['user'] else "",
