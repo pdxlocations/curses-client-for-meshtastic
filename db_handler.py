@@ -19,7 +19,6 @@ def save_message_to_db(channel, user_id, message_text):
     try:
         quoted_table_name = get_table_name(channel)
 
-        # Ensure table exists
         schema = '''
             user_id TEXT,
             message_text TEXT,
@@ -70,15 +69,12 @@ def update_ack_nak(channel, timestamp, message, ack):
         logging.error(f"Unexpected error in update_ack_nak: {e}")
 
 
-from datetime import datetime
-
 def load_messages_from_db():
     """Load messages from the database for all channels and update globals.all_messages and globals.channel_list."""
     try:
         with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
 
-            # Retrieve all table names that match the pattern
             query = "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE ?"
             db_cursor.execute(query, (f"{str(globals.myNodeNum)}_%_messages",))
             tables = [row[0] for row in db_cursor.fetchall()]
@@ -145,20 +141,6 @@ def load_messages_from_db():
     except sqlite3.Error as e:
         logging.error(f"SQLite error in load_messages_from_db: {e}")
 
-
-def ensure_node_table_exists():
-    """Ensure the node database table exists."""
-    table_name = f'"{globals.myNodeNum}_nodedb"'  # Quote for safety
-    schema = '''
-        user_id TEXT PRIMARY KEY,
-        long_name TEXT,
-        short_name TEXT,
-        hw_model TEXT,
-        is_licensed TEXT,
-        role TEXT,
-        public_key TEXT
-    '''
-    ensure_table_exists(table_name, schema)
 
 def init_nodedb():
     """Initialize the node database and update it with nodes from the interface."""
@@ -249,6 +231,22 @@ def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=No
         logging.error(f"SQLite error in update_node_info_in_db: {e}")
     except Exception as e:
         logging.error(f"Unexpected error in update_node_info_in_db: {e}")
+
+
+def ensure_node_table_exists():
+    """Ensure the node database table exists."""
+    table_name = f'"{globals.myNodeNum}_nodedb"'  # Quote for safety
+    schema = '''
+        user_id TEXT PRIMARY KEY,
+        long_name TEXT,
+        short_name TEXT,
+        hw_model TEXT,
+        is_licensed TEXT,
+        role TEXT,
+        public_key TEXT
+    '''
+    ensure_table_exists(table_name, schema)
+
 
 def ensure_table_exists(table_name, schema):
     """Ensure the given table exists in the database."""
