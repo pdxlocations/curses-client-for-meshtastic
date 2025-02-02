@@ -41,7 +41,7 @@ def draw_node_details():
     draw_centered_text_field(function_win, nodestr, 0, get_color("commands"))
 
 def draw_function_win():
-    cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit"]
+    cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit", "    ^t = Traceroute", "    ^d = Archive Chat"]
     function_str = ""
     for s in cmds:
         if(len(function_str) + len(s) < function_win.getmaxyx()[1]):
