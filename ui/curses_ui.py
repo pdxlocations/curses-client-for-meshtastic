@@ -646,6 +646,7 @@ def main_ui(stdscr):
 
                     del globals.channel_list[globals.selected_channel]
                     globals.selected_channel = min(globals.selected_channel, len(globals.channel_list) - 1)
+                    select_channel(globals.selected_channel)
                     draw_channel_list()
                     draw_messages_window()
 
