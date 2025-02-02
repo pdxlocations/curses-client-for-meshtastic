@@ -13,26 +13,23 @@ def get_table_name(channel):
     quoted_table_name = f'"{table_name}"'  # Quote the table name becuase we begin with numerics and contain spaces
     return quoted_table_name
 
+
 def save_message_to_db(channel, user_id, message_text):
     """Save messages to the database, ensuring the table exists."""
     try:
+        quoted_table_name = get_table_name(channel)
+
+        # Ensure table exists
+        schema = '''
+            user_id TEXT,
+            message_text TEXT,
+            timestamp INTEGER,
+            ack_type TEXT
+        '''
+        ensure_table_exists(quoted_table_name, schema)
+
         with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
-
-            quoted_table_name = get_table_name(channel)
-
-            # Ensure the table exists
-            create_table_query = f'''
-                CREATE TABLE IF NOT EXISTS {quoted_table_name} (
-                    user_id TEXT,
-                    message_text TEXT,
-                    timestamp INTEGER,
-                    ack_type TEXT
-                )
-            '''
-
-            db_cursor.execute(create_table_query)
-
             timestamp = int(time.time())
 
             # Insert the message
@@ -47,9 +44,9 @@ def save_message_to_db(channel, user_id, message_text):
 
     except sqlite3.Error as e:
         logging.error(f"SQLite error in save_message_to_db: {e}")
-
     except Exception as e:
         logging.error(f"Unexpected error in save_message_to_db: {e}")
+
 
 def update_ack_nak(channel, timestamp, message, ack):
     try:
@@ -151,34 +148,17 @@ def load_messages_from_db():
 
 def ensure_node_table_exists():
     """Ensure the node database table exists."""
-    try:
-        with sqlite3.connect(config.db_file_path) as db_connection:
-            db_cursor = db_connection.cursor()
-
-            # Construct the table name
-            table_name = f"{str(globals.myNodeNum)}_nodedb"
-            nodeinfo_table = f'"{table_name}"'  # Quote since we start with a number
-
-            # Create the table if it does not exist
-            create_table_query = f'''
-                CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
-                    user_id TEXT PRIMARY KEY,
-                    long_name TEXT,
-                    short_name TEXT,
-                    hw_model TEXT,
-                    is_licensed TEXT,
-                    role TEXT,
-                    public_key TEXT
-                )
-            '''
-            db_cursor.execute(create_table_query)
-            db_connection.commit()
-
-    except sqlite3.Error as e:
-        logging.error(f"SQLite error in ensure_node_table_exists: {e}")
-    except Exception as e:
-        logging.error(f"Unexpected error in ensure_node_table_exists: {e}")
-
+    table_name = f'"{globals.myNodeNum}_nodedb"'  # Quote for safety
+    schema = '''
+        user_id TEXT PRIMARY KEY,
+        long_name TEXT,
+        short_name TEXT,
+        hw_model TEXT,
+        is_licensed TEXT,
+        role TEXT,
+        public_key TEXT
+    '''
+    ensure_table_exists(table_name, schema)
 
 def init_nodedb():
     """Initialize the node database and update it with nodes from the interface."""
@@ -186,21 +166,19 @@ def init_nodedb():
         if not globals.interface.nodes:
             return  # No nodes to initialize
 
-        # Ensure the table exists without inserting a dummy record
-        ensure_node_table_exists()
+        ensure_node_table_exists()  # Ensure the table exists before insertion
 
-        # Iterate over nodes and insert/update them
+        # Insert or update all nodes
         for node in globals.interface.nodes.values():
-            user_id = node['num']
-            long_name = node['user'].get('longName', '')
-            short_name = node['user'].get('shortName', '')
-            hw_model = node['user'].get('hwModel', '')
-            is_licensed = node['user'].get('isLicensed', '0')
-            role = node['user'].get('role', 'CLIENT')
-            public_key = node['user'].get('publicKey', '')
-
-            # Use update_node_info_in_db() to update or insert node info
-            update_node_info_in_db(user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+            update_node_info_in_db(
+                user_id=node['num'],
+                long_name=node['user'].get('longName', ''),
+                short_name=node['user'].get('shortName', ''),
+                hw_model=node['user'].get('hwModel', ''),
+                is_licensed=node['user'].get('isLicensed', '0'),
+                role=node['user'].get('role', 'CLIENT'),
+                public_key=node['user'].get('publicKey', '')
+            )
 
         logging.info("Node database initialized successfully.")
 
@@ -232,35 +210,19 @@ def maybe_store_nodeinfo_in_db(packet):
 def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=None, is_licensed=None, role=None, public_key=None):
     """Update or insert node information into the database, preserving unchanged fields."""
     try:
+        ensure_node_table_exists()  # Ensure the table exists before any operation
+
         with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
+            table_name = f'"{globals.myNodeNum}_nodedb"'  # Quote in case of numeric names
 
-            # Table name construction (specific to the current node)
-            table_name = f"{str(globals.myNodeNum)}_nodedb"
-            nodeinfo_table = f'"{table_name}"'  # Quote in case the name starts with a number
-
-            # Ensure the table exists
-            create_table_query = f'''
-                CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
-                    user_id TEXT PRIMARY KEY,
-                    long_name TEXT,
-                    short_name TEXT,
-                    hw_model TEXT,
-                    is_licensed TEXT,
-                    role TEXT,
-                    public_key TEXT
-                )
-            '''
-            db_cursor.execute(create_table_query)
-
-            # Fetch the current values for this user_id (if they exist)
-            db_cursor.execute(f'SELECT * FROM {nodeinfo_table} WHERE user_id = ?', (user_id,))
+            # Fetch existing values to preserve unchanged fields
+            db_cursor.execute(f'SELECT * FROM {table_name} WHERE user_id = ?', (user_id,))
             existing_record = db_cursor.fetchone()
 
-            # If there's an existing record, preserve any fields that were not provided in the update
             if existing_record:
                 existing_long_name, existing_short_name, existing_hw_model, existing_is_licensed, existing_role, existing_public_key = existing_record[1:]
-                
+
                 long_name = long_name if long_name is not None else existing_long_name
                 short_name = short_name if short_name is not None else existing_short_name
                 hw_model = hw_model if hw_model is not None else existing_hw_model
@@ -268,9 +230,9 @@ def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=No
                 role = role if role is not None else existing_role
                 public_key = public_key if public_key is not None else existing_public_key
 
-            # Upsert (update if exists, insert otherwise)
+            # Upsert logic
             upsert_query = f'''
-                INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+                INSERT INTO {table_name} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                     long_name = excluded.long_name,
@@ -280,18 +242,26 @@ def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=No
                     role = excluded.role,
                     public_key = excluded.public_key
             '''
-
-            db_cursor.execute(upsert_query, (
-                user_id, long_name, short_name, hw_model, is_licensed, role, public_key
-            ))
-
+            db_cursor.execute(upsert_query, (user_id, long_name, short_name, hw_model, is_licensed, role, public_key))
             db_connection.commit()
-
 
     except sqlite3.Error as e:
         logging.error(f"SQLite error in update_node_info_in_db: {e}")
     except Exception as e:
         logging.error(f"Unexpected error in update_node_info_in_db: {e}")
+
+def ensure_table_exists(table_name, schema):
+    """Ensure the given table exists in the database."""
+    try:
+        with sqlite3.connect(config.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+            create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} ({schema})"
+            db_cursor.execute(create_table_query)
+            db_connection.commit()
+    except sqlite3.Error as e:
+        logging.error(f"SQLite error in ensure_table_exists({table_name}): {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error in ensure_table_exists({table_name}): {e}")
 
 
 def get_name_from_database(user_id, type="long"):
