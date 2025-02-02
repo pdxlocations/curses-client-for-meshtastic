@@ -113,6 +113,7 @@ def move_highlight(old_idx, new_idx, options, enum_win, enum_pad):
                      enum_win.getbegyx()[0] + 2, enum_win.getbegyx()[1] + 4,
                      enum_win.getbegyx()[0] + enum_win.getmaxyx()[0] - 2, enum_win.getbegyx()[1] + 4 + enum_win.getmaxyx()[1] - 4)
 
+
 def get_enum_input(options, current_value):
     selected_index = options.index(current_value) if current_value in options else 0
 
@@ -237,7 +238,7 @@ def get_list_input(prompt, current_option, list_options):
     list_pad.bkgd(get_color("background"))
 
     # Render header
-    list_win.clear()
+    list_win.erase()
     list_win.border()
     list_win.addstr(1, 2, prompt, get_color("settings_default", bold=True))
 
@@ -261,7 +262,7 @@ def get_list_input(prompt, current_option, list_options):
 
             if selected_index > 0:
                 selected_index -= 1
-
+    
         elif key == curses.KEY_DOWN:
             if selected_index < len(list_options) - 1:
                 selected_index += 1
