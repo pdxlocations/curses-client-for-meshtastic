@@ -1,8 +1,7 @@
-
 import sqlite3
 import time
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from utilities.utils import decimal_to_hex
 import default_config as config
@@ -105,7 +104,7 @@ def load_messages_from_db():
                     # Extract the channel name from the table name
                     channel = table_name.split("_")[1]
                     
-                    # Convert the channel to an integer if it's numeric, otherwise keep it as a string
+                    # Convert the channel to an integer if it's numeric, otherwise keep it as a string (nodenum vs channel name)
                     channel = int(channel) if channel.isdigit() else channel
                     
                     # Add the channel to globals.channel_list if not already present
@@ -153,14 +152,65 @@ def load_messages_from_db():
 def init_nodedb():
     """Initialize the node database and update it with nodes from the interface."""
     try:
+        if not globals.interface.nodes:
+            return  # No nodes to initialize
+
         with sqlite3.connect(config.db_file_path) as db_connection:
             db_cursor = db_connection.cursor()
 
-            # Table name construction
-            table_name = f"{str(globals.myNodeNum)}_nodedb"
-            nodeinfo_table = f'"{table_name}"'  # Quote the table name because it might begin with numerics
+            # Ensure the table exists by calling update_node_info_in_db with an empty user_id
+            update_node_info_in_db("dummy_id")
 
-            # Create the table if it doesn't exist
+            # Iterate over nodes and insert/update them
+            for node in globals.interface.nodes.values():
+                user_id = node['num']
+                long_name = node['user'].get('longName', '')
+                short_name = node['user'].get('shortName', '')
+                hw_model = node['user'].get('hwModel', '')
+                is_licensed = node['user'].get('isLicensed', '0')
+                role = node['user'].get('role', 'CLIENT')
+                public_key = node['user'].get('publicKey', '')
+
+                update_node_info_in_db(user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+
+            logging.info("Node database initialized successfully.")
+
+    except sqlite3.Error as e:
+        logging.error(f"SQLite error in init_nodedb: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error in init_nodedb: {e}")
+
+
+def maybe_store_nodeinfo_in_db(packet):
+    """Save nodeinfo unless that record is already there, updating if necessary."""
+    try:
+        user_id = packet['from']
+        long_name = packet['decoded']['user']['longName']
+        short_name = packet['decoded']['user']['shortName']
+        hw_model = packet['decoded']['user']['hwModel']
+        is_licensed = packet['decoded']['user'].get('isLicensed', '0')
+        role = packet['decoded']['user'].get('role', 'CLIENT')
+        public_key = packet['decoded']['user'].get('publicKey', '')
+
+        update_node_info_in_db(user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+
+    except sqlite3.Error as e:
+        logging.error(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error in maybe_store_nodeinfo_in_db: {e}")
+
+
+def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=None, is_licensed=None, role=None, public_key=None):
+    """Update or insert node information into the database, preserving unchanged fields."""
+    try:
+        with sqlite3.connect(config.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+
+            # Table name construction (specific to the current node)
+            table_name = f"{str(globals.myNodeNum)}_nodedb"
+            nodeinfo_table = f'"{table_name}"'  # Quote in case the name starts with a number
+
+            # Ensure the table exists
             create_table_query = f'''
                 CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
                     user_id TEXT PRIMARY KEY,
@@ -174,125 +224,45 @@ def init_nodedb():
             '''
             db_cursor.execute(create_table_query)
 
-            # Iterate over nodes and insert/update them
-            if globals.interface.nodes:
-                for node in globals.interface.nodes.values():
-                    role = node['user'].get('role', 'CLIENT')
-                    is_licensed = node['user'].get('isLicensed', '0')
-                    public_key = node['user'].get('publicKey', '')
+            # Fetch the current values for this user_id (if they exist)
+            db_cursor.execute(f'SELECT * FROM {nodeinfo_table} WHERE user_id = ?', (user_id,))
+            existing_record = db_cursor.fetchone()
 
-                    upsert_query = f'''
-                        INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                        ON CONFLICT(user_id) DO UPDATE SET
-                            long_name = excluded.long_name,
-                            short_name = excluded.short_name,
-                            hw_model = excluded.hw_model,
-                            is_licensed = excluded.is_licensed,
-                            role = excluded.role,
-                            public_key = excluded.public_key
-                    '''
+            # If there's an existing record, preserve any fields that were not provided in the update
+            if existing_record:
+                existing_long_name, existing_short_name, existing_hw_model, existing_is_licensed, existing_role, existing_public_key = existing_record[1:]
+                
+                long_name = long_name if long_name is not None else existing_long_name
+                short_name = short_name if short_name is not None else existing_short_name
+                hw_model = hw_model if hw_model is not None else existing_hw_model
+                is_licensed = is_licensed if is_licensed is not None else existing_is_licensed
+                role = role if role is not None else existing_role
+                public_key = public_key if public_key is not None else existing_public_key
 
-                    db_cursor.execute(upsert_query, (
-                        node['num'],
-                        node['user']['longName'],
-                        node['user']['shortName'],
-                        node['user']['hwModel'],
-                        is_licensed,
-                        role,
-                        public_key
-                    ))
+            # Upsert (update if exists, insert otherwise)
+            upsert_query = f'''
+                INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    long_name = excluded.long_name,
+                    short_name = excluded.short_name,
+                    hw_model = excluded.hw_model,
+                    is_licensed = excluded.is_licensed,
+                    role = excluded.role,
+                    public_key = excluded.public_key
+            '''
+
+            db_cursor.execute(upsert_query, (
+                user_id, long_name, short_name, hw_model, is_licensed, role, public_key
+            ))
 
             db_connection.commit()
 
+
     except sqlite3.Error as e:
-        logging.error(f"SQLite error in init_nodedb: {e}")
+        logging.error(f"SQLite error in update_node_info_in_db: {e}")
     except Exception as e:
-        logging.error(f"Unexpected error in init_nodedb: {e}")
-
-def maybe_store_nodeinfo_in_db(packet):
-    """Save nodeinfo unless that record is already there."""
-    try:
-        with sqlite3.connect(config.db_file_path) as db_connection:
-
-            table_name = f"{str(globals.myNodeNum)}_nodedb"
-            nodeinfo_table = f'"{table_name}"'  # Quote the table name becuase we might begin with numerics
-            db_cursor = db_connection.cursor()
-
-            # Check if a record with the same user_id already exists
-            existing_record = db_cursor.execute(f'SELECT * FROM {nodeinfo_table} WHERE user_id=?', (packet['from'],)).fetchone()
-
-            if existing_record is None:
-                role = packet['decoded']['user'].get('role', 'CLIENT')
-                is_licensed = packet['decoded']['user'].get('isLicensed', '0')
-                public_key = packet['decoded']['user'].get('publicKey', '')
-
-                # No existing record, insert the new record
-                insert_query = f'''
-                    INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                '''
-
-                db_cursor.execute(insert_query, (
-                    packet['from'], 
-                    packet['decoded']['user']['longName'], 
-                    packet['decoded']['user']['shortName'], 
-                    packet['decoded']['user']['hwModel'], 
-                    is_licensed, 
-                    role, 
-                    public_key
-                ))
-
-                db_connection.commit() 
-
-            else:
-                # Check if values are different, update if necessary
-                # Extract existing values
-                existing_long_name = existing_record[1]
-                existing_short_name = existing_record[2]
-                existing_is_licensed = existing_record[4]
-                existing_role = existing_record[5]
-                existing_public_key = existing_record[6]
-
-                # Extract new values from the packet
-                new_long_name = packet['decoded']['user']['longName']
-                new_short_name = packet['decoded']['user']['shortName']
-                new_is_licensed = packet['decoded']['user'].get('isLicensed', '0')
-                new_role = packet['decoded']['user'].get('role', 'CLIENT')
-                new_public_key = packet['decoded']['user'].get('publicKey', '')
-
-                # Check for any differences
-                if (
-                    existing_long_name != new_long_name or
-                    existing_short_name != new_short_name or
-                    existing_is_licensed != new_is_licensed or
-                    existing_role != new_role or
-                    existing_public_key != new_public_key
-                ):
-                    # Perform necessary updates
-                    update_query = f'''
-                        UPDATE {nodeinfo_table}
-                        SET long_name = ?, short_name = ?, is_licensed = ?,  role = ?, public_key = ?
-                        WHERE user_id = ?
-                    '''
-                    db_cursor.execute(update_query, (
-                        new_long_name, 
-                        new_short_name, 
-                        new_is_licensed, 
-                        new_role, 
-                        new_public_key, 
-                        packet['from']
-                    ))
-
-                    db_connection.commit()
-
-                    # TODO display new node name in nodelist
-
-
-    except sqlite3.Error as e:
-        logging.error(f"SQLite error in maybe_store_nodeinfo_in_db: {e}")
-    finally:
-        db_connection.close()
+        logging.error(f"Unexpected error in update_node_info_in_db: {e}")
 
 
 def get_name_from_database(user_id, type="long"):
