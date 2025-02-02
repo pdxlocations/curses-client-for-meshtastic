@@ -49,6 +49,9 @@ def edit_value(key, current_value):
         # Load theme names dynamically from the JSON
         theme_options = [k.split("_", 2)[2].lower() for k in loaded_config.keys() if k.startswith("COLOR_CONFIG")]
         return select_from_list("Select Theme", current_value, theme_options)
+    elif key == "node_sort":
+        sort_options = ['lastHeard', 'name', 'hops']
+        return select_from_list("Sort By", current_value, sort_options)
 
     # Standard Input Mode (Scrollable)
     edit_win.addstr(7, 2, "New Value: ", get_color("settings_default"))

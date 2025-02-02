@@ -1,6 +1,6 @@
 import logging
 import time
-from utilities.utils import get_node_list
+from utilities.utils import refresh_node_list
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
 from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db, get_name_from_database
 import default_config as config
@@ -24,9 +24,8 @@ def on_receive(packet, interface):
             return
 
         # Assume any incoming packet could update the last seen time for a node
-        new_node_list = get_node_list()
-        if new_node_list != globals.node_list:
-            globals.node_list = new_node_list
+        changed = refresh_node_list()
+        if(changed):
             draw_node_list()
 
         if packet['decoded']['portnum'] == 'NODEINFO_APP':

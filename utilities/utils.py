@@ -52,6 +52,13 @@ def get_node_list():
         return [my_node_num] + node_list  # Ensuring your node is always first
     return []
 
+def refresh_node_list():
+    new_node_list = get_node_list()
+    if new_node_list != globals.node_list:
+        globals.node_list = new_node_list
+        return True
+    return False
+
 def get_nodeNum():
     myinfo = globals.interface.getMyNodeInfo()
     myNodeNum = myinfo['num']

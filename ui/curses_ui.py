@@ -1,6 +1,6 @@
 import curses
 import textwrap
-from utilities.utils import get_channels, get_time_ago
+from utilities.utils import get_channels, get_time_ago, refresh_node_list
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 from ui.colors import setup_colors, get_color
@@ -609,6 +609,7 @@ def main_ui(stdscr):
             curses.curs_set(0)
             settings_menu(stdscr, globals.interface)
             curses.curs_set(1)
+            refresh_node_list()
             handle_resize(stdscr, False)
         
         elif char == chr(16):
