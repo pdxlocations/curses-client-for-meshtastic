@@ -4,7 +4,7 @@ import os
 
 from save_to_radio import save_changes
 from utilities.config_io import config_export, config_import
-from input_handlers import get_bool_selection, get_repeated_input, get_user_input, get_enum_input, get_fixed32_input, select_from_list
+from input_handlers import get_repeated_input, get_user_input, get_enum_input, get_fixed32_input, get_list_input
 from ui.menus import generate_menu_from_protobuf
 from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
@@ -187,8 +187,8 @@ def settings_menu(stdscr, interface):
                     yaml_file_path = os.path.join(app_directory, config_folder, filename)
 
                     if os.path.exists(yaml_file_path):
-                        overwrite = get_bool_selection(f"{filename} already exists. Overwrite?", None)
-                        if overwrite == "False":
+                        overwrite = get_list_input(f"{filename} already exists. Overwrite?", None, ["Yes", "No"])
+                        if overwrite == "Yes":
                             logging.info("Export cancelled: User chose not to overwrite.")
                             continue  # Return to menu
                     os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
@@ -213,11 +213,11 @@ def settings_menu(stdscr, interface):
                 config_folder = "node-configs"
                 folder_path = os.path.join(app_directory, config_folder)
                 file_list = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
-                filename = select_from_list("Choose a config file", None, file_list)
+                filename = get_list_input("Choose a config file", None, file_list)
                 if filename:
                     file_path = os.path.join(app_directory, config_folder, filename)
-                    overwrite = get_bool_selection(f"Are you sure you want to load {filename}?", None)
-                    if overwrite == "True":
+                    overwrite = get_list_input(f"Are you sure you want to load {filename}?", None,  ["Yes", "No"])
+                    if overwrite == "Yes":
                         config_import(globals.interface, file_path)
                     break
                 continue
@@ -225,29 +225,29 @@ def settings_menu(stdscr, interface):
 
 
             elif selected_option == "Reboot":
-                confirmation = get_bool_selection("Are you sure you want to Reboot?", 0)
-                if confirmation == "True":
+                confirmation = get_list_input("Are you sure you want to Reboot?", None,  ["Yes", "No"])
+                if confirmation == "Yes":
                     interface.localNode.reboot()
                     logging.info(f"Node Reboot Requested by menu")
                     break
                 continue
             elif selected_option == "Reset Node DB":
-                confirmation = get_bool_selection("Are you sure you want to Reset Node DB?", 0)
-                if confirmation == "True":
+                confirmation = get_list_input("Are you sure you want to Reset Node DB?", None,  ["Yes", "No"])
+                if confirmation == "Yes":
                     interface.localNode.resetNodeDb()
                     logging.info(f"Node DB Reset Requested by menu")
                     break
                 continue
             elif selected_option == "Shutdown":
-                confirmation = get_bool_selection("Are you sure you want to Shutdown?", 0)
-                if confirmation == "True":
+                confirmation = get_list_input("Are you sure you want to Shutdown?", None, ["Yes", "No"])
+                if confirmation == "Yes":
                     interface.localNode.shutdown()
                     logging.info(f"Node Shutdown Requested by menu")
                     break
                 continue
             elif selected_option == "Factory Reset":
-                confirmation = get_bool_selection("Are you sure you want to Factory Reset?", 0)
-                if confirmation == "True":
+                confirmation = get_list_input("Are you sure you want to Factory Reset?", None,  ["Yes", "No"])
+                if confirmation == "Yes":
                     interface.localNode.factoryReset()
                     logging.info(f"Factory Reset Requested by menu")
                     break
@@ -270,7 +270,7 @@ def settings_menu(stdscr, interface):
                         current_menu[selected_option] = (field, new_value)
 
                     elif selected_option == 'isLicensed':
-                        new_value = get_bool_selection(f"Current value for {selected_option}: {current_value}", str(current_value))
+                        new_value = get_list_input(f"Current value for {selected_option}: {current_value}", str(current_value),  ["True", "False"])
                         new_value = new_value == "True"
                         current_menu[selected_option] = (field, new_value)
 
@@ -287,7 +287,7 @@ def settings_menu(stdscr, interface):
                             modified_settings[option] = current_menu[option][1]
 
                 elif field.type == 8:  # Handle boolean type
-                    new_value = get_bool_selection(selected_option, str(current_value))
+                    new_value = get_list_input(selected_option, str(current_value),  ["True", "False"])
                     new_value = new_value == "True" or new_value is True
 
                 elif field.label == field.LABEL_REPEATED:  # Handle repeated field

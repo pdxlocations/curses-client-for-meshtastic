@@ -54,51 +54,6 @@ def get_user_input(prompt):
     input_win.refresh()
     return user_input
 
-def get_bool_selection(message, current_value):
-    message = "Select True or False:" if None else message
-    cvalue = current_value
-    options = ["True", "False"]
-    selected_index = 0 if current_value == "True" else 1
-
-    height = 7
-    width = 60
-    start_y = (curses.LINES - height) // 2
-    start_x = (curses.COLS - width) // 2
-
-    bool_win = curses.newwin(height, width, start_y, start_x)
-    bool_win.bkgd(get_color("background"))
-    bool_win.attrset(get_color("window_frame"))
-    bool_win.keypad(True)
-    bool_win.erase()
-
-    bool_win.border()
-    bool_win.addstr(1, 2, message, get_color("settings_default", bold=True))
-
-    for idx, option in enumerate(options):
-        if idx == selected_index:
-            bool_win.addstr(idx + 3, 4, option, get_color("settings_default", reverse=True))
-        else:
-            bool_win.addstr(idx + 3, 4, option, get_color("settings_default"))
-
-    bool_win.refresh()
-
-    while True:
-        key = bool_win.getch()
-
-        if key == curses.KEY_UP:
-            if(selected_index > 0):
-                selected_index = selected_index - 1
-                bool_win.chgat(1 + 3, 4, len(options[1]), get_color("settings_default"))
-                bool_win.chgat(0 + 3, 4, len(options[0]), get_color("settings_default", reverse = True))
-        elif key == curses.KEY_DOWN:
-            if(selected_index < len(options) - 1):
-                selected_index = selected_index + 1
-                bool_win.chgat(0 + 3, 4, len(options[0]), get_color("settings_default"))
-                bool_win.chgat(1 + 3, 4, len(options[1]), get_color("settings_default", reverse = True))
-        elif key == ord('\n'):  # Enter key
-            return options[selected_index]
-        elif key == 27 or key == curses.KEY_LEFT:  # ESC or Left Arrow
-            return cvalue
 
 def get_repeated_input(current_value):
     cvalue = current_value
@@ -262,7 +217,7 @@ def get_fixed32_input(current_value):
 
 
 
-def select_from_list(prompt, current_option, list_options):
+def get_list_input(prompt, current_option, list_options):
     """
     Displays a scrollable list of list_options for the user to choose from using a pad.
     """
