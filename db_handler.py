@@ -149,31 +149,60 @@ def load_messages_from_db():
         logging.error(f"SQLite error in load_messages_from_db: {e}")
 
 
+def ensure_node_table_exists():
+    """Ensure the node database table exists."""
+    try:
+        with sqlite3.connect(config.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+
+            # Construct the table name
+            table_name = f"{str(globals.myNodeNum)}_nodedb"
+            nodeinfo_table = f'"{table_name}"'  # Quote since we start with a number
+
+            # Create the table if it does not exist
+            create_table_query = f'''
+                CREATE TABLE IF NOT EXISTS {nodeinfo_table} (
+                    user_id TEXT PRIMARY KEY,
+                    long_name TEXT,
+                    short_name TEXT,
+                    hw_model TEXT,
+                    is_licensed TEXT,
+                    role TEXT,
+                    public_key TEXT
+                )
+            '''
+            db_cursor.execute(create_table_query)
+            db_connection.commit()
+
+    except sqlite3.Error as e:
+        logging.error(f"SQLite error in ensure_node_table_exists: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error in ensure_node_table_exists: {e}")
+
+
 def init_nodedb():
     """Initialize the node database and update it with nodes from the interface."""
     try:
         if not globals.interface.nodes:
             return  # No nodes to initialize
 
-        with sqlite3.connect(config.db_file_path) as db_connection:
-            db_cursor = db_connection.cursor()
+        # Ensure the table exists without inserting a dummy record
+        ensure_node_table_exists()
 
-            # Ensure the table exists by calling update_node_info_in_db with an empty user_id
-            update_node_info_in_db("dummy_id")
+        # Iterate over nodes and insert/update them
+        for node in globals.interface.nodes.values():
+            user_id = node['num']
+            long_name = node['user'].get('longName', '')
+            short_name = node['user'].get('shortName', '')
+            hw_model = node['user'].get('hwModel', '')
+            is_licensed = node['user'].get('isLicensed', '0')
+            role = node['user'].get('role', 'CLIENT')
+            public_key = node['user'].get('publicKey', '')
 
-            # Iterate over nodes and insert/update them
-            for node in globals.interface.nodes.values():
-                user_id = node['num']
-                long_name = node['user'].get('longName', '')
-                short_name = node['user'].get('shortName', '')
-                hw_model = node['user'].get('hwModel', '')
-                is_licensed = node['user'].get('isLicensed', '0')
-                role = node['user'].get('role', 'CLIENT')
-                public_key = node['user'].get('publicKey', '')
+            # Use update_node_info_in_db() to update or insert node info
+            update_node_info_in_db(user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
 
-                update_node_info_in_db(user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
-
-            logging.info("Node database initialized successfully.")
+        logging.info("Node database initialized successfully.")
 
     except sqlite3.Error as e:
         logging.error(f"SQLite error in init_nodedb: {e}")
