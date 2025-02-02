@@ -13,7 +13,8 @@ import logging
 import traceback
 
 from utilities.arg_parser import setup_parser
-from utilities.interfaces import initialize_interface, on_connection
+from utilities.interfaces import initialize_interface
+from ui.curses_ui import on_connection
 from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels, get_node_list, get_nodeNum

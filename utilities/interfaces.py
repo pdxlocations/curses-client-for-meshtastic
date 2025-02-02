@@ -1,11 +1,6 @@
 import logging
-from pubsub import pub
 import meshtastic.serial_interface, meshtastic.tcp_interface, meshtastic.ble_interface
 import globals
-
-def on_connection(interface, topic=pub.AUTO_TOPIC) -> None:  # pylint: disable=W0613
-    """Callback invoked when we connect/disconnect from a radio"""
-    logging.info(f"Connection changed: {topic.getName()}")
 
 def initialize_interface(args):
     try:
