@@ -2,6 +2,8 @@ from meshtastic.protobuf import channel_pb2
 from google.protobuf.message import Message
 import logging
 import base64
+from db_handler import update_node_info_in_db
+import globals
 
 def save_changes(interface, menu_path, modified_settings):
     """
@@ -29,16 +31,20 @@ def save_changes(interface, menu_path, modified_settings):
                 logging.info(f"Updated {config_category} with Latitude: {lat} and Longitude {lon} and Altitude {alt}")
                 return
 
-        elif menu_path[1] == "User Settings": # for user configs
-            config_category = "User Settings" 
+        elif menu_path[1] == "User Settings":  # for user configs
+            config_category = "User Settings"
             long_name = modified_settings.get("longName")
             short_name = modified_settings.get("shortName")
             is_licensed = modified_settings.get("isLicensed")
-            is_licensed = is_licensed == "True" or is_licensed is True
+            is_licensed = is_licensed == "True" or is_licensed is True  # Normalize boolean
 
             node.setOwner(long_name, short_name, is_licensed)
 
-            logging.info(f"Updated {config_category} with Long Name: {long_name} and Short Name {short_name} and Licensed Mode {is_licensed}")
+            # Update only the changed fields and preserve others
+            update_node_info_in_db(globals.myNodeNum, long_name=long_name, short_name=short_name, is_licensed=is_licensed)
+
+            logging.info(f"Updated {config_category} with Long Name: {long_name}, Short Name: {short_name}, Licensed Mode: {is_licensed}")
+
             return
         
         elif menu_path[1] == "Channels":    # for channel configs

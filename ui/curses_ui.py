@@ -1,6 +1,8 @@
 import curses
 import textwrap
 from utilities.utils import get_channels, get_time_ago, refresh_node_list
+import logging
+from pubsub import pub
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 from ui.colors import setup_colors, get_color
@@ -9,20 +11,44 @@ import default_config as config
 import ui.dialog
 import globals
 
-def draw_node_details():
-    nodes_snapshot = list(globals.interface.nodes.values())
+def on_connection(interface, topic=pub.AUTO_TOPIC) -> None:
+    """Callback invoked when we connect/disconnect from a radio."""
+    connection_status = topic.getName()
 
+    if connection_status == "meshtastic.connection.established":
+        globals.connected = True
+    elif connection_status == "meshtastic.connection.lost":
+        globals.connected = False
+        
+    logging.info(f"Connection changed: {connection_status}")
+    draw_connection_indicator()
+
+def draw_connection_indicator():
+    """Draw a connection indicator (green dot if connected, red if disconnected) in the input window."""
+
+    height, width = entry_win.getmaxyx()
+
+    indicator_x = width - 3
+    indicator_y = 1
+
+    entry_win.addstr(indicator_y, indicator_x, "✔" if globals.connected else "✖", get_color("input", bold=True))
+    curses.curs_set(0)
+    entry_win.refresh()
+
+
+def draw_node_details():
     node = None
-    for node in nodes_snapshot:
-        if globals.node_list[globals.selected_node] == node['num']:
-            break
+    try:
+        node = globals.interface.nodesByNum[globals.node_list[globals.selected_node]]
+    except KeyError:
+        return
 
     function_win.erase()
     function_win.box()
 
     nodestr = ""
     width = function_win.getmaxyx()[1]
-    node_details_list = [f"{node['user']['longName']}"
+    node_details_list = [f"{node['user']['longName']} "
                            if 'user' in node and 'longName' in node['user'] else "",
                          f"({node['user']['shortName']})"
                            if 'user' in node and 'shortName' in node['user'] else "",
@@ -448,7 +474,8 @@ def main_ui(stdscr):
     handle_resize(stdscr, True)
 
     while True:
-        draw_text_field(entry_win, f"Input: {input_text[-(stdscr.getmaxyx()[1] - 10):]}", get_color("input"))
+        draw_connection_indicator()
+        draw_text_field(entry_win, f"Input: {input_text[-(stdscr.getmaxyx()[1] - 12):]}", get_color("input"))
 
         # Get user input from entry window
         char = entry_win.get_wch()
