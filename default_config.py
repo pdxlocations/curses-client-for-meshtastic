@@ -118,7 +118,8 @@ def initialize_config():
         "theme": "dark",
         "COLOR_CONFIG_DARK": COLOR_CONFIG_DARK,
         "COLOR_CONFIG_LIGHT": COLOR_CONFIG_LIGHT,
-        "COLOR_CONFIG_GREEN": COLOR_CONFIG_GREEN
+        "COLOR_CONFIG_GREEN": COLOR_CONFIG_GREEN,
+        "node_sort": "lastHeard"
     }
 
     if not os.path.exists(json_file_path):
@@ -148,6 +149,7 @@ def assign_config_variables(loaded_config):
     global db_file_path, log_file_path, message_prefix, sent_message_prefix
     global notification_symbol, ack_implicit_str, ack_str, nak_str, ack_unknown_str
     global theme, COLOR_CONFIG
+    global node_sort
 
     db_file_path = loaded_config["db_file_path"]
     log_file_path = loaded_config["log_file_path"]
@@ -165,6 +167,7 @@ def assign_config_variables(loaded_config):
         COLOR_CONFIG = loaded_config["COLOR_CONFIG_LIGHT"]
     elif theme == "green":
         COLOR_CONFIG = loaded_config["COLOR_CONFIG_GREEN"]
+    node_sort = loaded_config["node_sort"]
 
 
 # Call the function when the script is imported
