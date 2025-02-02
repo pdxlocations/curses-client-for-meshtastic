@@ -115,11 +115,11 @@ def initialize_config():
         "ack_str": "[✓]",
         "nak_str": "[x]",
         "ack_unknown_str": "[…]",
+        "node_sort": "lastHeard",
         "theme": "dark",
         "COLOR_CONFIG_DARK": COLOR_CONFIG_DARK,
         "COLOR_CONFIG_LIGHT": COLOR_CONFIG_LIGHT,
-        "COLOR_CONFIG_GREEN": COLOR_CONFIG_GREEN,
-        "node_sort": "lastHeard"
+        "COLOR_CONFIG_GREEN": COLOR_CONFIG_GREEN
     }
 
     if not os.path.exists(json_file_path):
