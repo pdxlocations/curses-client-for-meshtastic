@@ -14,6 +14,7 @@ import traceback
 
 from utilities.arg_parser import setup_parser
 from utilities.interfaces import initialize_interface
+from ui.curses_ui import on_connection
 from message_handlers.rx_handler import on_receive
 from ui.curses_ui import main_ui, draw_splash
 from utilities.utils import get_channels, get_node_list, get_nodeNum
@@ -47,6 +48,7 @@ def main(stdscr):
         globals.channel_list = get_channels()
         globals.node_list = get_node_list()
         pub.subscribe(on_receive, 'meshtastic.receive')
+        pub.subscribe(on_connection, "meshtastic.connection")
         init_nodedb()
         load_messages_from_db()
         logging.info("Starting main UI")
