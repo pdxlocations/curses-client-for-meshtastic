@@ -174,19 +174,26 @@ def init_nodedb():
             '''
             db_cursor.execute(create_table_query)
 
-            # Iterate over nodes and insert them into the database
+            # Iterate over nodes and insert/update them
             if globals.interface.nodes:
                 for node in globals.interface.nodes.values():
                     role = node['user'].get('role', 'CLIENT')
                     is_licensed = node['user'].get('isLicensed', '0')
                     public_key = node['user'].get('publicKey', '')
 
-                    insert_query = f'''
-                        INSERT OR IGNORE INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
+                    upsert_query = f'''
+                        INSERT INTO {nodeinfo_table} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(user_id) DO UPDATE SET
+                            long_name = excluded.long_name,
+                            short_name = excluded.short_name,
+                            hw_model = excluded.hw_model,
+                            is_licensed = excluded.is_licensed,
+                            role = excluded.role,
+                            public_key = excluded.public_key
                     '''
 
-                    db_cursor.execute(insert_query, (
+                    db_cursor.execute(upsert_query, (
                         node['num'],
                         node['user']['longName'],
                         node['user']['shortName'],
@@ -195,7 +202,7 @@ def init_nodedb():
                         role,
                         public_key
                     ))
-                    
+
             db_connection.commit()
 
     except sqlite3.Error as e:
