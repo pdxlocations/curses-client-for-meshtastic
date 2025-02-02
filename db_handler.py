@@ -277,7 +277,7 @@ def maybe_store_nodeinfo_in_db(packet):
                         packet['from']
                     ))
 
-                db_connection.commit()
+                    db_connection.commit()
 
                     # TODO display new node name in nodelist
 
