@@ -8,6 +8,8 @@ import default_config as config
 import globals
 
 
+from datetime import datetime
+
 def on_receive(packet, interface):
 
     # Update packet log
