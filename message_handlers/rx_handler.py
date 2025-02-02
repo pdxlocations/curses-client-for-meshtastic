@@ -3,7 +3,7 @@ import time
 from utilities.utils import refresh_node_list
 from datetime import datetime
 from ui.curses_ui import draw_packetlog_win, draw_node_list, draw_messages_window, draw_channel_list, add_notification
-from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db, get_name_from_database
+from db_handler import save_message_to_db, maybe_store_nodeinfo_in_db, get_name_from_database, update_node_info_in_db
 import default_config as config
 import globals
 
@@ -50,7 +50,9 @@ def on_receive(packet, interface):
                     pass
                 else:
                     globals.channel_list.append(packet['from'])
-                    globals.all_messages[packet['from']] = []
+                    if(packet['from'] not in globals.all_messages):
+                        globals.all_messages[packet['from']] = []
+                    update_node_info_in_db(packet['from'], chat_archived=False)
                     refresh_channels = True
 
                 channel_number = globals.channel_list.index(packet['from'])
