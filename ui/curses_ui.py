@@ -4,7 +4,7 @@ from utilities.utils import get_channels, get_readable_duration, get_time_ago, r
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 from ui.colors import setup_colors, get_color
-from db_handler import get_name_from_database
+from db_handler import get_name_from_database, update_node_info_in_db, is_chat_archived
 import default_config as config
 import ui.dialog
 import globals
@@ -50,16 +50,16 @@ def draw_node_details():
                                  ])
 
     for s in node_details_list:
-        if len(nodestr) + len(s) < width:
+        if len(nodestr) + len(s) < width - 2:
             nodestr = nodestr + s
 
     draw_centered_text_field(function_win, nodestr, 0, get_color("commands"))
 
 def draw_function_win():
-    cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit"]
+    cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit", "    ^t = Traceroute", "    ^d = Archive Chat"]
     function_str = ""
     for s in cmds:
-        if(len(function_str) + len(s) < function_win.getmaxyx()[1]):
+        if(len(function_str) + len(s) < function_win.getmaxyx()[1] - 2):
             function_str += s
 
     draw_centered_text_field(function_win, function_str, 0, get_color("commands"))
@@ -113,7 +113,7 @@ def highlight_line(highlight, window, line):
         pad.chgat(line, 1, select_len, nd_color | curses.A_REVERSE if highlight else nd_color)
 
     if(window == 0):
-        channel = list(globals.all_messages.keys())[line]
+        channel = globals.channel_list[line]
         win_width = channel_box.getmaxyx()[1]
 
         if(isinstance(channel, int)):
@@ -126,10 +126,12 @@ def highlight_line(highlight, window, line):
         pad.chgat(line, 1, select_len, ch_color | curses.A_REVERSE if highlight else ch_color)
 
 def add_notification(channel_number):
-    globals.notifications.add(channel_number) 
+    if channel_number not in globals.notifications:
+        globals.notifications.append(channel_number)
 
 def remove_notification(channel_number):
-    globals.notifications.discard(channel_number) 
+    if channel_number in globals.notifications:
+        globals.notifications.remove(channel_number)
 
 def draw_text_field(win, text, color):
     win.border()
@@ -180,24 +182,28 @@ def draw_channel_list():
 
     channel_pad.resize(len(globals.all_messages), channel_box.getmaxyx()[1])
 
-    for i, channel in enumerate(list(globals.all_messages.keys())):
+    idx = 0
+    for channel in globals.channel_list:
         # Convert node number to long name if it's an integer
         if isinstance(channel, int):
+            if is_chat_archived(channel):
+                continue
             channel = get_name_from_database(channel, type='long')
 
         # Determine whether to add the notification
-        notification = " " + config.notification_symbol if i in globals.notifications else ""
+        notification = " " + config.notification_symbol if idx in globals.notifications else ""
 
         # Truncate the channel name if it's too long to fit in the window
         truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
-        if i == globals.selected_channel:
+        if idx == globals.selected_channel:
             if globals.current_window == 0:
-                channel_pad.addstr(i, 1, truncated_channel + notification, get_color("channel_list", reverse=True))
+                channel_pad.addstr(idx, 1, truncated_channel + notification, get_color("channel_list", reverse=True))
                 remove_notification(globals.selected_channel)
             else:
-                channel_pad.addstr(i, 1, truncated_channel + notification, get_color("channel_selected"))
+                channel_pad.addstr(idx, 1, truncated_channel + notification, get_color("channel_selected"))
         else:
-            channel_pad.addstr(i, 1, truncated_channel + notification, get_color("channel_list"))
+            channel_pad.addstr(idx, 1, truncated_channel + notification, get_color("channel_list"))
+        idx += 1
 
     channel_box.attrset(get_color("window_frame_selected") if globals.current_window == 0 else get_color("window_frame"))
     channel_box.box()
@@ -477,10 +483,6 @@ def main_ui(stdscr):
             elif globals.current_window == 2:
                 scroll_nodes(-1)
 
-        elif char == curses.KEY_RESIZE:
-            input_text = ""
-            handle_resize(stdscr, False)
-
         elif char == curses.KEY_DOWN:
             if globals.current_window == 0:
                 scroll_channels(1)
@@ -591,9 +593,15 @@ def main_ui(stdscr):
                 node_list = globals.node_list
                 if node_list[globals.selected_node] not in globals.channel_list:
                     globals.channel_list.append(node_list[globals.selected_node])
+                if(node_list[globals.selected_node] not in globals.all_messages):
                     globals.all_messages[node_list[globals.selected_node]] = []
 
+
                 globals.selected_channel = globals.channel_list.index(node_list[globals.selected_node])
+
+                if(is_chat_archived(globals.channel_list[globals.selected_channel])):
+                    update_node_info_in_db(globals.channel_list[globals.selected_channel], chat_archived=False)
+
                 globals.selected_node = 0
                 globals.current_window = 0
 
@@ -635,6 +643,28 @@ def main_ui(stdscr):
                 globals.display_log = False
                 packetlog_win.erase()
                 draw_messages_window(True)
+
+        elif char == curses.KEY_RESIZE:
+            input_text = ""
+            handle_resize(stdscr, False)
+
+        # ^D
+        elif char == chr(4):
+            if(globals.current_window == 0):
+                if(isinstance(globals.channel_list[globals.selected_channel], int)):
+                    update_node_info_in_db(globals.channel_list[globals.selected_channel], chat_archived=True)
+
+                    # Shift notifications up to account for deleted item
+                    for i in range(len(globals.notifications)):
+                        if globals.notifications[i] > globals.selected_channel:
+                            globals.notifications[i] -= 1
+
+                    del globals.channel_list[globals.selected_channel]
+                    globals.selected_channel = min(globals.selected_channel, len(globals.channel_list) - 1)
+                    select_channel(globals.selected_channel)
+                    draw_channel_list()
+                    draw_messages_window()
+
         else:
             # Append typed character to input text
             if(isinstance(char, str)):
