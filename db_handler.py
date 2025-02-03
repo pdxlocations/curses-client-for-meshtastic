@@ -101,7 +101,7 @@ def load_messages_from_db():
                     channel = int(channel) if channel.isdigit() else channel
                     
                     # Add the channel to globals.channel_list if not already present
-                    if channel not in globals.channel_list:
+                    if channel not in globals.channel_list and not is_chat_archived(channel):
                         globals.channel_list.append(channel)
 
                     # Ensure the channel exists in globals.all_messages
@@ -189,7 +189,7 @@ def maybe_store_nodeinfo_in_db(packet):
         logging.error(f"Unexpected error in maybe_store_nodeinfo_in_db: {e}")
 
 
-def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=None, is_licensed=None, role=None, public_key=None):
+def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=None, is_licensed=None, role=None, public_key=None, chat_archived=None):
     """Update or insert node information into the database, preserving unchanged fields."""
     try:
         ensure_node_table_exists()  # Ensure the table exists before any operation
@@ -198,12 +198,18 @@ def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=No
             db_cursor = db_connection.cursor()
             table_name = f'"{globals.myNodeNum}_nodedb"'  # Quote in case of numeric names
 
+
+            table_columns = [i[1] for i in db_cursor.execute(f'PRAGMA table_info({table_name})')]
+            if "chat_archived" not in table_columns:
+                update_table_query = f"ALTER TABLE {table_name} ADD COLUMN chat_archived INTEGER"
+                db_cursor.execute(update_table_query)
+
             # Fetch existing values to preserve unchanged fields
             db_cursor.execute(f'SELECT * FROM {table_name} WHERE user_id = ?', (user_id,))
             existing_record = db_cursor.fetchone()
 
             if existing_record:
-                existing_long_name, existing_short_name, existing_hw_model, existing_is_licensed, existing_role, existing_public_key = existing_record[1:]
+                existing_long_name, existing_short_name, existing_hw_model, existing_is_licensed, existing_role, existing_public_key, existing_chat_archived = existing_record[1:]
 
                 long_name = long_name if long_name is not None else existing_long_name
                 short_name = short_name if short_name is not None else existing_short_name
@@ -211,20 +217,22 @@ def update_node_info_in_db(user_id, long_name=None, short_name=None, hw_model=No
                 is_licensed = is_licensed if is_licensed is not None else existing_is_licensed
                 role = role if role is not None else existing_role
                 public_key = public_key if public_key is not None else existing_public_key
+                chat_archived = chat_archived if chat_archived is not None else existing_chat_archived
 
             # Upsert logic
             upsert_query = f'''
-                INSERT INTO {table_name} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO {table_name} (user_id, long_name, short_name, hw_model, is_licensed, role, public_key, chat_archived)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                     long_name = excluded.long_name,
                     short_name = excluded.short_name,
                     hw_model = excluded.hw_model,
                     is_licensed = excluded.is_licensed,
                     role = excluded.role,
-                    public_key = excluded.public_key
+                    public_key = excluded.public_key,
+                    chat_archived = excluded.chat_archived
             '''
-            db_cursor.execute(upsert_query, (user_id, long_name, short_name, hw_model, is_licensed, role, public_key))
+            db_cursor.execute(upsert_query, (user_id, long_name, short_name, hw_model, is_licensed, role, public_key, chat_archived))
             db_connection.commit()
 
     except sqlite3.Error as e:
@@ -243,7 +251,8 @@ def ensure_node_table_exists():
         hw_model TEXT,
         is_licensed TEXT,
         role TEXT,
-        public_key TEXT
+        public_key TEXT,
+        chat_archived INTEGER
     '''
     ensure_table_exists(table_name, schema)
 
@@ -295,3 +304,24 @@ def get_name_from_database(user_id, type="long"):
     except Exception as e:
         logging.error(f"Unexpected error in get_name_from_database: {e}")
         return "Unknown"
+
+def is_chat_archived(user_id):
+    try:
+        with sqlite3.connect(config.db_file_path) as db_connection:
+            db_cursor = db_connection.cursor()
+            table_name = f"{str(globals.myNodeNum)}_nodedb"
+            nodeinfo_table = f'"{table_name}"'
+            query = f"SELECT chat_archived FROM {nodeinfo_table} WHERE user_id = ?"
+            db_cursor.execute(query, (user_id,))
+            result = db_cursor.fetchone()
+
+            return result[0] if result else 0
+
+    except sqlite3.Error as e:
+        logging.error(f"SQLite error in is_chat_archived: {e}")
+        return "Unknown"
+
+    except Exception as e:
+        logging.error(f"Unexpected error in is_chat_archived: {e}")
+        return "Unknown"
+
