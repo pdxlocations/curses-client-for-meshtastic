@@ -4,7 +4,7 @@ import os
 
 from save_to_radio import save_changes
 from utilities.config_io import config_export, config_import
-from input_handlers import get_repeated_input, get_user_input, get_enum_input, get_fixed32_input, get_list_input
+from input_handlers import get_repeated_input, get_text_input, get_fixed32_input, get_list_input
 from ui.menus import generate_menu_from_protobuf
 from ui.colors import setup_colors, get_color
 from utilities.arg_parser import setup_parser
@@ -171,7 +171,7 @@ def settings_menu(stdscr, interface):
 
 
             elif selected_option == "Export Config":
-                filename = get_user_input("Enter a filename for the config file")
+                filename = get_text_input("Enter a filename for the config file")
 
                 if not filename:
                     logging.warning("Export aborted: No filename provided.")
@@ -265,7 +265,7 @@ def settings_menu(stdscr, interface):
 
                 if selected_option in ['longName', 'shortName', 'isLicensed']:
                     if selected_option in ['longName', 'shortName']:
-                        new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                        new_value = get_text_input(f"Current value for {selected_option}: {current_value}")
                         new_value = current_value if new_value is None else new_value
                         current_menu[selected_option] = (field, new_value)
 
@@ -278,7 +278,7 @@ def settings_menu(stdscr, interface):
                         modified_settings[option] = value
 
                 elif selected_option in ['latitude', 'longitude', 'altitude']:
-                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = get_text_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else new_value
                     current_menu[selected_option] = (field, new_value)
 
@@ -296,22 +296,22 @@ def settings_menu(stdscr, interface):
 
                 elif field.enum_type:  # Enum field
                     enum_options = {v.name: v.number for v in field.enum_type.values}
-                    new_value_name = get_enum_input(list(enum_options.keys()), current_value)
+                    new_value_name = get_list_input("Select an option", current_value, list(enum_options.keys()))
                     new_value = enum_options.get(new_value_name, current_value)
 
                 elif field.type == 7: # Field type 7 corresponds to FIXED32
                     new_value = get_fixed32_input(current_value)
 
                 elif field.type == 13: # Field type 13 corresponds to UINT32
-                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = get_text_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else int(new_value)
 
                 elif field.type == 2: # Field type 13 corresponds to INT64
-                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = get_text_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else float(new_value)
 
                 else:  # Handle other field types
-                    new_value = get_user_input(f"Current value for {selected_option}: {current_value}")
+                    new_value = get_text_input(f"Current value for {selected_option}: {current_value}")
                     new_value = current_value if new_value is None else new_value
                 
                 for key in menu_path[3:]:  # Skip "Main Menu"
