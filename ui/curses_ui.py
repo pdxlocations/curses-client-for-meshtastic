@@ -40,7 +40,7 @@ def draw_node_details():
 
     draw_centered_text_field(function_win, nodestr, 0, get_color("commands"))
 
-def draw_function_win():
+def draw_help():
     cmds = ["↑→↓← = Select", "    ENTER = Send", "    ` = Settings", "    ^P = Packet Log", "    ESC = Quit", "    ^t = Traceroute", "    ^d = Archive Chat"]
     function_str = ""
     for s in cmds:
@@ -48,6 +48,12 @@ def draw_function_win():
             function_str += s
 
     draw_centered_text_field(function_win, function_str, 0, get_color("commands"))
+
+def draw_function_win():
+    if(globals.current_window == 2):
+        draw_node_details()
+    else:
+        draw_help()
 
 def get_msg_window_lines():
     packetlog_height = packetlog_win.getmaxyx()[0] - 1 if globals.display_log else 0
@@ -297,7 +303,7 @@ def select_node(idx):
     highlight_line(True, 2, globals.selected_node)
     refresh_pad(2)
 
-    draw_node_details()
+    draw_function_win()
 
 def scroll_nodes(direction):
     new_selected_node = globals.selected_node + direction
@@ -553,7 +559,7 @@ def main_ui(stdscr):
                 messages_box.refresh()
                 refresh_pad(1)
             elif globals.current_window == 2:
-                draw_node_details()
+                draw_function_win()
                 nodes_box.attrset(get_color("window_frame_selected"))
                 nodes_box.box()
                 nodes_box.attrset(get_color("window_frame"))
