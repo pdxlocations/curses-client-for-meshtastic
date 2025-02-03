@@ -1,6 +1,6 @@
 import curses
 import textwrap
-from utilities.utils import get_channels, get_time_ago, refresh_node_list
+from utilities.utils import get_channels, get_readable_duration, get_time_ago, refresh_node_list
 from settings import settings_menu
 from message_handlers.tx_handler import send_message, send_traceroute
 from ui.colors import setup_colors, get_color
@@ -21,18 +21,33 @@ def draw_node_details():
 
     nodestr = ""
     width = function_win.getmaxyx()[1]
+
     node_details_list = [f"{node['user']['longName']} "
                            if 'user' in node and 'longName' in node['user'] else "",
                          f"({node['user']['shortName']})"
                            if 'user' in node and 'shortName' in node['user'] else "",
                          f" | {node['user']['hwModel']}"
-                           if 'user' in node and 'hwModel' in node['user'] else "",
-                         f" | {get_time_ago(node['lastHeard'])}" if ('lastHeard' in node and node['lastHeard']) else "",
-                         f" | Hops: {node['hopsAway']}" if 'hopsAway' in node else "",
-                         f" | SNR: {node['snr']}dB"
-                           if ('snr' in node and 'hopsAway' in node and node['hopsAway'] == 0)
-                           else "",
-                         ]
+                           if 'user' in node and 'hwModel' in node['user'] else ""]
+
+    if globals.node_list[globals.selected_node] == globals.myNodeNum:
+        node_details_list.extend([f" | Bat: {node['deviceMetrics']['batteryLevel']}% ({node['deviceMetrics']['voltage']}v)"
+                                    if 'deviceMetrics' in node
+                                        and 'batteryLevel' in node['deviceMetrics']
+                                        and 'voltage' in node['deviceMetrics'] else "",
+                                  f" | Up: {get_readable_duration(node['deviceMetrics']['uptimeSeconds'])}" if 'deviceMetrics' in node
+                                        and 'uptimeSeconds' in node['deviceMetrics'] else "",
+                                  f" | ChUtil: {node['deviceMetrics']['channelUtilization']:.2f}%" if 'deviceMetrics' in node
+                                        and 'channelUtilization' in node['deviceMetrics'] else "",
+                                  f" | AirUtilTX: {node['deviceMetrics']['airUtilTx']:.2f}%" if 'deviceMetrics' in node
+                                        and 'airUtilTx' in node['deviceMetrics'] else "",
+                                  ])
+    else:
+        node_details_list.extend([f" | {get_time_ago(node['lastHeard'])}" if ('lastHeard' in node and node['lastHeard']) else "",
+                                 f" | Hops: {node['hopsAway']}" if 'hopsAway' in node else "",
+                                 f" | SNR: {node['snr']}dB"
+                                   if ('snr' in node and 'hopsAway' in node and node['hopsAway'] == 0)
+                                   else "",
+                                 ])
 
     for s in node_details_list:
         if len(nodestr) + len(s) < width:
