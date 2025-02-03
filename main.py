@@ -21,10 +21,14 @@ from db_handler import init_nodedb, load_messages_from_db
 import default_config as config
 import globals
 
-# Set environment variables for ncurses compatibility
+import os
+
+# Set ncurses compatibility settings
 os.environ["NCURSES_NO_UTF8_ACS"] = "1"
-os.environ["TERM"] = "screen"
 os.environ["LANG"] = "C.UTF-8"
+os.environ.setdefault("TERM", "xterm-256color")
+if os.environ.get("COLORTERM") == "gnome-terminal":
+    os.environ["TERM"] = "xterm-256color"
 
 # Configure logging
 # Run `tail -f client.log` in another terminal to view live
