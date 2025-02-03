@@ -1,5 +1,5 @@
 import globals
-from datetime import datetime
+import datetime
 from meshtastic.protobuf import config_pb2
 import default_config as config
 
@@ -72,35 +72,45 @@ def convert_to_camel_case(string):
     camel_case_string = ''.join(word.capitalize() for word in words)
     return camel_case_string
 
-def get_time_ago(timestamp):
-    now = datetime.now()
-    dt = datetime.fromtimestamp(timestamp)
-    delta = now - dt
-
+def get_time_val_units(time_delta):
     value = 0
     unit = ""
 
-    if delta.days > 365:
-        value = delta.days // 365
+    if time_delta.days > 365:
+        value = time_delta.days // 365
         unit = "y"
-    elif delta.days > 30:
-        value = delta.days // 30
+    elif time_delta.days > 30:
+        value = time_delta.days // 30
         unit = "mon"
-    elif delta.days > 7:
-        value = delta.days // 7
+    elif time_delta.days > 7:
+        value = time_delta.days // 7
         unit = "w"
-    elif delta.days > 0:
-        value = delta.days
+    elif time_delta.days > 0:
+        value = time_delta.days
         unit = "d"
-    elif delta.seconds > 3600:
-        value = delta.seconds // 3600
+    elif time_delta.seconds > 3600:
+        value = time_delta.seconds // 3600
         unit = "h"
-    elif delta.seconds > 60:
-        value = delta.seconds // 60
+    elif time_delta.seconds > 60:
+        value = time_delta.seconds // 60
         unit = "min"
+    else:
+        value = time_delta.seconds
+        unit = "s"
+    return (value, unit)
 
-    if len(unit) > 0:
+def get_readable_duration(seconds):
+    delta = datetime.timedelta(seconds = seconds)
+    val, units = get_time_val_units(delta)
+    return f"{val} {units}"
+
+def get_time_ago(timestamp):
+    now = datetime.datetime.now()
+    dt = datetime.datetime.fromtimestamp(timestamp)
+    delta = now - dt
+
+    value, unit = get_time_val_units(delta)
+    if unit is not "s":
         return f"{value} {unit} ago"
-
     return "now"
 
