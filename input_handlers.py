@@ -159,7 +159,7 @@ def get_list_input(prompt, current_option, list_options):
     """
     selected_index = list_options.index(current_option) if current_option in list_options else 0
 
-    height = min(len(list_options) + 4, curses.LINES - 2)
+    height = min(len(list_options) + 5, curses.LINES - 2)
     width = 60
     start_y = (curses.LINES - height) // 2
     start_x = (curses.COLS - width) // 2
@@ -187,7 +187,7 @@ def get_list_input(prompt, current_option, list_options):
     # Initial refresh
     list_win.refresh()
     list_pad.refresh(0, 0,
-                    list_win.getbegyx()[0] + 2, list_win.getbegyx()[1] + 4,
+                    list_win.getbegyx()[0] + 3, list_win.getbegyx()[1] + 4,
                     list_win.getbegyx()[0] + list_win.getmaxyx()[0] - 2, list_win.getbegyx()[1] + list_win.getmaxyx()[1] - 4)
 
     while True:
@@ -220,6 +220,6 @@ def move_highlight(old_idx, new_idx, options, enum_win, enum_pad):
 
     enum_win.refresh()
     enum_pad.refresh(start_index, 0,
-                     enum_win.getbegyx()[0] + 2, enum_win.getbegyx()[1] + 4,
+                     enum_win.getbegyx()[0] + 3, enum_win.getbegyx()[1] + 4,
                      enum_win.getbegyx()[0] + enum_win.getmaxyx()[0] - 2, enum_win.getbegyx()[1] + 4 + enum_win.getmaxyx()[1] - 4)
     

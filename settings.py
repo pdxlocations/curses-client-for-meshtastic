@@ -204,11 +204,7 @@ def settings_menu(stdscr, interface):
                     logging.error(f"Unexpected error: {e}")
                 continue
 
-
-
-
             elif selected_option == "Load Config":
-
                 app_directory = os.path.dirname(os.path.abspath(__file__))
                 config_folder = "node-configs"
                 folder_path = os.path.join(app_directory, config_folder)
@@ -221,8 +217,6 @@ def settings_menu(stdscr, interface):
                         config_import(globals.interface, file_path)
                     break
                 continue
-
-
 
             elif selected_option == "Reboot":
                 confirmation = get_list_input("Are you sure you want to Reboot?", None,  ["Yes", "No"])
@@ -296,7 +290,7 @@ def settings_menu(stdscr, interface):
 
                 elif field.enum_type:  # Enum field
                     enum_options = {v.name: v.number for v in field.enum_type.values}
-                    new_value_name = get_list_input("Select an option", current_value, list(enum_options.keys()))
+                    new_value_name = get_list_input(selected_option, current_value, list(enum_options.keys()))
                     new_value = enum_options.get(new_value_name, current_value)
 
                 elif field.type == 7: # Field type 7 corresponds to FIXED32
