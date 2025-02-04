@@ -110,7 +110,7 @@ def get_time_ago(timestamp):
     delta = now - dt
 
     value, unit = get_time_val_units(delta)
-    if unit is not "s":
+    if unit != "s":
         return f"{value} {unit} ago"
     return "now"
 
