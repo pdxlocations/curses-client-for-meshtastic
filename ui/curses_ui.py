@@ -107,29 +107,16 @@ def refresh_pad(window):
                         box.getbegyx()[0] + lines, box.getbegyx()[1] + box.getmaxyx()[1] - 2)
 
 def highlight_line(highlight, window, line):
-    pad = channel_pad
-    select_len = 0
-    ch_color = get_color("channel_list")
-    nd_color = get_color("node_list")
-
-    if(window == 2):
-        pad = nodes_pad
-        select_len = len(get_name_from_database(globals.node_list[line], "long"))
-
-        pad.chgat(line, 1, select_len, nd_color | curses.A_REVERSE if highlight else nd_color)
+    pad = nodes_pad
+    color = get_color("node_list")
+    select_len = nodes_box.getmaxyx()[1] - 2
 
     if(window == 0):
-        channel = globals.channel_list[line]
-        win_width = channel_box.getmaxyx()[1]
+        pad = channel_pad
+        color = get_color("channel_selected" if (line == globals.selected_channel and highlight == False) else "channel_list")
+        select_len = channel_box.getmaxyx()[1] - 2
 
-        if(isinstance(channel, int)):
-            channel = get_name_from_database(channel, type="long")
-        select_len = min(len(channel), win_width - 4)
-
-        if line == globals.selected_channel and highlight == False:
-            ch_color = get_color("channel_selected")
-
-        pad.chgat(line, 1, select_len, ch_color | curses.A_REVERSE if highlight else ch_color)
+    pad.chgat(line, 1, select_len, color | curses.A_REVERSE if highlight else color)
 
 def add_notification(channel_number):
     if channel_number not in globals.notifications:
@@ -200,15 +187,16 @@ def draw_channel_list():
         notification = " " + config.notification_symbol if idx in globals.notifications else ""
 
         # Truncate the channel name if it's too long to fit in the window
-        truncated_channel = channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel
+        truncated_channel = ((channel[:win_width - 5] + '-' if len(channel) > win_width - 5 else channel) + notification).ljust(win_width - 3)
+
+        color = get_color("channel_list")
         if idx == globals.selected_channel:
             if globals.current_window == 0:
-                channel_pad.addstr(idx, 1, truncated_channel + notification, get_color("channel_list", reverse=True))
+                color = get_color("channel_list", reverse=True)
                 remove_notification(globals.selected_channel)
             else:
-                channel_pad.addstr(idx, 1, truncated_channel + notification, get_color("channel_selected"))
-        else:
-            channel_pad.addstr(idx, 1, truncated_channel + notification, get_color("channel_list"))
+                color = get_color("channel_selected")
+        channel_pad.addstr(idx, 1, truncated_channel, color)
         idx += 1
 
     channel_box.attrset(get_color("window_frame_selected") if globals.current_window == 0 else get_color("window_frame"))
@@ -263,13 +251,14 @@ def draw_messages_window(scroll_to_bottom = False):
 
 def draw_node_list():
     nodes_pad.erase()
-    nodes_pad.resize(len(globals.node_list), nodes_box.getmaxyx()[1])
+    box_width = nodes_box.getmaxyx()[1]
+    nodes_pad.resize(len(globals.node_list) + 1, box_width)
 
-    for i, node in enumerate(globals.node_list):
-        if globals.selected_node == i and globals.current_window == 2:
-            nodes_pad.addstr(i, 1, get_name_from_database(node, "long"), get_color("node_list", reverse=True))
-        else:
-            nodes_pad.addstr(i, 1, get_name_from_database(node, "long"), get_color("node_list"))
+    for i, node_num in enumerate(globals.node_list):
+        node = globals.interface.nodesByNum[node_num]
+        secure = 'user' in node and 'publicKey' in node['user'] and node['user']['publicKey']
+        node_str = f"{'🔒' if secure else '🔓'} {get_name_from_database(node_num, 'long')}".ljust(box_width - 2)[:box_width - 2]
+        nodes_pad.addstr(i, 1, node_str, get_color("node_list", reverse=globals.selected_node == i and globals.current_window == 2))
 
     nodes_box.attrset(get_color("window_frame_selected") if globals.current_window == 2 else get_color("window_frame"))
     nodes_box.box()
