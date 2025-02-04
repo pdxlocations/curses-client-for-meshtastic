@@ -1,7 +1,9 @@
 import curses
 import textwrap
+import time
 from utilities.utils import get_channels, get_readable_duration, get_time_ago, refresh_node_list
 from settings import settings_menu
+from input_handlers import get_list_input
 from message_handlers.tx_handler import send_message, send_traceroute
 from ui.colors import setup_colors, get_color
 from db_handler import get_name_from_database, update_node_info_in_db, is_chat_archived
@@ -670,6 +672,20 @@ def main_ui(stdscr):
                     select_channel(globals.selected_channel)
                     draw_channel_list()
                     draw_messages_window()
+
+            if(globals.current_window == 2):
+                curses.curs_set(0)
+                confirmation = get_list_input(f"Remove {get_name_from_database(globals.node_list[globals.selected_node])} from nodedb?", "no", ["yes", "no"])
+                if confirmation == "yes":
+                    globals.interface.localNode.removeNode(globals.node_list[globals.selected_node])
+                    globals.node_list.pop(globals.selected_node)
+
+                    draw_messages_window()
+                    draw_node_list()
+                else:
+                    draw_messages_window()
+                curses.curs_set(1)
+                continue
 
         else:
             # Append typed character to input text
