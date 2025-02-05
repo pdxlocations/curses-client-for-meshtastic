@@ -363,6 +363,49 @@ def draw_packetlog_win():
         packetlog_win.box()
         packetlog_win.refresh()
 
+def search(win):
+    start_idx = globals.selected_node
+    select_func = select_node
+
+    if win == 0:
+        start_idx = globals.selected_channel
+        select_func = select_channel
+
+    search_text = ""
+    entry_win.erase()
+
+    while True:
+        draw_centered_text_field(entry_win, f"Search: {search_text}", 0, get_color("input"))
+        char = entry_win.get_wch()
+
+        if char in (chr(27), chr(curses.KEY_ENTER), chr(10), chr(13)):
+            break
+        elif char == "\t":
+            start_idx = globals.selected_node + 1 if win == 2 else globals.selected_channel + 1
+        elif char in (curses.KEY_BACKSPACE, chr(127)):
+            if search_text:
+                search_text = search_text[:-1]
+                y, x = entry_win.getyx()
+                entry_win.move(y, x - 1)
+                entry_win.addch(' ')  #
+                entry_win.move(y, x - 1)
+                entry_win.erase()
+                entry_win.refresh()
+        elif isinstance(char, str):
+            search_text += char
+
+        search_text_caseless = search_text.casefold()
+
+        l = globals.node_list if win == 2 else globals.channel_list
+        for i, n in enumerate(l[start_idx:] + l[:start_idx]):
+            if isinstance(n, int) and search_text_caseless in get_name_from_database(n, 'long').casefold() \
+              or isinstance(n, int) and search_text_caseless in get_name_from_database(n, 'short').casefold() \
+              or search_text_caseless in str(n).casefold():
+                select_func((i + start_idx) % len(l))
+                break
+
+    entry_win.erase()
+
 def handle_resize(stdscr, firstrun):
     global messages_pad, messages_box, nodes_pad, nodes_box, channel_pad, channel_box, function_win, packetlog_win, entry_win
 
@@ -659,6 +702,10 @@ def main_ui(stdscr):
                     select_channel(globals.selected_channel)
                     draw_channel_list()
                     draw_messages_window()
+
+        elif char == chr(31):
+            if(globals.current_window == 2 or globals.current_window == 0):
+                search(globals.current_window)
 
         else:
             # Append typed character to input text
