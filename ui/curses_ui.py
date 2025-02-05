@@ -376,12 +376,10 @@ def draw_packetlog_win():
 
 def search(win):
     start_idx = globals.selected_node
-    l = globals.node_list
     select_func = select_node
 
     if win == 0:
         start_idx = globals.selected_channel
-        l = globals.channel_list
         select_func = select_channel
 
     search_text = ""
@@ -409,6 +407,7 @@ def search(win):
 
         search_text_caseless = search_text.casefold()
 
+        l = globals.node_list if win == 2 else globals.channel_list
         for i, n in enumerate(l[start_idx:] + l[:start_idx]):
             if isinstance(n, int) and search_text_caseless in get_name_from_database(n, 'long').casefold() \
               or isinstance(n, int) and search_text_caseless in get_name_from_database(n, 'short').casefold() \
